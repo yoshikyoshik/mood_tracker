@@ -20,6 +20,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   int _selectedIndex = 0;
   
   double _currentMoodValue = 5.0;
+  double _currentSleepValue = 5.0;
   final Set<String> _selectedTags = {};
   bool _showSuccessAnimation = false;
   DateTime _selectedDate = DateTime.now();
@@ -152,6 +153,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     final newEntry = MoodEntry(
       timestamp: DateTime.now(),
       score: _currentMoodValue,
+      sleepRating: _currentSleepValue,
       tags: Set.from(_selectedTags),
       profileId: _selectedProfileId,
     );
@@ -159,8 +161,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     try {
       final res = await Supabase.instance.client.from('mood_entries').insert({
         'user_id': user.id,
-        'profile_id': _selectedProfileId, 
+        'profile_id': _selectedProfileId,
         'score': newEntry.score,
+        'sleep_rating': newEntry.sleepRating,
         'tags': newEntry.tags.toList(),
       }).select().single();
       
@@ -208,20 +211,19 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     }
   }
 
-  Future<void> _updateEntry(String entryId, double newScore, Set<String> newTags) async {
+  Future<void> _updateEntry(String entryId, double newScore, double newSleep, Set<String> newTags) async {
     try {
-      // 1. Update in der Datenbank
       final res = await Supabase.instance.client
           .from('mood_entries')
           .update({
             'score': newScore,
+            'sleep_rating': newSleep,
             'tags': newTags.toList(),
           })
           .eq('id', entryId)
           .select()
           .single();
 
-      // 2. Update in der lokalen Liste (damit man es sofort sieht)
       final updatedEntry = MoodEntry.fromMap(res);
       setState(() {
         final index = _allEntries.indexWhere((e) => e.id == entryId);
@@ -230,7 +232,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         }
       });
       
-      if (mounted) Navigator.pop(context); // Schließt das Fenster
+      if (mounted) Navigator.pop(context); 
       
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler beim Update: $e")));
@@ -238,14 +240,14 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 
   void _showEditSheet(MoodEntry entry) {
-    // Wir brauchen lokale Variablen für den Dialog-Zustand
-    // (StatefulBuilder hilft uns, den Slider IM Dialog zu aktualisieren)
+    // KORRIGIERT: Schlaf-Wert initialisieren
     double editScore = entry.score;
+    double editSleep = entry.sleepRating ?? 5.0; 
     Set<String> editTags = Set.from(entry.tags);
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Damit die Tastatur nichts verdeckt
+      isScrollControlled: true, 
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return StatefulBuilder(
@@ -265,18 +267,48 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                   const Text("Eintrag bearbeiten", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   
-                  // 1. Slider im Edit-Modus
+                  // 1. Slider Stimmung
                   Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
                   Slider(
                     value: editScore,
                     min: 0.0,
                     max: 10.0,
                     onChanged: (val) {
-                      setSheetState(() => editScore = val); // Aktualisiert nur das Sheet
+                      setSheetState(() => editScore = val); 
                     },
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // KORRIGIERT: 2. Slider Schlaf auch hier anzeigen
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.bedtime, color: Colors.indigoAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Schlaf: ${editSleep.toStringAsFixed(1)}",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87.withValues(alpha: 0.6)),
+                      ),
+                    ],
+                  ),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 10.0,
+                      activeTrackColor: Colors.indigoAccent,
+                      thumbColor: Colors.indigo,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
+                    ),
+                    child: Slider(
+                      value: editSleep,
+                      min: 0.0, max: 10.0,
+                      onChanged: (val) => setSheetState(() => editSleep = val),
+                    ),
+                  ),
                   
-                  // 2. Tags im Edit-Modus
+                  const SizedBox(height: 20),
+
+                  // 3. Tags
                   Wrap(
                     spacing: 6.0,
                     children: _availableTags.map((tag) {
@@ -299,9 +331,10 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                   
                   const SizedBox(height: 20),
                   
-                  // 3. Speichern Button
+                  // 4. Speichern Button
                   ElevatedButton(
-                    onPressed: () => _updateEntry(entry.id!, editScore, editTags),
+                    // KORRIGIERT: Hier auch editSleep übergeben
+                    onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       backgroundColor: Colors.black87,
@@ -401,6 +434,33 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.bedtime, color: Colors.indigoAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Schlaf: ${_currentSleepValue.toStringAsFixed(1)}",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87.withValues(alpha: 0.6)),
+                      ),
+                    ],
+                  ),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 10.0,
+                      activeTrackColor: Colors.indigoAccent,
+                      thumbColor: Colors.indigo,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
+                    ),
+                    child: Slider(
+                      value: _currentSleepValue,
+                      min: 0.0, max: 10.0,
+                      onChanged: _showSuccessAnimation ? null : (val) => setState(() => _currentSleepValue = val),
+                    ),
+                  ),
+
                   Wrap(
                     spacing: 6.0,
                     runSpacing: 6.0,
@@ -464,7 +524,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                       key: Key(entry.id ?? index.toString()),
                       direction: DismissDirection.endToStart,
                       background: Container(
-                        margin: const EdgeInsets.only(bottom: 12), // Abstand passend zur Karte
+                        margin: const EdgeInsets.only(bottom: 12),
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
@@ -478,13 +538,11 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           _deleteEntry(entry.id!);
                         }
                       },
-                      // HIER IST DAS NEUE DESIGN:
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12), // Luft zwischen den Karten
+                        margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          // Premium-Schatten (weich und dezent)
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.03),
@@ -494,35 +552,31 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           ],
                         ),
                         child: ListTile(
-                          // NEU: HIER WIRD DAS EDIT-FENSTER GEÖFFNET
                           onTap: () => _showEditSheet(entry),
-                          
+
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          // Das Score-Badge (links)
                           leading: Container(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.2), // Helle Version der Stimmungsfarbe
+                              color: color.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Center(
                               child: Text(
                                 entry.score.toStringAsFixed(1),
                                 style: TextStyle(
-                                  color: color, // Dunkle Version der Stimmungsfarbe für Text
+                                  color: color,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
                                 ),
                               ),
                             ),
                           ),
-                          // Uhrzeit
                           title: Text(
                             "${DateFormat('HH:mm').format(entry.timestamp)} Uhr",
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           ),
-                          // Die Tags als kleine Chips
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Wrap(
@@ -559,19 +613,16 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         ? _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: '')).name
         : "Unbekannt";
 
-    // Wir nutzen ListView statt Column, damit man scrollen kann, 
-    // wenn viele Insights da sind.
     return ListView(
       padding: const EdgeInsets.all(20.0),
       children: [
         Text("Woche von $currentProfileName", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         const Text("Tagesdurchschnitt der letzten 7 Tage"),
-        const SizedBox(height: 20), // Etwas weniger Abstand
+        const SizedBox(height: 20),
         
-        // Das CHART muss jetzt eine fixe Höhe haben, weil es in einer ListView liegt
         SizedBox(
-          height: 250, // Fixe Höhe für Chart
+          height: 250,
           child: chartData.isEmpty 
             ? const Center(child: Text("Nicht genug Daten für eine Grafik."))
             : LineChart(
@@ -630,11 +681,89 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         ),
         
         const SizedBox(height: 40),
+
+        // KORRIGIERT: Diese Methode existiert jetzt
+        _buildWeekdayStats(),
+
+        const SizedBox(height: 40),
         
-        // --- HIER IST DAS NEUE FEATURE ---
         _buildInsightsSection(),
         
         const SizedBox(height: 50),
+      ],
+    );
+  }
+
+  // KORRIGIERT: Die fehlende Methode für das Balkendiagramm hinzugefügt
+  Widget _buildWeekdayStats() {
+    final entries = _filteredEntries;
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    // 1. Daten aggregieren
+    final Map<int, List<double>> dayScores = {};
+    for (var i = 1; i <= 7; i++) dayScores[i] = [];
+
+    for (var e in entries) {
+      dayScores[e.timestamp.weekday]!.add(e.score);
+    }
+
+    // 2. Chart Daten bauen
+    final List<BarChartGroupData> barGroups = [];
+    for (var i = 1; i <= 7; i++) {
+      final scores = dayScores[i]!;
+      final avg = scores.isNotEmpty ? scores.reduce((a, b) => a + b) / scores.length : 0.0;
+      
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: avg,
+              color: _getBackgroundColor(avg),
+              width: 16,
+              borderRadius: BorderRadius.circular(4),
+              backDrawRodData: BackgroundBarChartRodData(show: true, toY: 10, color: Colors.grey.withValues(alpha: 0.1)),
+            )
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Wochentags-Muster", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 200,
+          child: BarChart(
+            BarChartData(
+              maxY: 10,
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+                      final index = value.toInt() - 1;
+                      if (index < 0 || index >= days.length) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(days[index], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barGroups: barGroups,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -760,17 +889,13 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     );
   }
 
-// --- INTELLIGENZ: Wir berechnen, welche Tags gut/schlecht tun ---
   Widget _buildInsightsSection() {
-    // 1. Wir nutzen nur die Daten des aktuellen Profils
     final entries = _filteredEntries;
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    // 2. Globalen Durchschnitt berechnen
     final totalSum = entries.fold(0.0, (sum, e) => sum + e.score);
     final globalAvg = totalSum / entries.length;
 
-    // 3. Werte pro Tag sammeln
     final Map<String, List<double>> tagScores = {};
 
     for (var entry in entries) {
@@ -782,11 +907,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       }
     }
 
-    // 4. Einfluss berechnen (Tag-Durchschnitt minus Global-Durchschnitt)
     final List<Map<String, dynamic>> impacts = [];
 
     tagScores.forEach((tag, scores) {
-      // Nur Tags analysieren, die mindestens 2x vorkommen (sonst ist es Zufall)
       if (scores.length >= 2) {
         final tagAvg = scores.reduce((a, b) => a + b) / scores.length;
         final impact = tagAvg - globalAvg;
@@ -799,7 +922,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       }
     });
 
-    // 5. Sortieren: Die stärksten Einflüsse (positiv wie negativ) zuerst
     impacts.sort((a, b) => (b['impact'].abs() as double).compareTo((a['impact'].abs() as double)));
 
     if (impacts.isEmpty) {
@@ -809,7 +931,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       );
     }
 
-    // 6. UI bauen
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -870,5 +991,4 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       ],
     );
   }
-
 }
