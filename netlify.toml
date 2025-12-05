@@ -1,0 +1,12 @@
+[build]
+  # 1. Wir holen Flutter (stable branch)
+  # 2. Wir bauen die Web-App
+  command = "git clone https://github.com/flutter/flutter.git -b stable && ./flutter/bin/flutter build web --release"
+  
+  # Das ist der Ordner, den Netlify veröffentlichen soll
+  publish = "build/web"
+
+[build.environment]
+  # Setzt den Pfad, damit Befehle gefunden werden
+  FLUTTER_ROOT = "flutter"
+  PATH = "$PATH:$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin"
