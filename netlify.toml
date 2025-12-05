@@ -1,10 +1,10 @@
 [build]
   # Wir nutzen den relativen Pfad zu Flutter (./flutter/bin/flutter), 
   # damit wir die PATH-Variable nicht anfassen müssen.
-  command = "git clone https://github.com/flutter/flutter.git -b stable && ./flutter/bin/flutter build web --release"
+  command = "rm -rf flutter && git clone https://github.com/flutter/flutter.git -b stable && ./flutter/bin/flutter build web --release"
   
   publish = "build/web"
-  
+
   [build.environment]
   # Schaltet den Scanner aus, damit er sich nicht über das Flutter SDK beschwert
   SECRETS_SCAN_ENABLED = "false"
