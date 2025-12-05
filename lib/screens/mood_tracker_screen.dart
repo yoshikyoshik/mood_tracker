@@ -208,6 +208,116 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     }
   }
 
+  Future<void> _updateEntry(String entryId, double newScore, Set<String> newTags) async {
+    try {
+      // 1. Update in der Datenbank
+      final res = await Supabase.instance.client
+          .from('mood_entries')
+          .update({
+            'score': newScore,
+            'tags': newTags.toList(),
+          })
+          .eq('id', entryId)
+          .select()
+          .single();
+
+      // 2. Update in der lokalen Liste (damit man es sofort sieht)
+      final updatedEntry = MoodEntry.fromMap(res);
+      setState(() {
+        final index = _allEntries.indexWhere((e) => e.id == entryId);
+        if (index != -1) {
+          _allEntries[index] = updatedEntry;
+        }
+      });
+      
+      if (mounted) Navigator.pop(context); // Schließt das Fenster
+      
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler beim Update: $e")));
+    }
+  }
+
+  void _showEditSheet(MoodEntry entry) {
+    // Wir brauchen lokale Variablen für den Dialog-Zustand
+    // (StatefulBuilder hilft uns, den Slider IM Dialog zu aktualisieren)
+    double editScore = entry.score;
+    Set<String> editTags = Set.from(entry.tags);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Damit die Tastatur nichts verdeckt
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final moodData = _getMoodData(editScore);
+            
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
+                left: 20, 
+                right: 20, 
+                top: 20
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Eintrag bearbeiten", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  
+                  // 1. Slider im Edit-Modus
+                  Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
+                  Slider(
+                    value: editScore,
+                    min: 0.0,
+                    max: 10.0,
+                    onChanged: (val) {
+                      setSheetState(() => editScore = val); // Aktualisiert nur das Sheet
+                    },
+                  ),
+                  
+                  // 2. Tags im Edit-Modus
+                  Wrap(
+                    spacing: 6.0,
+                    children: _availableTags.map((tag) {
+                      final isSelected = editTags.contains(tag);
+                      return ChoiceChip(
+                        label: Text(tag),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setSheetState(() {
+                            if (selected) {
+                              editTags.add(tag);
+                            } else {
+                              editTags.remove(tag);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // 3. Speichern Button
+                  ElevatedButton(
+                    onPressed: () => _updateEntry(entry.id!, editScore, editTags),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Colors.black87,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Änderungen speichern"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _signOut() async {
     await Supabase.instance.client.auth.signOut();
   }
@@ -384,6 +494,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           ],
                         ),
                         child: ListTile(
+                          // NEU: HIER WIRD DAS EDIT-FENSTER GEÖFFNET
+                          onTap: () => _showEditSheet(entry),
+                          
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           // Das Score-Badge (links)
                           leading: Container(
