@@ -8,6 +8,7 @@ import 'package:fl_chart/fl_chart.dart';
 // Wir importieren unsere ausgelagerten Modelle
 import '../models/mood_entry.dart';
 import '../models/profile.dart';
+import '../models/subscription.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -35,6 +36,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   List<MoodEntry> _allEntries = [];
   bool _isLoading = true;
 
+  bool _isPro = false;
+
   final List<String> _availableTags = [
     'Arbeit', 'Familie', 'Beziehung', 'Sport', 
     'Schlaf', 'Essen', 'Wetter', 'Gesundheit', 'Reisen', 'Schule', 'Hausaufgaben'
@@ -44,11 +47,36 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   void initState() {
     super.initState();
     _initializeData();
+    _checkSubscription();
   }
 
   Future<void> _initializeData() async {
     await _loadProfiles();
     await _loadEntries();
+  }
+
+  Future<void> _checkSubscription() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final data = await Supabase.instance.client
+          .from('subscriptions')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle(); // maybeSingle, weil es sein kann, dass noch KEIN Eintrag existiert
+
+      if (data != null) {
+        final sub = Subscription.fromMap(data);
+        if (mounted) {
+          setState(() {
+            _isPro = sub.isPro;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Fehler beim Abo-Check: $e");
+    }
   }
 
   Future<void> _loadProfiles() async {
@@ -736,7 +764,10 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
         const SizedBox(height: 40),
         
-        _buildInsightsSection(),
+        if (_isPro)
+          _buildInsightsSection()
+        else
+          _buildLockedInsights(),
         
         const SizedBox(height: 50),
       ],
@@ -895,11 +926,12 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         ),
         actions: [
           // NEU: Der Abo-Button
-          IconButton(
-            icon: const Icon(Icons.diamond, color: Colors.indigo),
-            onPressed: _startCheckout, // Hier rufen wir die Funktion auf!
-            tooltip: "Pro werden",
-          ),
+          if (!_isPro) 
+            IconButton(
+              icon: const Icon(Icons.diamond, color: Colors.indigo),
+              onPressed: _startCheckout,
+              tooltip: "Pro werden",
+            ),
           IconButton(icon: const Icon(Icons.calendar_month), onPressed: _pickDate),
           IconButton(icon: const Icon(Icons.logout), onPressed: _signOut)
         ],
@@ -1046,6 +1078,44 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           );
         }),
       ],
+    );
+  }
+  Widget _buildLockedInsights() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.lock_outline, size: 48, color: Colors.indigo),
+          const SizedBox(height: 16),
+          const Text(
+            "Schalte Premium-Insights frei",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Erfahre genau, was deine Stimmung beeinflusst. Unsere KI analysiert deine Muster.",
+            style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _startCheckout,
+            icon: const Icon(Icons.diamond, size: 18),
+            label: const Text("Jetzt Pro werden"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
