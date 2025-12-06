@@ -9,6 +9,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/mood_entry.dart';
 import '../models/profile.dart';
 
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
+
 class MoodTrackerScreen extends StatefulWidget {
   const MoodTrackerScreen({super.key});
 
@@ -353,6 +357,51 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   Future<void> _signOut() async {
     await Supabase.instance.client.auth.signOut();
+  }
+
+  Future<void> _startCheckout() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Netlify Function aufrufen
+      // WICHTIG: Ersetze dies mit DEINER echten Netlify-URL!
+      final response = await http.post(
+        Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-checkout'),
+        body: jsonEncode({
+          'userEmail': user.email,
+          'userId': user.id,
+          'priceId': 'price_1SbFNUFoVhyNl27phao8dSGu', // WICHTIG: Deine Stripe Price ID hier rein!
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final url = Uri.parse(data['url']);
+        
+        // 2. Stripe Checkout im Browser öffnen
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        // FIX: Check if mounted
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: ${response.body}")));
+        }
+      }
+    } catch (e) {
+      // FIX: Check if mounted
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: $e")));
+      }
+    } finally {
+      // FIX: Check if mounted
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Color _getBackgroundColor(double value) {
@@ -701,7 +750,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     // 1. Daten aggregieren
     final Map<int, List<double>> dayScores = {};
-    for (var i = 1; i <= 7; i++) dayScores[i] = [];
+    for (var i = 1; i <= 7; i++) {
+      dayScores[i] = [];
+    }
 
     for (var e in entries) {
       dayScores[e.timestamp.weekday]!.add(e.score);
@@ -843,6 +894,12 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           ],
         ),
         actions: [
+          // NEU: Der Abo-Button
+          IconButton(
+            icon: const Icon(Icons.diamond, color: Colors.indigo),
+            onPressed: _startCheckout, // Hier rufen wir die Funktion auf!
+            tooltip: "Pro werden",
+          ),
           IconButton(icon: const Icon(Icons.calendar_month), onPressed: _pickDate),
           IconButton(icon: const Icon(Icons.logout), onPressed: _signOut)
         ],
