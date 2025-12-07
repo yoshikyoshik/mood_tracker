@@ -4,6 +4,7 @@ class MoodEntry {
   final double score;
   final double? sleepRating; // NEU: Kann null sein (für alte Einträge)
   final Set<String> tags;
+  final String? note;
   final String? profileId;
 
   MoodEntry({
@@ -12,6 +13,7 @@ class MoodEntry {
     required this.score,
     this.sleepRating, // NEU
     required this.tags,
+    this.note,
     this.profileId,
   });
 
@@ -23,6 +25,7 @@ class MoodEntry {
       // NEU: Sicherstellen, dass wir null handhaben oder 0.0 als Fallback
       sleepRating: map['sleep_rating'] != null ? (map['sleep_rating'] as num).toDouble() : null,
       tags: Set<String>.from(map['tags'] ?? []),
+      note: map['note'],
       profileId: map['profile_id'],
     );
   }
