@@ -1,12 +1,14 @@
 class Subscription {
   final String userId;
-  final String status; // 'active', 'trialing', 'canceled', etc.
+  final String status;
   final String? planType;
+  final String? customerId; // <--- NEU
 
   Subscription({
     required this.userId,
     required this.status,
     this.planType,
+    this.customerId, // <--- NEU
   });
 
   factory Subscription.fromMap(Map<String, dynamic> map) {
@@ -14,9 +16,9 @@ class Subscription {
       userId: map['user_id'],
       status: map['status'] ?? 'inactive',
       planType: map['plan_type'],
+      customerId: map['stripe_customer_id'], // <--- NEU: Aus DB lesen
     );
   }
 
-  // Hilfs-Getter: Ist der User "Pro"?
   bool get isPro => status == 'active' || status == 'trialing';
 }

@@ -13,6 +13,7 @@ import '../models/subscription.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 class MoodTrackerScreen extends StatefulWidget {
   const MoodTrackerScreen({super.key});
@@ -37,6 +38,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   bool _isLoading = true;
 
   bool _isPro = false;
+  String? _stripeCustomerId;
 
   final List<String> _availableTags = [
     'Arbeit', 'Familie', 'Beziehung', 'Sport', 
@@ -71,6 +73,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         if (mounted) {
           setState(() {
             _isPro = sub.isPro;
+            _stripeCustomerId = sub.customerId;
           });
         }
       }
@@ -393,6 +396,13 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     setState(() => _isLoading = true);
 
+        // FIX: Dynamische URL je nach Plattform
+    // Wenn Web -> Nimm die aktuelle URL des Browsers (oder deine Netlify URL)
+    // Wenn Mobile -> Nimm den Deep Link
+    final String returnUrl = kIsWeb 
+        ? 'https://celadon-pasca-8b960a.netlify.app/' // Deine Netlify URL
+        : 'moodtracker://home';
+
     try {
       // 1. Netlify Function aufrufen
       // WICHTIG: Ersetze dies mit DEINER echten Netlify-URL!
@@ -402,6 +412,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           'userEmail': user.email,
           'userId': user.id,
           'priceId': 'price_1SbFNUFoVhyNl27phao8dSGu', // WICHTIG: Deine Stripe Price ID hier rein!
+          'returnUrl': returnUrl,
         }),
       );
 
@@ -429,6 +440,41 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _openCustomerPortal() async {
+    if (_stripeCustomerId == null) return;
+    
+    setState(() => _isLoading = true);
+    // FIX: Dynamische URL
+    final String returnUrl = kIsWeb 
+        ? 'https://celadon-pasca-8b960a.netlify.app/' 
+        : 'moodtracker://home';
+
+    try {
+      final response = await http.post(
+        // URL zu deiner create-portal Function
+        Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-portal'),
+        body: jsonEncode({
+          'customerId': _stripeCustomerId, // WICHTIG
+          'returnUrl': returnUrl,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final url = Uri.parse(data['url']);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: ${response.body}")));
+      }
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: $e")));
+    } finally {
+      if(mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -931,6 +977,13 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
               icon: const Icon(Icons.diamond, color: Colors.indigo),
               onPressed: _startCheckout,
               tooltip: "Pro werden",
+            ),
+            // Wenn PRO -> Verwalten
+          if (_isPro)
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.black87),
+              onPressed: _openCustomerPortal, // Ruft das Portal auf
+              tooltip: "Abo verwalten",
             ),
           IconButton(icon: const Icon(Icons.calendar_month), onPressed: _pickDate),
           IconButton(icon: const Icon(Icons.logout), onPressed: _signOut)
