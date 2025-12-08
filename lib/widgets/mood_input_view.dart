@@ -91,12 +91,16 @@ class _MoodInputViewState extends State<MoodInputView> {
   Future<void> _startRecording() async {
     try {
       if (await _audioRecorder.hasPermission()) {
-        final directory = await getApplicationDocumentsDirectory();
-        // Datei-Pfad generieren
-        final path = '${directory.path}/audio_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
-
-        // Config: AAC ist gut komprimiert und OpenAI versteht es
         const config = RecordConfig(encoder: AudioEncoder.aacLc);
+        
+        // FIX: Pfad-Logik trennen
+        String path = ''; // Leer lassen für Web (wird automatisch im RAM/Blob gespeichert)
+        
+        if (!kIsWeb) {
+          // Nur auf Mobile (Android/iOS) brauchen wir einen echten Ordner
+          final directory = await getApplicationDocumentsDirectory();
+          path = '${directory.path}/audio_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        }
 
         // Starten
         await _audioRecorder.start(config, path: path);
@@ -146,23 +150,25 @@ class _MoodInputViewState extends State<MoodInputView> {
   // Der Upload zur Netlify Function
   Future<void> _uploadAndTranscribe(String filePath) async {
     try {
-      // URL deiner Netlify Function (Lokal oder Prod)
-      // WICHTIG: Wenn du lokal testest (Handy am PC), nutze deine lokale IP oder Tunnel
-      // Für Web lokal: localhost:8888
-      // Hier nutzen wir die relative URL für Web, oder die harte URL für Mobile
-      // Ersetze DEIN-PROJEKT durch deine echte URL
-      final url = Uri.parse('https://https://celadon-pasca-8b960a.netlify.app//.netlify/functions/transcribe'); 
+      // URL deiner Netlify Function
+      final url = Uri.parse('https://mood-tracker-rico.netlify.app/.netlify/functions/transcribe'); 
       
       var request = http.MultipartRequest('POST', url);
       
       if (kIsWeb) {
-        // Web-Spezifisch (Blob handhabung ist hier komplexer, Record Web gibt Blob URL)
-        // Einfachheitshalber: Flutter record auf Web speichert oft direkt im Browser Blob.
-        // Für diesen Schritt fokussieren wir auf Mobile, da Web record anders ist.
-        // Falls Web: Wir brauchen bytes.
-        // Das record package gibt im Web oft null path zurück, wenn man streams nutzt.
-        // Wir nehmen an, wir sind auf Mobile (Android) wie geplant.
+        // FIX WEB: filePath ist hier eine Blob-URL (z.B. "blob:http://localhost...")
+        // Wir müssen die Audiodaten erst aus dem Browser-Speicher holen
+        final blobResponse = await http.get(Uri.parse(filePath));
+        final bytes = blobResponse.bodyBytes;
+        
+        // Als Bytes anfügen
+        request.files.add(http.MultipartFile.fromBytes(
+          'file', 
+          bytes, 
+          filename: 'recording.m4a'
+        ));
       } else {
+        // FIX MOBILE: Echte Datei vom Speicherpfad laden
         request.files.add(await http.MultipartFile.fromPath('file', filePath));
       }
 
