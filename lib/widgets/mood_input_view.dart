@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt; // <--- NEU
+import 'package:permission_handler/permission_handler.dart'; // <--- NEU
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
+import 'package:flutter/foundation.dart';
 
-class MoodInputView extends StatelessWidget {
+class MoodInputView extends StatefulWidget {
   final double currentMoodValue;
   final double currentSleepValue;
   final bool trackSleep;
@@ -11,6 +14,7 @@ class MoodInputView extends StatelessWidget {
   
   final Map<String, List<String>> categorizedTags;
   final Set<String> customTagNames;
+  final int? cycleDay; 
   
   final TextEditingController noteController;
   final List<MoodEntry> entriesForDate;
@@ -25,11 +29,7 @@ class MoodInputView extends StatelessWidget {
   final VoidCallback onSave;
   final Function(String) onDeleteEntry;
   final Function(MoodEntry) onEditEntry;
-
-  final int? cycleDay;
-  
-  // UMBENANNT: Von onDelete... zu onManage...
-  final Function(String) onManageCustomTag; 
+  final Function(String) onManageCustomTag;
 
   const MoodInputView({
     super.key,
@@ -39,6 +39,7 @@ class MoodInputView extends StatelessWidget {
     required this.selectedTags,
     required this.categorizedTags,
     required this.customTagNames,
+    this.cycleDay,
     required this.noteController,
     required this.entriesForDate,
     required this.showSuccessAnimation,
@@ -51,16 +52,95 @@ class MoodInputView extends StatelessWidget {
     required this.onSave,
     required this.onDeleteEntry,
     required this.onEditEntry,
-    required this.onManageCustomTag, // <--- HIER
-    required this.cycleDay,
+    required this.onManageCustomTag,
   });
 
   @override
+  State<MoodInputView> createState() => _MoodInputViewState();
+}
+
+class _MoodInputViewState extends State<MoodInputView> {
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+  bool _speechEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+    _initSpeech();
+  }
+
+  // Initialisierung der Spracherkennung
+  void _initSpeech() async {
+    try {
+      // FIX: Auf dem Handy (Mobile) müssen wir explizit fragen.
+      // Im Web (!kIsWeb) macht das der Browser automatisch beim Initialisieren.
+      if (!kIsWeb) {
+        var status = await Permission.microphone.status;
+        if (!status.isGranted) {
+          await Permission.microphone.request();
+        }
+      }
+
+      _speechEnabled = await _speech.initialize(
+        onStatus: (status) => debugPrint('Speech Status: $status'),
+        onError: (error) => debugPrint('Speech Error: $error'),
+      );
+      
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint("Speech Init Error: $e");
+    }
+  }
+
+  // Start/Stop Aufnahme
+  void _listen() async {
+    if (!_speechEnabled) {
+      _initSpeech(); // Versuch neu zu starten
+      return;
+    }
+
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+    } else {
+      setState(() => _isListening = true);
+      
+      final String existingText = widget.noteController.text;
+      
+      await _speech.listen(
+        onResult: (val) {
+          setState(() {
+            String separator = (existingText.isNotEmpty && !existingText.endsWith(' ')) ? ' ' : '';
+            if (val.recognizedWords.isNotEmpty) {
+               widget.noteController.text = "$existingText$separator${val.recognizedWords}";
+               
+               widget.noteController.selection = TextSelection.fromPosition(
+                 TextPosition(offset: widget.noteController.text.length)
+               );
+            }
+          });
+        },
+        localeId: "de_DE",
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 5),
+        // FIX: Veraltete Parameter in 'listenOptions' verschoben
+        listenOptions: stt.SpeechListenOptions(
+          cancelOnError: true,
+          listenMode: stt.ListenMode.dictation,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final moodData = MoodUtils.getMoodData(currentMoodValue);
+    final moodData = MoodUtils.getMoodData(widget.currentMoodValue);
 
     return Column(
       children: [
+        // --- SCROLL BEREICH ---
         Expanded(
           flex: 3,
           child: Column(
@@ -73,27 +153,29 @@ class MoodInputView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 10),
-
-                        // ZYKLUS ANZEIGE (Nur wenn aktiv und Tag berechnet)
-                        if (cycleDay != null)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.pinkAccent.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.water_drop, size: 14, color: Colors.pinkAccent),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Zyklustag $cycleDay",
-                                  style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 12),
-                                ),
-                              ],
+                        
+                        // ZYKLUS ANZEIGE (Falls vorhanden)
+                        if (widget.cycleDay != null)
+                          Center(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.pinkAccent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.water_drop, size: 14, color: Colors.pinkAccent),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "Zyklustag ${widget.cycleDay}",
+                                    style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -123,9 +205,9 @@ class MoodInputView extends StatelessWidget {
                             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
                           ),
                           child: Slider(
-                            value: currentMoodValue,
+                            value: widget.currentMoodValue,
                             min: 0.0, max: 10.0,
-                            onChanged: showSuccessAnimation ? null : onMoodChanged,
+                            onChanged: widget.showSuccessAnimation ? null : widget.onMoodChanged,
                           ),
                         ),
 
@@ -135,22 +217,22 @@ class MoodInputView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Switch(
-                              value: trackSleep, 
-                              onChanged: onTrackSleepChanged,
+                              value: widget.trackSleep, 
+                              onChanged: widget.onTrackSleepChanged,
                               activeTrackColor: Colors.indigo, 
                             ),
                             const Icon(Icons.bedtime, color: Colors.indigoAccent),
                             const SizedBox(width: 8),
                             Text(
-                              trackSleep 
-                                ? "Schlaf: ${currentSleepValue.toStringAsFixed(1)}"
+                              widget.trackSleep 
+                                ? "Schlaf: ${widget.currentSleepValue.toStringAsFixed(1)}"
                                 : "Schlaf nicht erfassen",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: trackSleep ? Colors.black87.withValues(alpha: 0.6) : Colors.grey),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: widget.trackSleep ? Colors.black87.withValues(alpha: 0.6) : Colors.grey),
                             ),
                           ],
                         ),
                         
-                        if (trackSleep)
+                        if (widget.trackSleep)
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               trackHeight: 10.0,
@@ -159,16 +241,16 @@ class MoodInputView extends StatelessWidget {
                               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
                             ),
                             child: Slider(
-                              value: currentSleepValue,
+                              value: widget.currentSleepValue,
                               min: 0.0, max: 10.0,
-                              onChanged: showSuccessAnimation ? null : onSleepChanged,
+                              onChanged: widget.showSuccessAnimation ? null : widget.onSleepChanged,
                             ),
                           ),
 
                         const SizedBox(height: 20),
                         const Divider(),
 
-                        ...categorizedTags.entries.map((entry) {
+                        ...widget.categorizedTags.entries.map((entry) {
                           if (entry.value.isEmpty) return const SizedBox.shrink();
 
                           return Column(
@@ -193,7 +275,7 @@ class MoodInputView extends StatelessWidget {
                         
                         Center(
                           child: TextButton.icon(
-                            onPressed: onAddTag, 
+                            onPressed: widget.onAddTag, 
                             icon: const Icon(Icons.add), 
                             label: const Text("Eigenen Tag erstellen"),
                             style: TextButton.styleFrom(foregroundColor: Colors.indigo),
@@ -202,14 +284,31 @@ class MoodInputView extends StatelessWidget {
 
                         const SizedBox(height: 10),
 
+                        // --- TEXTFELD MIT VOICE BUTTON ---
                         TextField(
-                          controller: noteController,
-                          decoration: const InputDecoration(
-                            hintText: "Warum fühlst du dich so? (Optional)",
-                            prefixIcon: Icon(Icons.edit_note),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                          controller: widget.noteController,
+                          decoration: InputDecoration(
+                            hintText: "Warum fühlst du dich so?",
+                            prefixIcon: const Icon(Icons.edit_note),
+                            // NEU: Mikrofon Button als Suffix
+                            suffixIcon: GestureDetector(
+                              onTap: _listen,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _isListening ? Colors.redAccent : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _isListening ? Icons.mic_off : Icons.mic,
+                                  color: _isListening ? Colors.white : Colors.grey,
+                                ),
+                              ),
+                            ),
+                            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                           ),
-                          maxLines: 2, 
+                          maxLines: 3, 
                           minLines: 1,
                         ),
                         
@@ -228,7 +327,7 @@ class MoodInputView extends StatelessWidget {
                   border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
                 ),
                 child: ElevatedButton(
-                  onPressed: showSuccessAnimation ? null : onSave,
+                  onPressed: widget.showSuccessAnimation ? null : widget.onSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black87,
                     foregroundColor: Colors.white,
@@ -248,15 +347,15 @@ class MoodInputView extends StatelessWidget {
           flex: 2,
           child: Container(
             color: Colors.white.withValues(alpha: 0.3),
-            child: isLoading 
+            child: widget.isLoading 
               ? const Center(child: CircularProgressIndicator()) 
-              : entriesForDate.isEmpty 
+              : widget.entriesForDate.isEmpty 
                 ? const Center(child: Text("Keine Einträge für diese Person an diesem Tag."))
                 : ListView.builder(
                     padding: const EdgeInsets.all(10),
-                    itemCount: entriesForDate.length,
+                    itemCount: widget.entriesForDate.length,
                     itemBuilder: (context, index) {
-                      final entry = entriesForDate[index];
+                      final entry = widget.entriesForDate[index];
                       final color = MoodUtils.getBackgroundColor(entry.score);
 
                       return Dismissible(
@@ -270,7 +369,7 @@ class MoodInputView extends StatelessWidget {
                           child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
                         ),
                         onDismissed: (direction) {
-                          if (entry.id != null) onDeleteEntry(entry.id!);
+                          if (entry.id != null) widget.onDeleteEntry(entry.id!);
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -280,7 +379,7 @@ class MoodInputView extends StatelessWidget {
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))],
                           ),
                           child: ListTile(
-                            onTap: () => onEditEntry(entry),
+                            onTap: () => widget.onEditEntry(entry),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             leading: Container(
                               width: 50, height: 50,
@@ -312,12 +411,12 @@ class MoodInputView extends StatelessWidget {
   }
 
   Widget _buildTagChip(String tag) {
-    final isSelected = selectedTags.contains(tag);
-    final isCustom = customTagNames.contains(tag);
+    final isSelected = widget.selectedTags.contains(tag);
+    final isCustom = widget.customTagNames.contains(tag);
 
     return GestureDetector(
-      onTap: () => onTagToggle(tag),
-      onLongPress: isCustom ? () => onManageCustomTag(tag) : null, // UMBENANNT
+      onTap: () => widget.onTagToggle(tag),
+      onLongPress: isCustom ? () => widget.onManageCustomTag(tag) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
