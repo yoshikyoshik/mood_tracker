@@ -67,8 +67,44 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     _checkSubscription();
   }
 
+  // Diese Methode muss angepasst werden, um dynamisch zu reagieren
   void _initializeTagsMap() {
-    _combinedTagsByCategory = Map.from(_baseTagsByCategory.map((k, v) => MapEntry(k, List<String>.from(v))));
+    // 1. Basis kopieren
+    final newMap = Map<String, List<String>>.from(
+      _baseTagsByCategory.map((k, v) => MapEntry(k, List<String>.from(v)))
+    );
+
+    // 2. Prüfen: Zyklus aktiv?
+    if (_profiles.isNotEmpty && _selectedProfileId != null) {
+      final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: ''));
+      
+      if (profile.isCycleTracking) {
+        // 3. Zyklus-Kategorie EINFÜGEN (am besten ganz vorne oder an 2. Stelle)
+        // Da Maps ungeordnet sein können, erstellen wir eine neue LinkedHashMap oder fügen es einfach hinzu.
+        // Für die einfache Anzeige reicht 'putIfAbsent' oder direktes Setzen.
+        
+        final cycleTags = [
+          'Periode (Leicht)', 
+          'Periode (Mittel)', 
+          'Periode (Stark)', 
+          'Schmierblutung',
+          'Regelschmerzen',
+          'PMS',
+          'Ovulation'
+        ];
+        
+        // Trick: Damit es oben steht, bauen wir die Map neu zusammen
+        final combined = <String, List<String>>{
+          'Zyklus & Körper': cycleTags, // Neue Kategorie ganz oben
+          ...newMap // Der Rest danach
+        };
+        
+        _combinedTagsByCategory = combined;
+        return;
+      }
+    }
+
+    _combinedTagsByCategory = newMap;
   }
 
   @override
@@ -552,6 +588,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
             _selectedProfileId = _profiles.first.id;
           }
         }
+
+      _initializeTagsMap();
+
       });
     } catch (e) { debugPrint("Profil-Lade-Fehler: $e"); }
   }
@@ -559,6 +598,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   Future<void> _changeProfile(String? newId) async {
     if (newId != null) {
       setState(() => _selectedProfileId = newId);
+      _initializeTagsMap();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_profile_id', newId);
       _loadEntries(); 
@@ -696,6 +736,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       }).eq('id', id);
       
       await _loadProfiles(); // Neu laden, damit die UI updated
+      setState(() {
+   _initializeTagsMap(); // <--- HIER AUFRUFEN, falls Tracking an/aus geschaltet wurde
+});
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: $e")));
     }
