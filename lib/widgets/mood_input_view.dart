@@ -63,6 +63,7 @@ class _MoodInputViewState extends State<MoodInputView> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   bool _speechEnabled = false;
+  String _currentLocaleId = ""; // NEU: Wir speichern die gefundene ID
 
   @override
   void initState() {
@@ -71,11 +72,8 @@ class _MoodInputViewState extends State<MoodInputView> {
     _initSpeech();
   }
 
-  // Initialisierung der Spracherkennung
   void _initSpeech() async {
     try {
-      // FIX: Auf dem Handy (Mobile) müssen wir explizit fragen.
-      // Im Web (!kIsWeb) macht das der Browser automatisch beim Initialisieren.
       if (!kIsWeb) {
         var status = await Permission.microphone.status;
         if (!status.isGranted) {
@@ -87,6 +85,24 @@ class _MoodInputViewState extends State<MoodInputView> {
         onStatus: (status) => debugPrint('Speech Status: $status'),
         onError: (error) => debugPrint('Speech Error: $error'),
       );
+
+      if (_speechEnabled) {
+        // --- NEU: Wir suchen die beste deutsche Sprache ---
+        var locales = await _speech.locales();
+        var systemLocale = await _speech.systemLocale();
+        
+        // Versuche, eine deutsche Locale zu finden
+        try {
+          var germanLocale = locales.firstWhere(
+            (locale) => locale.localeId.toLowerCase().startsWith("de"),
+            orElse: () => systemLocale ?? locales.first, // Fallback
+          );
+          _currentLocaleId = germanLocale.localeId;
+          debugPrint("Gewählte Sprache: $_currentLocaleId");
+        } catch (e) {
+          debugPrint("Fehler bei Sprachwahl: $e");
+        }
+      }
       
       if (mounted) setState(() {});
     } catch (e) {
@@ -94,10 +110,9 @@ class _MoodInputViewState extends State<MoodInputView> {
     }
   }
 
-  // Start/Stop Aufnahme
   void _listen() async {
     if (!_speechEnabled) {
-      _initSpeech(); // Versuch neu zu starten
+      _initSpeech(); 
       return;
     }
 
@@ -122,12 +137,13 @@ class _MoodInputViewState extends State<MoodInputView> {
             }
           });
         },
-        localeId: "de_DE",
+        // --- NEU: Wir nutzen die gefundene ID ---
+        localeId: _currentLocaleId.isNotEmpty ? _currentLocaleId : "de_DE", 
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 5),
-        // FIX: Veraltete Parameter in 'listenOptions' verschoben
         listenOptions: stt.SpeechListenOptions(
-          cancelOnError: true,
+          cancelOnError: false, // Besser false, damit kleine Pausen nicht abbrechen
+          partialResults: true,
           listenMode: stt.ListenMode.dictation,
         ),
       );
