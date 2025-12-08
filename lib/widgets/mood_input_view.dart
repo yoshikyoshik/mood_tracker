@@ -1,10 +1,14 @@
+import 'dart:async'; // Timer braucht das
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt; // <--- NEU
-import 'package:permission_handler/permission_handler.dart'; // <--- NEU
+import 'package:record/record.dart'; 
+import 'package:path_provider/path_provider.dart'; 
+import 'package:flutter/foundation.dart'; // kIsWeb
+import 'package:http/http.dart' as http; 
+import 'dart:convert';
+
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
-import 'package:flutter/foundation.dart';
 
 class MoodInputView extends StatefulWidget {
   final double currentMoodValue;
@@ -60,93 +64,141 @@ class MoodInputView extends StatefulWidget {
 }
 
 class _MoodInputViewState extends State<MoodInputView> {
-  late stt.SpeechToText _speech;
-  bool _isListening = false;
-  bool _speechEnabled = false;
-  String _currentLocaleId = ""; // NEU: Wir speichern die gefundene ID
+  // Recorder State
+  late final AudioRecorder _audioRecorder;
+  bool _isRecording = false;
+  bool _isProcessing = false; // "KI denkt nach..."
+  int _recordDuration = 0;
+  Timer? _timer;
+  
+  // Max Zeit in Sekunden
+  static const int _maxDuration = 60; 
 
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
-    _initSpeech();
+    _audioRecorder = AudioRecorder();
   }
 
-  void _initSpeech() async {
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _audioRecorder.dispose();
+    super.dispose();
+  }
+
+  // Aufnahme starten
+  Future<void> _startRecording() async {
     try {
-      if (!kIsWeb) {
-        var status = await Permission.microphone.status;
-        if (!status.isGranted) {
-          await Permission.microphone.request();
-        }
-      }
+      if (await _audioRecorder.hasPermission()) {
+        final directory = await getApplicationDocumentsDirectory();
+        // Datei-Pfad generieren
+        final path = '${directory.path}/audio_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-      _speechEnabled = await _speech.initialize(
-        onStatus: (status) => debugPrint('Speech Status: $status'),
-        onError: (error) => debugPrint('Speech Error: $error'),
-      );
+        // Config: AAC ist gut komprimiert und OpenAI versteht es
+        const config = RecordConfig(encoder: AudioEncoder.aacLc);
 
-      if (_speechEnabled) {
-        // --- NEU: Wir suchen die beste deutsche Sprache ---
-        var locales = await _speech.locales();
-        var systemLocale = await _speech.systemLocale();
-        
-        // Versuche, eine deutsche Locale zu finden
-        try {
-          var germanLocale = locales.firstWhere(
-            (locale) => locale.localeId.toLowerCase().startsWith("de"),
-            orElse: () => systemLocale ?? locales.first, // Fallback
-          );
-          _currentLocaleId = germanLocale.localeId;
-          debugPrint("Gewählte Sprache: $_currentLocaleId");
-        } catch (e) {
-          debugPrint("Fehler bei Sprachwahl: $e");
-        }
+        // Starten
+        await _audioRecorder.start(config, path: path);
+
+        setState(() {
+          _isRecording = true;
+          _recordDuration = 0;
+        });
+
+        _startTimer();
       }
-      
-      if (mounted) setState(() {});
     } catch (e) {
-      debugPrint("Speech Init Error: $e");
+      debugPrint("Fehler beim Starten: $e");
     }
   }
 
-  void _listen() async {
-    if (!_speechEnabled) {
-      _initSpeech(); 
-      return;
-    }
+  // Aufnahme stoppen & hochladen
+  Future<void> _stopRecording() async {
+    _timer?.cancel();
+    final path = await _audioRecorder.stop();
 
-    if (_isListening) {
-      await _speech.stop();
-      setState(() => _isListening = false);
+    setState(() {
+      _isRecording = false;
+      _isProcessing = true; // Lade-Status an
+    });
+
+    if (path != null) {
+      await _uploadAndTranscribe(path);
     } else {
-      setState(() => _isListening = true);
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _recordDuration++;
+      });
+      // Auto-Stop bei 60s
+      if (_recordDuration >= _maxDuration) {
+        _stopRecording();
+      }
+    });
+  }
+
+  // Der Upload zur Netlify Function
+  Future<void> _uploadAndTranscribe(String filePath) async {
+    try {
+      // URL deiner Netlify Function (Lokal oder Prod)
+      // WICHTIG: Wenn du lokal testest (Handy am PC), nutze deine lokale IP oder Tunnel
+      // Für Web lokal: localhost:8888
+      // Hier nutzen wir die relative URL für Web, oder die harte URL für Mobile
+      // Ersetze DEIN-PROJEKT durch deine echte URL
+      final url = Uri.parse('https://https://celadon-pasca-8b960a.netlify.app//.netlify/functions/transcribe'); 
       
-      final String existingText = widget.noteController.text;
+      var request = http.MultipartRequest('POST', url);
       
-      await _speech.listen(
-        onResult: (val) {
-          setState(() {
-            String separator = (existingText.isNotEmpty && !existingText.endsWith(' ')) ? ' ' : '';
-            if (val.recognizedWords.isNotEmpty) {
-               widget.noteController.text = "$existingText$separator${val.recognizedWords}";
-               
-               widget.noteController.selection = TextSelection.fromPosition(
-                 TextPosition(offset: widget.noteController.text.length)
-               );
-            }
-          });
-        },
-        // --- NEU: Wir nutzen die gefundene ID ---
-        localeId: _currentLocaleId.isNotEmpty ? _currentLocaleId : "de_DE", 
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
-        listenOptions: stt.SpeechListenOptions(
-          cancelOnError: false, // Besser false, damit kleine Pausen nicht abbrechen
-          partialResults: true,
-          listenMode: stt.ListenMode.dictation,
-        ),
-      );
+      if (kIsWeb) {
+        // Web-Spezifisch (Blob handhabung ist hier komplexer, Record Web gibt Blob URL)
+        // Einfachheitshalber: Flutter record auf Web speichert oft direkt im Browser Blob.
+        // Für diesen Schritt fokussieren wir auf Mobile, da Web record anders ist.
+        // Falls Web: Wir brauchen bytes.
+        // Das record package gibt im Web oft null path zurück, wenn man streams nutzt.
+        // Wir nehmen an, wir sind auf Mobile (Android) wie geplant.
+      } else {
+        request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      }
+
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(respStr);
+        final text = data['text'];
+        
+        // Text einfügen
+        if (mounted) {
+          final currentText = widget.noteController.text;
+          widget.noteController.text = currentText.isEmpty ? text : "$currentText $text";
+        }
+      } else {
+        debugPrint("Fehler beim Transkribieren: $respStr");
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Audio nicht verstehen.")));
+      }
+    } catch (e) {
+      debugPrint("Upload Fehler: $e");
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Verbindungsfehler: $e")));
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  // Toggle Logik für den Button
+  void _toggleRecording() {
+    if (_isProcessing) return; // Blockieren während Ladezeit
+    if (_isRecording) {
+      _stopRecording();
+    } else {
+      _startRecording();
     }
   }
 
@@ -156,7 +208,6 @@ class _MoodInputViewState extends State<MoodInputView> {
 
     return Column(
       children: [
-        // --- SCROLL BEREICH ---
         Expanded(
           flex: 3,
           child: Column(
@@ -168,157 +219,82 @@ class _MoodInputViewState extends State<MoodInputView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ... (Restlicher UI Code bleibt identisch wie vorher) ...
+                        // KORZITAT für die Übersichtlichkeit: Hier oben hat sich nichts geändert
                         const SizedBox(height: 10),
-                        
-                        // ZYKLUS ANZEIGE (Falls vorhanden)
                         if (widget.cycleDay != null)
                           Center(
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.pinkAccent.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.water_drop, size: 14, color: Colors.pinkAccent),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    "Zyklustag ${widget.cycleDay}",
-                                    style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 12),
-                                  ),
-                                ],
-                              ),
+                              decoration: BoxDecoration(color: Colors.pinkAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3))),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.water_drop, size: 14, color: Colors.pinkAccent), const SizedBox(width: 6), Text("Zyklustag ${widget.cycleDay}", style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 12))]),
                             ),
                           ),
-
-                        Center(
-                          child: Column(
-                            children: [
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 200),
-                                child: Text(
-                                  moodData['emoji']!,
-                                  key: ValueKey(moodData['emoji']),
-                                  style: const TextStyle(fontSize: 60),
-                                ),
-                              ),
-                              Text(
-                                moodData['label']!,
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black87.withValues(alpha: 0.7)),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 10.0,
-                            activeTrackColor: Colors.black12,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
-                          ),
-                          child: Slider(
-                            value: widget.currentMoodValue,
-                            min: 0.0, max: 10.0,
-                            onChanged: widget.showSuccessAnimation ? null : widget.onMoodChanged,
-                          ),
-                        ),
-
+                        Center(child: Column(children: [AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: Text(moodData['emoji']!, key: ValueKey(moodData['emoji']), style: const TextStyle(fontSize: 60))), Text(moodData['label']!, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black87.withValues(alpha: 0.7)))])),
+                        SliderTheme(data: SliderTheme.of(context).copyWith(trackHeight: 10.0, activeTrackColor: Colors.black12, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0)), child: Slider(value: widget.currentMoodValue, min: 0.0, max: 10.0, onChanged: widget.showSuccessAnimation ? null : widget.onMoodChanged)),
                         const SizedBox(height: 20),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Switch(
-                              value: widget.trackSleep, 
-                              onChanged: widget.onTrackSleepChanged,
-                              activeTrackColor: Colors.indigo, 
-                            ),
-                            const Icon(Icons.bedtime, color: Colors.indigoAccent),
-                            const SizedBox(width: 8),
-                            Text(
-                              widget.trackSleep 
-                                ? "Schlaf: ${widget.currentSleepValue.toStringAsFixed(1)}"
-                                : "Schlaf nicht erfassen",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: widget.trackSleep ? Colors.black87.withValues(alpha: 0.6) : Colors.grey),
-                            ),
-                          ],
-                        ),
-                        
-                        if (widget.trackSleep)
-                          SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 10.0,
-                              activeTrackColor: Colors.indigoAccent,
-                              thumbColor: Colors.indigo,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0),
-                            ),
-                            child: Slider(
-                              value: widget.currentSleepValue,
-                              min: 0.0, max: 10.0,
-                              onChanged: widget.showSuccessAnimation ? null : widget.onSleepChanged,
-                            ),
-                          ),
-
+                        Row(mainAxisAlignment: MainAxisAlignment.center, children: [Switch(value: widget.trackSleep, onChanged: widget.onTrackSleepChanged, activeTrackColor: Colors.indigo), const Icon(Icons.bedtime, color: Colors.indigoAccent), const SizedBox(width: 8), Text(widget.trackSleep ? "Schlaf: ${widget.currentSleepValue.toStringAsFixed(1)}" : "Schlaf nicht erfassen", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: widget.trackSleep ? Colors.black87.withValues(alpha: 0.6) : Colors.grey))]),
+                        if (widget.trackSleep) SliderTheme(data: SliderTheme.of(context).copyWith(trackHeight: 10.0, activeTrackColor: Colors.indigoAccent, thumbColor: Colors.indigo, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0)), child: Slider(value: widget.currentSleepValue, min: 0.0, max: 10.0, onChanged: widget.showSuccessAnimation ? null : widget.onSleepChanged)),
                         const SizedBox(height: 20),
                         const Divider(),
-
-                        ...widget.categorizedTags.entries.map((entry) {
-                          if (entry.value.isEmpty) return const SizedBox.shrink();
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 15),
-                              Text(
-                                entry.key.toUpperCase(), 
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 1.2),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: entry.value.map((tag) => _buildTagChip(tag)).toList(),
-                              ),
-                            ],
-                          );
-                        }),
-
+                        ...widget.categorizedTags.entries.map((entry) { if (entry.value.isEmpty) return const SizedBox.shrink(); return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SizedBox(height: 15), Text(entry.key.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 1.2)), const SizedBox(height: 8), Wrap(spacing: 8.0, runSpacing: 8.0, children: entry.value.map((tag) => _buildTagChip(tag)).toList())]); }),
                         const SizedBox(height: 20),
-                        
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: widget.onAddTag, 
-                            icon: const Icon(Icons.add), 
-                            label: const Text("Eigenen Tag erstellen"),
-                            style: TextButton.styleFrom(foregroundColor: Colors.indigo),
-                          ),
-                        ),
-
+                        Center(child: TextButton.icon(onPressed: widget.onAddTag, icon: const Icon(Icons.add), label: const Text("Eigenen Tag erstellen"), style: TextButton.styleFrom(foregroundColor: Colors.indigo))),
                         const SizedBox(height: 10),
 
-                        // --- TEXTFELD MIT VOICE BUTTON ---
+                        // --- NEU: TEXTFELD MIT SMART RECORDER BUTTON ---
                         TextField(
                           controller: widget.noteController,
                           decoration: InputDecoration(
-                            hintText: "Warum fühlst du dich so?",
+                            hintText: "Erzähl mir von deinem Tag...",
                             prefixIcon: const Icon(Icons.edit_note),
-                            // NEU: Mikrofon Button als Suffix
-                            suffixIcon: GestureDetector(
-                              onTap: _listen,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: _isListening ? Colors.redAccent : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _isListening ? Icons.mic_off : Icons.mic,
-                                  color: _isListening ? Colors.white : Colors.grey,
+                            
+                            // Hier ist der magische Button
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.all(4.0), // Etwas Abstand
+                              child: GestureDetector(
+                                onTap: _toggleRecording,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // 1. Der Kreis-Fortschritt (Nur sichtbar bei Aufnahme)
+                                    if (_isRecording)
+                                      SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: CircularProgressIndicator(
+                                          value: _recordDuration / _maxDuration, // Füllt sich über 60s
+                                          strokeWidth: 3,
+                                          backgroundColor: Colors.red.withValues(alpha: 0.2),
+                                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+                                        ),
+                                      ),
+                                    
+                                    // 2. Der Lade-Kreis (Nur sichtbar beim Verarbeiten)
+                                    if (_isProcessing)
+                                      const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+
+                                    // 3. Das Icon (Mikro oder Stopp)
+                                    if (!_isProcessing)
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: _isRecording ? Colors.red : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          _isRecording ? Icons.stop : Icons.mic,
+                                          color: _isRecording ? Colors.white : Colors.grey,
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -335,30 +311,16 @@ class _MoodInputViewState extends State<MoodInputView> {
                 ),
               ),
               
+              // Speicher Button
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
-                ),
-                child: ElevatedButton(
-                  onPressed: widget.showSuccessAnimation ? null : widget.onSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text("Speichern", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
+                width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.1)))),
+                child: ElevatedButton(onPressed: widget.showSuccessAnimation ? null : widget.onSave, style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text("Speichern", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
               ),
             ],
           ),
         ),
-
+        // ... (Restlicher UI Code)
         const Divider(height: 1, thickness: 1, color: Colors.black12),
-        
         Expanded(
           flex: 2,
           child: Container(
@@ -373,48 +335,18 @@ class _MoodInputViewState extends State<MoodInputView> {
                     itemBuilder: (context, index) {
                       final entry = widget.entriesForDate[index];
                       final color = MoodUtils.getBackgroundColor(entry.score);
-
                       return Dismissible(
                         key: Key(entry.id ?? index.toString()),
                         direction: DismissDirection.endToStart,
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(color: Colors.redAccent.shade100, borderRadius: BorderRadius.circular(16)),
-                          child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
-                        ),
-                        onDismissed: (direction) {
-                          if (entry.id != null) widget.onDeleteEntry(entry.id!);
-                        },
+                        background: Container(margin: const EdgeInsets.only(bottom: 12), alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), decoration: BoxDecoration(color: Colors.redAccent.shade100, borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.delete_outline, color: Colors.white, size: 28)),
+                        onDismissed: (direction) { if (entry.id != null) widget.onDeleteEntry(entry.id!); },
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))],
-                          ),
+                          margin: const EdgeInsets.only(bottom: 12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))]),
                           child: ListTile(
-                            onTap: () => widget.onEditEntry(entry),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            leading: Container(
-                              width: 50, height: 50,
-                              decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)),
-                              child: Center(child: Text(entry.score.toStringAsFixed(1), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16))),
-                            ),
+                            onTap: () => widget.onEditEntry(entry), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            leading: Container(width: 50, height: 50, decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)), child: Center(child: Text(entry.score.toStringAsFixed(1), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 16)))),
                             title: Text("${DateFormat('HH:mm').format(entry.timestamp)} Uhr", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (entry.note != null && entry.note!.isNotEmpty)
-                                  Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                                Wrap(spacing: 4, children: entry.tags.map((t) => Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))),
-                                  child: Text(t, style: TextStyle(fontSize: 10, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)),
-                                )).toList()),
-                              ],
-                            ),
+                            subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [if (entry.note != null && entry.note!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis)), Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(t, style: TextStyle(fontSize: 10, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList())]),
                           ),
                         ),
                       );
@@ -429,33 +361,6 @@ class _MoodInputViewState extends State<MoodInputView> {
   Widget _buildTagChip(String tag) {
     final isSelected = widget.selectedTags.contains(tag);
     final isCustom = widget.customTagNames.contains(tag);
-
-    return GestureDetector(
-      onTap: () => widget.onTagToggle(tag),
-      onLongPress: isCustom ? () => widget.onManageCustomTag(tag) : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.black87 : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected 
-              ? Colors.black87 
-              : (isCustom ? Colors.indigoAccent : Colors.grey.shade300),
-            width: isCustom && !isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))] : [],
-        ),
-        child: Text(
-          tag,
-          style: TextStyle(
-            fontSize: 13, 
-            color: isSelected ? Colors.white : Colors.black87, 
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-          ),
-        ),
-      ),
-    );
+    return GestureDetector(onTap: () => widget.onTagToggle(tag), onLongPress: isCustom ? () => widget.onManageCustomTag(tag) : null, child: AnimatedContainer(duration: const Duration(milliseconds: 200), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: isSelected ? Colors.black87 : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: isSelected ? Colors.black87 : (isCustom ? Colors.indigoAccent : Colors.grey.shade300), width: isCustom && !isSelected ? 1.5 : 1.0), boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))] : []), child: Text(tag, style: TextStyle(fontSize: 13, color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal))));
   }
 }
