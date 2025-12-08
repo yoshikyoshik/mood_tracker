@@ -1,47 +1,40 @@
 const axios = require('axios');
 const FormData = require('form-data');
-const multiparty = require('multiparty');
-const fs = require('fs');
+const parser = require('lambda-multipart-parser'); // <--- NEU
 
 exports.handler = async (event, context) => {
-  // --- CORS HEADER START ---
+  // --- CORS HEADER ---
   const headers = {
-    'Access-Control-Allow-Origin': '*', // Erlaubt Zugriff von überall (auch localhost)
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
-  // Preflight Request (OPTIONS) beantworten (wichtig für Browser!)
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+    return { statusCode: 200, headers, body: '' };
   }
-  // --- CORS HEADER ENDE ---
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: 'Method Not Allowed' };
   }
 
   try {
-    const form = new multiparty.Form();
-    const data = await new Promise((resolve, reject) => {
-      form.parse(event, (err, fields, files) => {
-        if (err) reject(err);
-        resolve({ fields, files });
-      });
-    });
+    // 1. Parse das Event direkt (kein Stream nötig)
+    const result = await parser.parse(event);
 
-    if (!data.files.file || data.files.file.length === 0) {
+    if (!result.files || result.files.length === 0) {
+      console.error('Keine Datei gefunden in:', result);
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'No file uploaded' }) };
     }
 
-    const audioFile = data.files.file[0];
+    const audioFile = result.files[0];
 
+    // 2. Weiterleiten an OpenAI
+    // Wir senden den Buffer direkt (schneller als Dateisystem)
     const formData = new FormData();
-    formData.append('file', fs.createReadStream(audioFile.path), 'recording.m4a');
+    
+    // WICHTIG: Bei Buffern braucht FormData zwingend einen Dateinamen ('recording.m4a')
+    formData.append('file', audioFile.content, 'recording.m4a'); 
     formData.append('model', 'whisper-1');
     formData.append('language', 'de');
 
@@ -52,18 +45,19 @@ exports.handler = async (event, context) => {
       },
     });
 
+    // 3. Erfolg!
     return {
       statusCode: 200,
-      headers, // <--- WICHTIG: Header auch hier mitsenden!
+      headers,
       body: JSON.stringify({ text: response.data.text }),
     };
 
   } catch (error) {
-    console.error('Error:', error.response ? error.response.data : error.message);
+    console.error('OpenAI Error:', error.response ? error.response.data : error.message);
     return {
       statusCode: 500,
-      headers, // <--- Und hier auch!
-      body: JSON.stringify({ error: 'Transcription failed' }),
+      headers,
+      body: JSON.stringify({ error: 'Transcription failed', details: error.message }),
     };
   }
 };
