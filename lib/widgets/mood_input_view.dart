@@ -151,7 +151,7 @@ class _MoodInputViewState extends State<MoodInputView> {
   Future<void> _uploadAndTranscribe(String filePath) async {
     try {
       // URL deiner Netlify Function
-      final url = Uri.parse('https://mood-tracker-rico.netlify.app/.netlify/functions/transcribe'); 
+      final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/transcribe'); 
       
       var request = http.MultipartRequest('POST', url);
       
