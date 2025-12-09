@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart'; // <--- NEU
+import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
@@ -72,11 +72,7 @@ class _StatsViewState extends State<StatsView> {
   Map<DateTime, int> _getHeatmapData() {
     final Map<DateTime, int> data = {};
     for (var entry in widget.entries) {
-      // Wir normalisieren das Datum (Uhrzeit entfernen), damit Heatmap es erkennt
       final dateOnly = DateTime(entry.timestamp.year, entry.timestamp.month, entry.timestamp.day);
-      // Wir nutzen den Mood-Score (gerundet) als Farbintensität
-      // Oder einfach '1' für "Eintrag vorhanden", wenn man nur Frequenz will.
-      // Hier nehmen wir den Score (1-10)
       data[dateOnly] = entry.score.round();
     }
     return data;
@@ -84,12 +80,17 @@ class _StatsViewState extends State<StatsView> {
 
   @override
   Widget build(BuildContext context) {
-    // Hintergrund leicht grau, damit die weißen Karten "schweben"
     return Container(
       color: const Color(0xFFF5F7FA), 
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         children: [
+          // 0. PREDICTION CARD (NEU!)
+          if (widget.entries.length >= 3) // Nur zeigen, wenn wir ein paar Daten haben
+            _buildPredictionCard(),
+
+          const SizedBox(height: 16),
+
           // 1. HEATMAP CARD (Jahresübersicht)
           _buildCard(
             title: "Jahres-Verlauf",
@@ -98,20 +99,18 @@ class _StatsViewState extends State<StatsView> {
               ? const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("Noch keine Daten.")))
               : Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  // FIX: Wir machen den ganzen Container scrollbar, 
-                  // damit Labels links nicht abgeschnitten werden.
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 10), // Etwas Luft an den Seiten
+                    padding: const EdgeInsets.symmetric(horizontal: 10), 
                     child: HeatMap(
                       datasets: _getHeatmapData(),
                       startDate: DateTime.now().subtract(const Duration(days: 90)), 
                       endDate: DateTime.now(),
                       colorMode: ColorMode.opacity, 
                       showText: false,
-                      scrollable: false, // <--- WICHTIG: Internes Scrollen aus!
-                      margin: const EdgeInsets.all(2), // Engerer Abstand zwischen Kästchen
-                      size: 18, // Feste, gut lesbare Größe (nicht zu klein)
+                      scrollable: false, 
+                      margin: const EdgeInsets.all(2), 
+                      size: 18, 
                       fontSize: 12,
                       colorsets: const {
                         1: Colors.red,
@@ -131,7 +130,7 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
-          // 2. CHART CARD (Interaktiv)
+          // 2. CHART CARD
           _buildCard(
             title: "Stimmung & Schlaf",
             icon: Icons.show_chart,
@@ -197,6 +196,78 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
+  // --- NEU: VORHERSAGE CARD ---
+  Widget _buildPredictionCard() {
+    // 1. Morgen bestimmen
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+        
+    // 2. Daten filtern: Alle Einträge, die an diesem Wochentag waren
+    final relevantEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
+    
+    // 3. Durchschnitt berechnen
+    double avg = 0;
+    if (relevantEntries.isNotEmpty) {
+      avg = relevantEntries.fold(0.0, (sum, e) => sum + e.score) / relevantEntries.length;
+    } else {
+      // Fallback: Wenn wir für morgen keine Daten haben, nimm den globalen Schnitt
+      avg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / widget.entries.length;
+    }
+
+    // 4. Text generieren
+    String title = "Trend für morgen";
+    String text = "Basierend auf deinen Daten liegt deine Stimmung an einem ${getWeekdayName(tomorrow.weekday)} meist bei ${avg.toStringAsFixed(1)}.";
+    IconData icon = Icons.lightbulb_outline;
+
+    if (avg >= 7.5) {
+      title = "Gute Aussichten! ☀️";
+      text = "Morgen ist ${getWeekdayName(tomorrow.weekday)}. Das ist statistisch gesehen einer deiner besten Tage (Ø ${avg.toStringAsFixed(1)}).";
+      icon = Icons.wb_sunny_outlined;
+    } else if (avg <= 4.5) {
+      title = "Pass auf dich auf 💜";
+      text = "An ${getWeekdayName(tomorrow.weekday)}en ist deine Energie oft etwas niedriger (Ø ${avg.toStringAsFixed(1)}). Plan dir was Schönes ein!";
+      icon = Icons.spa_outlined;
+    }
+
+    // 5. UI Bauen (Lila Gradient)
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.deepPurple.shade400, Colors.indigo.shade600],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.deepPurple.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(text, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // Helper für Wochentagsnamen (manuell, falls Intl locale nicht gesetzt)
+  String getWeekdayName(int weekday) {
+    const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+    return days[weekday - 1];
+  }
+
   // --- HELPER: CARD BUILDER ---
   Widget _buildCard({required String title, required IconData icon, required Widget child}) {
     return Container(
@@ -210,7 +281,6 @@ class _StatsViewState extends State<StatsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
             child: Row(
@@ -226,7 +296,6 @@ class _StatsViewState extends State<StatsView> {
             ),
           ),
           const Divider(height: 1, thickness: 0.5),
-          // Content
           Padding(
             padding: const EdgeInsets.all(0),
             child: child,
@@ -236,12 +305,9 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // --- HELPER: CHARTS ---
+  // --- CHART HELPERS ---
   Widget _buildInteractiveChart() {
-    // Daten vorbereiten (Letzte 7 Tage oder mehr)
-    // Wir sortieren erst mal
     final sorted = List<MoodEntry>.from(widget.entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    // Nehmen wir max die letzten 14 Einträge für Übersichtlichkeit, oder filtern nach Datum
     final chartData = sorted.length > 14 ? sorted.sublist(sorted.length - 14) : sorted;
 
     List<FlSpot> moodSpots = [];
@@ -266,14 +332,13 @@ class _StatsViewState extends State<StatsView> {
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), // Keine Achsenbeschriftung links für cleanen Look
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < chartData.length) {
-                  // Nur jeden 2. Tag anzeigen wenn es viele sind
                   if (chartData.length > 7 && index % 2 != 0) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
@@ -289,7 +354,6 @@ class _StatsViewState extends State<StatsView> {
           ),
         ),
         borderData: FlBorderData(show: false),
-        // INTERAKTIVITÄT
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (spot) => Colors.black87,
@@ -299,7 +363,7 @@ class _StatsViewState extends State<StatsView> {
             fitInsideVertically: true,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final isMood = spot.barIndex == 1; // Index 1 ist Mood (siehe unten bei lineBarsData)
+                final isMood = spot.barIndex == 1; 
                 final entry = chartData[spot.x.toInt()];
                 
                 if (isMood) {
@@ -319,7 +383,6 @@ class _StatsViewState extends State<StatsView> {
                     ],
                   );
                 } else {
-                  // Schlaf Tooltip (nur wenn explizit berührt)
                   return LineTooltipItem(
                     "Schlaf: ${spot.y.toStringAsFixed(1)} h",
                     const TextStyle(color: Colors.indigoAccent, fontSize: 12, fontWeight: FontWeight.bold),
@@ -331,13 +394,11 @@ class _StatsViewState extends State<StatsView> {
           handleBuiltInTouches: true,
         ),
         lineBarsData: [
-          // Schlaf Linie
           LineChartBarData(
             spots: sleepSpots, isCurved: true,
             color: Colors.indigoAccent.withValues(alpha: 0.3), 
             barWidth: 3, isStrokeCapRound: true, dotData: const FlDotData(show: false), 
           ),
-          // Stimmungs Linie
           LineChartBarData(
             spots: moodSpots, isCurved: true,
             color: Colors.black87,
@@ -361,16 +422,8 @@ class _StatsViewState extends State<StatsView> {
 
   Widget _buildBarChart() {
     final Map<int, List<double>> dayScores = {};
-    
-    // FIX: Jetzt mit geschweiften Klammern
-    for (var i = 1; i <= 7; i++) {
-      dayScores[i] = [];
-    }
-
-    // FIX: Auch hier Klammern drum
-    for (var e in widget.entries) {
-      dayScores[e.timestamp.weekday]!.add(e.score);
-    }
+    for (var i = 1; i <= 7; i++) { dayScores[i] = []; }
+    for (var e in widget.entries) { dayScores[e.timestamp.weekday]!.add(e.score); }
 
     List<BarChartGroupData> barGroups = [];
     for (var i = 1; i <= 7; i++) {
