@@ -196,48 +196,91 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // --- NEU: VORHERSAGE CARD ---
+  // --- NEU: ERWEITERTE VORHERSAGE LOGIK ---
   Widget _buildPredictionCard() {
     // 1. Morgen bestimmen
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-        
-    // 2. Daten filtern: Alle Einträge, die an diesem Wochentag waren
-    final relevantEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
     
-    // 3. Durchschnitt berechnen
-    double avg = 0;
-    if (relevantEntries.isNotEmpty) {
-      avg = relevantEntries.fold(0.0, (sum, e) => sum + e.score) / relevantEntries.length;
+    // --- FAKTOR 1: WOCHENTAG (Historisch) ---
+    // Alle Einträge, die an diesem Wochentag waren
+    final weekdayEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
+    double weekdayAvg = 0;
+    if (weekdayEntries.isNotEmpty) {
+      weekdayAvg = weekdayEntries.fold(0.0, (sum, e) => sum + e.score) / weekdayEntries.length;
     } else {
-      // Fallback: Wenn wir für morgen keine Daten haben, nimm den globalen Schnitt
-      avg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / widget.entries.length;
+      weekdayAvg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / widget.entries.length;
     }
 
-    // 4. Text generieren
+    // --- FAKTOR 2: TREND (Letzte 3 Tage) ---
+    // Wir nehmen die allerneuesten Einträge
+    final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    double trendAvg = weekdayAvg; // Fallback
+    if (recentEntries.isNotEmpty) {
+      // Nimm max die letzten 3
+      final takeCount = recentEntries.length > 3 ? 3 : recentEntries.length;
+      final recentSubset = recentEntries.sublist(0, takeCount);
+      trendAvg = recentSubset.fold(0.0, (sum, e) => sum + e.score) / takeCount;
+    }
+
+    // --- FAKTOR 3: SCHLAF (Letzte Nacht) ---
+    double sleepImpact = 0; // Neutral
+    if (recentEntries.isNotEmpty && recentEntries.first.sleepRating != null) {
+      // FIX: Klammern hinzugefügt für Linter
+      final lastSleep = recentEntries.first.sleepRating!;
+      if (lastSleep < 5.0) {
+        sleepImpact = -0.8;
+      } else if (lastSleep > 7.0) {
+        sleepImpact = 0.3;
+      }
+    }
+
+    // --- GESAMTSCORE BERECHNEN (Gewichtet) ---
+    // 50% Wochentag + 50% Aktueller Trend + Schlaf-Bonus/Malus
+    final double predictionScore = (weekdayAvg * 0.5) + (trendAvg * 0.5) + sleepImpact;
+    
+    // Begrenzen auf 0-10
+    final double finalScore = predictionScore.clamp(0.0, 10.0);
+
+    // Text generieren
     String title = "Trend für morgen";
-    String text = "Basierend auf deinen Daten liegt deine Stimmung an einem ${getWeekdayName(tomorrow.weekday)} meist bei ${avg.toStringAsFixed(1)}.";
+    String text = "";
     IconData icon = Icons.lightbulb_outline;
+    List<Color> colors = [Colors.deepPurple.shade400, Colors.indigo.shade600];
 
-    if (avg >= 7.5) {
+    final weekdayName = getWeekdayName(tomorrow.weekday);
+
+    if (finalScore >= 7.5) {
       title = "Gute Aussichten! ☀️";
-      text = "Morgen ist ${getWeekdayName(tomorrow.weekday)}. Das ist statistisch gesehen einer deiner besten Tage (Ø ${avg.toStringAsFixed(1)}).";
-      icon = Icons.wb_sunny_outlined;
-    } else if (avg <= 4.5) {
-      title = "Pass auf dich auf 💜";
-      text = "An ${getWeekdayName(tomorrow.weekday)}en ist deine Energie oft etwas niedriger (Ø ${avg.toStringAsFixed(1)}). Plan dir was Schönes ein!";
-      icon = Icons.spa_outlined;
+      text = "Morgen ist $weekdayName. Dein aktueller Trend und deine Historie deuten auf einen starken Tag hin (Ø ${finalScore.toStringAsFixed(1)}).";
+      icon = Icons.wb_sunny_rounded;
+      colors = [Colors.orange.shade400, Colors.deepOrange.shade600];
+    } else if (finalScore <= 4.5) {
+      title = "Achtsam bleiben 💜";
+      text = "Für $weekdayName sagen deine Daten etwas weniger Energie voraus (Ø ${finalScore.toStringAsFixed(1)}). Gönn dir Pausen!";
+      icon = Icons.spa_rounded;
+      colors = [Colors.purple.shade300, Colors.deepPurple.shade700];
+    } else {
+      title = "Solider Tag erwartet 🌱";
+      text = "Deine Daten prognostizieren einen ausgeglichenen $weekdayName (Ø ${finalScore.toStringAsFixed(1)}).";
+      icon = Icons.insights_rounded;
+      colors = [Colors.teal.shade400, Colors.teal.shade700];
     }
 
-    // 5. UI Bauen (Lila Gradient)
+    // Zusatztip bei schlechtem Schlaf
+    if (sleepImpact < 0) {
+      text += " Dein letzter Schlaf war kurz – versuch heute früher ins Bett zu gehen.";
+    }
+
+    // UI Bauen
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.deepPurple.shade400, Colors.indigo.shade600],
+          colors: colors,
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.deepPurple.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: colors.first.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
@@ -253,7 +296,7 @@ class _StatsViewState extends State<StatsView> {
               children: [
                 Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text(text, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4)),
+                Text(text, style: TextStyle(color: Colors.white.withValues(alpha: 0.95), fontSize: 13, height: 1.4)),
               ],
             ),
           )
