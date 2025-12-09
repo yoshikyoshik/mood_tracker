@@ -307,6 +307,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                         )
                       : StatsView(
                           entries: relevantEntries,
+                          allEntries: _allEntries,
                           profileName: currentProfileName,
                           isPro: _isPro,
                           onUnlockPressed: _startCheckout,

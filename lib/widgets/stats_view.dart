@@ -10,7 +10,8 @@ import '../utils/mood_utils.dart';
 import 'locked_insights.dart';
 
 class StatsView extends StatefulWidget {
-  final List<MoodEntry> entries;
+  final List<MoodEntry> entries;     // Meine Einträge
+  final List<MoodEntry> allEntries;  // NEU: Alle Einträge (für Family Context)
   final String profileName;
   final bool isPro;
   final VoidCallback onUnlockPressed;
@@ -18,6 +19,7 @@ class StatsView extends StatefulWidget {
   const StatsView({
     super.key,
     required this.entries,
+    required this.allEntries, // <--- NEU
     required this.profileName,
     required this.isPro,
     required this.onUnlockPressed,
@@ -196,37 +198,34 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // --- NEU: ERWEITERTE VORHERSAGE LOGIK ---
+  // --- NEU: VORHERSAGE MIT FAMILIEN-FAKTOR ---
   Widget _buildPredictionCard() {
     // 1. Morgen bestimmen
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     
-    // --- FAKTOR 1: WOCHENTAG (Historisch) ---
-    // Alle Einträge, die an diesem Wochentag waren
+    // --- FAKTOR 1: MEIN WOCHENTAG (Historisch) ---
     final weekdayEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
     double weekdayAvg = 0;
     if (weekdayEntries.isNotEmpty) {
       weekdayAvg = weekdayEntries.fold(0.0, (sum, e) => sum + e.score) / weekdayEntries.length;
     } else {
-      weekdayAvg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / widget.entries.length;
+      weekdayAvg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / (widget.entries.isEmpty ? 1 : widget.entries.length);
     }
 
-    // --- FAKTOR 2: TREND (Letzte 3 Tage) ---
-    // Wir nehmen die allerneuesten Einträge
+    // --- FAKTOR 2: MEIN TREND (Letzte 3 Tage) ---
     final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    double trendAvg = weekdayAvg; // Fallback
+    double trendAvg = weekdayAvg; 
     if (recentEntries.isNotEmpty) {
-      // Nimm max die letzten 3
       final takeCount = recentEntries.length > 3 ? 3 : recentEntries.length;
       final recentSubset = recentEntries.sublist(0, takeCount);
       trendAvg = recentSubset.fold(0.0, (sum, e) => sum + e.score) / takeCount;
     }
 
     // --- FAKTOR 3: SCHLAF (Letzte Nacht) ---
-    double sleepImpact = 0; // Neutral
+    double sleepImpact = 0;
     if (recentEntries.isNotEmpty && recentEntries.first.sleepRating != null) {
-      // FIX: Klammern hinzugefügt für Linter
       final lastSleep = recentEntries.first.sleepRating!;
+      // FIX: Jetzt mit geschweiften Klammern für den Linter
       if (lastSleep < 5.0) {
         sleepImpact = -0.8;
       } else if (lastSleep > 7.0) {
@@ -234,11 +233,32 @@ class _StatsViewState extends State<StatsView> {
       }
     }
 
-    // --- GESAMTSCORE BERECHNEN (Gewichtet) ---
-    // 50% Wochentag + 50% Aktueller Trend + Schlaf-Bonus/Malus
-    final double predictionScore = (weekdayAvg * 0.5) + (trendAvg * 0.5) + sleepImpact;
+    // --- FAKTOR 4: HOUSEHOLD VIBE (Die anderen Profile) ---
+    final myEntryIds = widget.entries.map((e) => e.id).toSet();
     
-    // Begrenzen auf 0-10
+    final otherEntriesRecent = widget.allEntries.where((e) {
+      final isNotMine = !myEntryIds.contains(e.id);
+      final isRecent = DateTime.now().difference(e.timestamp).inHours < 24;
+      return isNotMine && isRecent;
+    }).toList();
+
+    double householdImpact = 0;
+    String familyText = "";
+
+    if (otherEntriesRecent.isNotEmpty) {
+      final householdAvg = otherEntriesRecent.fold(0.0, (sum, e) => sum + e.score) / otherEntriesRecent.length;
+      
+      if (householdAvg < 4.0) {
+        householdImpact = -0.6; 
+        familyText = "Die Stimmung im Haus war zuletzt angespannt.";
+      } else if (householdAvg > 8.0) {
+        householdImpact = 0.4; 
+        familyText = "Positive Vibes im Haushalt geben dir Rückenwind!";
+      }
+    }
+
+    // --- GESAMTSCORE ---
+    final double predictionScore = (weekdayAvg * 0.45) + (trendAvg * 0.45) + sleepImpact + householdImpact;
     final double finalScore = predictionScore.clamp(0.0, 10.0);
 
     // Text generieren
@@ -251,44 +271,40 @@ class _StatsViewState extends State<StatsView> {
 
     if (finalScore >= 7.5) {
       title = "Gute Aussichten! ☀️";
-      text = "Morgen ist $weekdayName. Dein aktueller Trend und deine Historie deuten auf einen starken Tag hin (Ø ${finalScore.toStringAsFixed(1)}).";
+      text = "Morgen ist $weekdayName. Deine Daten und das Umfeld deuten auf einen starken Tag hin (Ø ${finalScore.toStringAsFixed(1)}).";
       icon = Icons.wb_sunny_rounded;
       colors = [Colors.orange.shade400, Colors.deepOrange.shade600];
     } else if (finalScore <= 4.5) {
       title = "Achtsam bleiben 💜";
-      text = "Für $weekdayName sagen deine Daten etwas weniger Energie voraus (Ø ${finalScore.toStringAsFixed(1)}). Gönn dir Pausen!";
+      text = "Für $weekdayName sagen die Daten etwas weniger Energie voraus (Ø ${finalScore.toStringAsFixed(1)}).";
       icon = Icons.spa_rounded;
       colors = [Colors.purple.shade300, Colors.deepPurple.shade700];
     } else {
       title = "Solider Tag erwartet 🌱";
-      text = "Deine Daten prognostizieren einen ausgeglichenen $weekdayName (Ø ${finalScore.toStringAsFixed(1)}).";
+      text = "Die Prognose für $weekdayName ist ausgeglichen (Ø ${finalScore.toStringAsFixed(1)}).";
       icon = Icons.insights_rounded;
       colors = [Colors.teal.shade400, Colors.teal.shade700];
     }
 
-    // Zusatztip bei schlechtem Schlaf
+    // Zusätze anhängen
     if (sleepImpact < 0) {
-      text += " Dein letzter Schlaf war kurz – versuch heute früher ins Bett zu gehen.";
+      text += " Tipp: Geh heute früher schlafen.";
+    }
+    if (familyText.isNotEmpty) {
+      text += " $familyText";
     }
 
     // UI Bauen
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: colors.first.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle), child: Icon(icon, color: Colors.white, size: 28)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
