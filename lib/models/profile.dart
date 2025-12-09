@@ -22,4 +22,15 @@ class Profile {
           : null,
     );
   }
+
+factory Profile.fromJson(Map<String, dynamic> json) {
+    return Profile(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      isCycleTracking: json['is_cycle_tracking'] ?? false,
+      lastPeriodDate: json['last_period_date'] != null 
+          ? DateTime.tryParse(json['last_period_date']) 
+          : null,
+    );
+  }
 }
