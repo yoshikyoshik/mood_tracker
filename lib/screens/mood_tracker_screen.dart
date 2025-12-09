@@ -109,14 +109,23 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = MoodUtils.getBackgroundColor(_currentMoodValue);
+    // Wir holen uns deine Farben aus dem Theme (AppTheme)
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary; // Dein dunkles Grau
+        
+    // Stimmungshintergrund:
+    // Wenn Statistik tab: neutrales Grau. Sonst: Stimmungsfarbe.
+    final bgColor = _selectedIndex == 0 
+        ? MoodUtils.getBackgroundColor(_currentMoodValue) 
+        : const Color(0xFFF2F4F8); 
+
+    // Header Text Farbe (Dunkelgrau für guten Kontrast)
+    final headerTextColor = Colors.black87;
+
     final dateString = DateUtils.isSameDay(_selectedDate, DateTime.now()) 
         ? "Heute" : DateFormat('dd.MM.yyyy').format(_selectedDate);
 
-    final currentProfileName = _profiles.isNotEmpty && _selectedProfileId != null
-        ? _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: '')).name
-        : "Unbekannt";
-
+    // ... (Filterlogik & Zyklus bleibt gleich wie vorher) ...
     final relevantEntries = (_selectedProfileId == null) 
         ? <MoodEntry>[] 
         : _allEntries.where((e) => e.profileId == _selectedProfileId).toList();
@@ -125,147 +134,208 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       return DateUtils.isSameDay(entry.timestamp, _selectedDate);
     }).toList();
 
-    // Zyklustag berechnen
+    final currentProfileName = _profiles.isNotEmpty && _selectedProfileId != null
+        ? _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: '')).name
+        : "Unbekannt";
+    
+    // (Hier deine Zyklus-Logik einfügen/behalten, falls nicht im Snippet)
     int? currentCycleDay;
-    if (_profiles.isNotEmpty && _selectedProfileId != null) {
+     if (_profiles.isNotEmpty && _selectedProfileId != null) {
       final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId);
       if (profile.isCycleTracking && profile.lastPeriodDate != null) {
-        // Differenz zwischen ausgewähltem Datum und letzter Periode
         final difference = _selectedDate.difference(profile.lastPeriodDate!).inDays;
-        if (difference >= 0) {
-          currentCycleDay = difference + 1; // Tag 1 ist der Starttag
-        }
+        if (difference >= 0) currentCycleDay = difference + 1;
       }
     }
 
     return Scaffold(
-      backgroundColor: _selectedIndex == 0 ? bgColor : Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 100, 
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 25), 
-            Text(dateString, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            
-            if (_profiles.isNotEmpty)
-              Row(
-                children: [
-                  // Profil-Auswahl
-                  DropdownButton<String>(
-                    value: _selectedProfileId,
-                    icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
-                    underline: const SizedBox(), 
-                    style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
-                    isDense: true,
-                    onChanged: (String? newValue) {
-                      if (newValue == 'new') {
-                        _createNewProfile();
-                      } else if (newValue != null) {
-                        _changeProfile(newValue);
-                      }
-                    },
-                    items: [
-                      ..._profiles.map<DropdownMenuItem<String>>((Profile profile) {
-                        return DropdownMenuItem<String>(
-                          value: profile.id,
-                          child: Text(profile.name),
-                        );
-                      }),
-                      const DropdownMenuItem<String>(
-                        value: 'new',
-                        child: Row(
-                          children: [
-                            Icon(Icons.add_circle_outline, size: 18),
-                            SizedBox(width: 8),
-                            Text("Neu...", style: TextStyle(fontStyle: FontStyle.italic)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // NEU: Der Edit-Button (Stift) ist wieder da!
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 16, color: Colors.black54),
-                    tooltip: "Profil & Zyklus bearbeiten",
-                    onPressed: _editCurrentProfileDialog, // Hier wird die Methode verwendet
-                  ),
-                ],
-              ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(top: 20.0),
-            child: Row(
-              children: [
-                if (!_isPro) 
-                  IconButton(
-                    icon: const Icon(Icons.diamond, color: Colors.indigo),
-                    onPressed: _startCheckout,
-                    tooltip: "Pro werden",
-                  ),
-                if (_isPro)
-                  IconButton(
-                    icon: const Icon(Icons.settings, color: Colors.black87),
-                    onPressed: _openCustomerPortal,
-                    tooltip: "Abo verwalten",
-                  ),
-                
-                IconButton(icon: const Icon(Icons.calendar_month), onPressed: _pickDate),
-                IconButton(icon: const Icon(Icons.logout), onPressed: _signOut)
-              ],
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: bgColor, // Der Hintergrund atmet die Stimmung
+      
+      // KEINE Standard-AppBar! Wir bauen das Layout selbst.
       body: Stack(
         children: [
-          SafeArea(
-            child: _selectedIndex == 0 
-                ? MoodInputView(
-                    currentMoodValue: _currentMoodValue,
-                    currentSleepValue: _currentSleepValue,
-                    trackSleep: _trackSleep,
-                    selectedTags: _selectedTags,
-                    categorizedTags: _combinedTagsByCategory,
-                    customTagNames: _customTagNames,
-                    noteController: _noteController,
-                    entriesForDate: entriesForDate,
-                    showSuccessAnimation: _showSuccessAnimation,
-                    isLoading: _isLoading,
-                    onMoodChanged: (val) => setState(() => _currentMoodValue = val),
-                    onSleepChanged: (val) => setState(() => _currentSleepValue = val),
-                    onTrackSleepChanged: (val) => setState(() => _trackSleep = val),
-                    onTagToggle: _toggleTag,
-                    onAddTag: _addNewTagDialog,
-                    onSave: _saveEntry,
-                    onDeleteEntry: _deleteEntry,
-                    onEditEntry: _showEditSheet,
-                    onManageCustomTag: _showTagOptions,
-                    cycleDay: currentCycleDay,
-                  ) 
-                : StatsView(
-                    entries: relevantEntries,
-                    profileName: currentProfileName,
-                    isPro: _isPro,
-                    onUnlockPressed: _startCheckout,
+          Column(
+            children: [
+              // --- HEADER BEREICH (Farbig) ---
+              // Dieser Bereich löst dein "Klebt oben"-Problem
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 20), // Mehr Abstand oben (20)
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Linke Seite: Datum & Profil
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            dateString.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12, 
+                              fontWeight: FontWeight.bold, 
+                              color: headerTextColor.withValues(alpha: 0.6),
+                              letterSpacing: 1.2
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (_profiles.isNotEmpty)
+                            InkWell(
+                              onTap: null, 
+                              child: Row(
+                                children: [
+                                  // Profil Name
+                                  DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _selectedProfileId,
+                                      icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                                      // Nutzt deine Poppins Schriftart automatisch via Theme
+                                      style: theme.textTheme.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: headerTextColor
+                                      ),
+                                      isDense: true,
+                                      onChanged: (String? newValue) {
+                                        if (newValue == 'new') {
+                                          _createNewProfile();
+                                        } else if (newValue != null) {
+                                          _changeProfile(newValue);
+                                        }
+                                      },
+                                      items: [
+                                        ..._profiles.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
+                                        const DropdownMenuItem(value: 'new', child: Text("+ Neu...")),
+                                      ],
+                                    ),
+                                  ),
+                                  // Edit Stift
+                                  IconButton(
+                                    icon: Icon(Icons.edit_outlined, size: 18, color: headerTextColor.withValues(alpha: 0.5)),
+                                    onPressed: _editCurrentProfileDialog,
+                                    tooltip: "Profil bearbeiten",
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      
+                      // Rechte Seite: Icons
+                      Row(
+                        children: [
+                          if (!_isPro) 
+                            IconButton(
+                              icon: const Icon(Icons.diamond_outlined), 
+                              color: primaryColor, // Deine Farbe
+                              onPressed: _startCheckout
+                            ),
+                          if (_isPro) 
+                            IconButton(
+                              icon: const Icon(Icons.settings_outlined), 
+                              color: headerTextColor, 
+                              onPressed: _openCustomerPortal
+                            ),
+                          
+                          IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
+                          IconButton(icon: Icon(Icons.logout, color: headerTextColor), onPressed: _signOut),
+                        ],
+                      )
+                    ],
                   ),
+                ),
+              ),
+              
+              const SizedBox(height: 10),
+
+              // --- CONTENT SHEET (Weiß, Runde Ecken oben) ---
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white, // Das Blatt Papier
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+                    child: _selectedIndex == 0 
+                      ? MoodInputView(
+                          currentMoodValue: _currentMoodValue,
+                          currentSleepValue: _currentSleepValue,
+                          trackSleep: _trackSleep,
+                          selectedTags: _selectedTags,
+                          categorizedTags: _combinedTagsByCategory,
+                          customTagNames: _customTagNames,
+                          cycleDay: currentCycleDay,
+                          noteController: _noteController,
+                          entriesForDate: entriesForDate,
+                          showSuccessAnimation: _showSuccessAnimation,
+                          isLoading: _isLoading,
+                          onMoodChanged: (val) => setState(() => _currentMoodValue = val),
+                          onSleepChanged: (val) => setState(() => _currentSleepValue = val),
+                          onTrackSleepChanged: (val) => setState(() => _trackSleep = val),
+                          onTagToggle: _toggleTag,
+                          onAddTag: _addNewTagDialog,
+                          onSave: _saveEntry,
+                          onDeleteEntry: _deleteEntry,
+                          onEditEntry: _showEditSheet,
+                          onManageCustomTag: _showTagOptions,
+                        )
+                      : StatsView(
+                          entries: relevantEntries,
+                          profileName: currentProfileName,
+                          isPro: _isPro,
+                          onUnlockPressed: _startCheckout,
+                        ),
+                  ),
+                ),
+              ),
+            ],
           ),
+
+          // Lottie Animation
           if (_showSuccessAnimation)
-            Container(color: Colors.black45, child: Center(child: Lottie.asset('assets/success.json', repeat: false, width: 200))),
+            IgnorePointer(
+              child: Container(
+                color: Colors.black45,
+                child: Center(
+                  child: Lottie.asset('assets/success.json', repeat: false, width: 250),
+                ),
+              ),
+            ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.add_reaction_outlined), selectedIcon: Icon(Icons.add_reaction), label: 'Eintrag'),
-          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Statistik'),
-        ],
+      
+      // Navigation Bar unten
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.black12, width: 0.5)),
+        ),
+        child: NavigationBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          indicatorColor: theme.colorScheme.secondary.withValues(alpha: 0.3), // Dein Amber, soft
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.add_reaction_outlined),
+              selectedIcon: Icon(Icons.add_reaction, color: primaryColor),
+              label: 'Eintrag',
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.insights_outlined),
+              selectedIcon: Icon(Icons.insights, color: primaryColor),
+              label: 'Statistik',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -289,19 +359,33 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       final data = response as List<dynamic>;
       
       setState(() {
-        _initializeTagsMap();
+        // 1. Basis-Struktur (Standard-Kategorien + Zyklus) neu laden (Reset)
+        _initializeTagsMap(); 
         _customTagNames.clear();
 
         for (var item in data) {
           final tagName = item['name'] as String;
+          // Falls in der DB 'null' steht, nehmen wir 'Sonstiges' als Fallback
           String category = item['category'] ?? 'Sonstiges';
           
+          // 2. Sicherheits-Check: Gibt es diese Kategorie in unserer aktuellen Map?
+          // (Falls du z.B. eine Kategorie im Code umbenannt hast, aber in der DB noch der alte Name steht)
           if (!_combinedTagsByCategory.containsKey(category)) {
-            category = 'Sonstiges';
+            // Fallback A: Wenn wir eine "Sonstiges"-Box haben, packen wir es da rein.
+            if (_combinedTagsByCategory.containsKey('Sonstiges')) {
+              category = 'Sonstiges';
+            } else {
+              // Fallback B: Wenn gar nichts passt, erstellen wir die Kategorie dynamisch,
+              // damit der Tag auf keinen Fall verloren geht.
+              _combinedTagsByCategory[category] = [];
+            }
           }
 
-          _combinedTagsByCategory[category]!.add(tagName);
-          _customTagNames.add(tagName);
+          // 3. Tag einsortieren
+          _combinedTagsByCategory[category]?.add(tagName);
+          
+          // Merken, dass es ein eigener Tag ist (für Delete-Option)
+          _customTagNames.add(tagName); 
         }
       });
     } catch (e) {
