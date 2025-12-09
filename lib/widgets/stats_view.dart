@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http; // NEU
+import 'dart:convert'; // NEU
+
+
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
 import 'locked_insights.dart';
 
-class StatsView extends StatelessWidget {
+// JETZT STATEFUL!
+class StatsView extends StatefulWidget {
   final List<MoodEntry> entries;
   final String profileName;
   final bool isPro;
@@ -20,6 +25,81 @@ class StatsView extends StatelessWidget {
   });
 
   @override
+  State<StatsView> createState() => _StatsViewState();
+}
+
+class _StatsViewState extends State<StatsView> {
+  bool _isAnalyzing = false;
+  String? _analysisResult;
+
+  // --- LOGIK: WOCHE ANALYSIEREN ---
+  Future<void> _analyzeWeek() async {
+    setState(() {
+      _isAnalyzing = true;
+      _analysisResult = null;
+    });
+
+    try {
+      // 1. Daten der letzten 7 Tage sammeln und formatieren
+      final now = DateTime.now();
+      final sevenDaysAgo = now.subtract(const Duration(days: 7));
+      
+      // Filtern
+      final weekEntries = widget.entries.where((e) => e.timestamp.isAfter(sevenDaysAgo)).toList();
+      
+      if (weekEntries.isEmpty) {
+        setState(() {
+          _isAnalyzing = false;
+          _analysisResult = "Keine Einträge in den letzten 7 Tagen gefunden.";
+        });
+        return;
+      }
+
+      // Sortieren (alt nach neu)
+      weekEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      // String bauen
+      StringBuffer sb = StringBuffer();
+      sb.writeln("Daten für ${widget.profileName}:");
+      for (var e in weekEntries) {
+        final date = DateFormat('dd.MM.').format(e.timestamp);
+        sb.writeln("- $date: Stimmung ${e.score.toStringAsFixed(1)}, Schlaf ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. Notiz: ${e.note ?? ''}");
+      }
+
+      // 2. An Netlify senden
+      final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/analyze'); // DEINE URL
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'entriesText': sb.toString()}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes)); // utf8 decode für Umlaute
+        setState(() {
+          _analysisResult = data['result'];
+        });
+      } else {
+        setState(() {
+          _analysisResult = "Fehler bei der Analyse: ${response.statusCode}";
+        });
+      }
+
+    } catch (e) {
+      setState(() {
+        _analysisResult = "Verbindungsfehler: $e";
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isAnalyzing = false);
+      }
+    }
+  }
+
+  // --- UI BUILDER ---
+
+  @override
   Widget build(BuildContext context) {
     final moodData = _getChartData((e) => e.score); 
     final sleepData = _getChartData((e) => e.sleepRating ?? 5.0);
@@ -27,10 +107,9 @@ class StatsView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20.0),
       children: [
-        Text("Woche von $profileName", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        Text("Woche von ${widget.profileName}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         
-        // Legende
         Row(
           children: [
             Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle)),
@@ -45,7 +124,7 @@ class StatsView extends StatelessWidget {
         
         const SizedBox(height: 20),
         
-        // Line Chart
+        // --- CHARTS ---
         SizedBox(
           height: 250,
           child: (moodData.isEmpty) 
@@ -108,17 +187,97 @@ class StatsView extends StatelessWidget {
 
         const SizedBox(height: 40),
         
-        if (isPro)
-          _buildInsightsSection()
-        else
-          LockedInsights(onUnlockPressed: onUnlockPressed),
+        // --- KI ANALYSE BUTTON ---
+        if (widget.isPro) ...[
+          _buildAISection(),
+          const SizedBox(height: 40),
+          _buildInsightsSection(),
+        ] else ...[
+          LockedInsights(onUnlockPressed: widget.onUnlockPressed),
+        ],
         
         const SizedBox(height: 50),
       ],
     );
   }
 
-  // --- HELPER LOGIK ---
+  // --- NEUES WIDGET: AI ANALYSE ---
+  Widget _buildAISection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.indigo.shade50, Colors.white],
+          begin: Alignment.topLeft, end: Alignment.bottomRight
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.indigo.withValues(alpha: 0.1)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.indigo),
+              const SizedBox(width: 10),
+              const Text("AI Wochen-Coach", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          
+          if (_analysisResult == null && !_isAnalyzing)
+            const Text("Lass deine Woche von der KI analysieren. Sie findet Muster in deinem Schlaf, Zyklus und deinen Notizen.", style: TextStyle(color: Colors.black87)),
+
+          if (_isAnalyzing)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 10),
+                    Text("Dein Coach denkt nach...", style: TextStyle(color: Colors.indigo, fontStyle: FontStyle.italic)),
+                  ],
+                ),
+              ),
+            ),
+
+          if (_analysisResult != null)
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.indigo.withValues(alpha: 0.1)),
+              ),
+              child: Text(_analysisResult!, style: const TextStyle(fontSize: 15, height: 1.5)),
+            ),
+
+          if (!_isAnalyzing)
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _analyzeWeek,
+                  icon: const Icon(Icons.psychology),
+                  label: Text(_analysisResult == null ? "Woche analysieren" : "Analyse aktualisieren"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- HELPER LOGIK (ausgelagert, aber jetzt mit 'widget.entries') ---
 
   List<FlSpot> _getChartData(double Function(MoodEntry) getValue) {
     final now = DateTime.now();
@@ -126,7 +285,7 @@ class StatsView extends StatelessWidget {
 
     for (int i = 6; i >= 0; i--) {
       final dateToCheck = now.subtract(Duration(days: i));
-      final entriesForDay = entries.where((e) => DateUtils.isSameDay(e.timestamp, dateToCheck)).toList();
+      final entriesForDay = widget.entries.where((e) => DateUtils.isSameDay(e.timestamp, dateToCheck)).toList();
 
       if (entriesForDay.isNotEmpty) {
         final double avg = entriesForDay.map((e) => getValue(e)).reduce((a, b) => a + b) / entriesForDay.length;
@@ -137,16 +296,14 @@ class StatsView extends StatelessWidget {
   }
 
   Widget _buildWeekdayStats() {
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (widget.entries.isEmpty) return const SizedBox.shrink();
 
     final Map<int, List<double>> dayScores = {};
-    
-    // FIX: Hier waren die fehlenden geschweiften Klammern
     for (var i = 1; i <= 7; i++) {
       dayScores[i] = [];
     }
 
-    for (var e in entries) {
+    for (var e in widget.entries) {
       dayScores[e.timestamp.weekday]!.add(e.score);
     }
 
@@ -210,16 +367,15 @@ class StatsView extends StatelessWidget {
   }
 
   Widget _buildInsightsSection() {
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (widget.entries.isEmpty) return const SizedBox.shrink();
 
-    final totalSum = entries.fold(0.0, (sum, e) => sum + e.score);
-    final globalAvg = totalSum / entries.length;
+    final totalSum = widget.entries.fold(0.0, (sum, e) => sum + e.score);
+    final globalAvg = totalSum / widget.entries.length;
 
     final Map<String, List<double>> tagScores = {};
 
-    for (var entry in entries) {
+    for (var entry in widget.entries) {
       for (var tag in entry.tags) {
-        // FIX: Auch hier saubere Klammern gesetzt
         if (!tagScores.containsKey(tag)) {
           tagScores[tag] = [];
         }
@@ -256,7 +412,7 @@ class StatsView extends StatelessWidget {
       children: [
         const Text("Deine Einflussfaktoren", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 5),
-        Text("Basierend auf ${entries.length} Einträgen (Ø ${globalAvg.toStringAsFixed(1)})", 
+        Text("Basierend auf ${widget.entries.length} Einträgen (Ø ${globalAvg.toStringAsFixed(1)})", 
              style: TextStyle(color: Colors.black.withValues(alpha: 0.6), fontSize: 12)),
         const SizedBox(height: 15),
         
