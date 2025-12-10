@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/mood_entry.dart';
-// import '../utils/mood_utils.dart'; // <--- ENTFERNT, da nicht genutzt
 
 class ProfileView extends StatelessWidget {
   final String profileName;
+  final String email;   // <--- NEU
+  final String version; // <--- NEU
   final List<MoodEntry> entries;
   final bool isPro;
   final VoidCallback onLogout;
@@ -13,6 +14,8 @@ class ProfileView extends StatelessWidget {
   const ProfileView({
     super.key,
     required this.profileName,
+    required this.email,   // <--- NEU
+    required this.version, // <--- NEU
     required this.entries,
     required this.isPro,
     required this.onLogout,
@@ -44,11 +47,23 @@ class ProfileView extends StatelessWidget {
                 const SizedBox(height: 15),
                 Text(profileName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
+                
+                // PRO BADGE
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(color: isPro ? Colors.indigo : Colors.grey, borderRadius: BorderRadius.circular(12)),
                   child: Text(isPro ? "PRO MITGLIED" : "FREE USER", style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
                 ),
+                
+                const SizedBox(height: 8),
+                
+                // EMAIL (NEU)
+                Text(email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                
+                const SizedBox(height: 4),
+                
+                // VERSION (NEU)
+                Text("Version $version", style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
               ],
             ),
           ),
@@ -76,16 +91,22 @@ class ProfileView extends StatelessWidget {
   Widget _buildBadgesGrid(BuildContext context) {
     final totalEntries = entries.length;
     
-    // Berechne Statistiken
-    // "uniqueDaysCount": Anzahl unterschiedlicher Tage, an denen getrackt wurde
+    // Bestehende Metriken
     final uniqueDaysCount = entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
-    
     final nightCount = entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
     final noteCount = entries.where((e) => e.note != null && e.note!.length > 10).length; 
     final highMoodCount = entries.where((e) => e.score >= 8.0).length;
 
-    // DIE SCHWEREN ZIELE:
+    // --- NEUE METRIKEN FÜR NEUE BADGES ---
+    // 1. Kontext-King: Einträge mit mehr als 2 Tags
+    final detailedCount = entries.where((e) => e.tags.length >= 3).length;
+    // 2. Schlaf-Wächter: Einträge mit Schlafdaten
+    final sleepTrackedCount = entries.where((e) => e.sleepRating != null).length;
+    // 3. Wochenend-Held: Einträge an Sa/So
+    final weekendCount = entries.where((e) => e.timestamp.weekday >= 6).length;
+
     final badges = [
+      // --- START ---
       {
         'title': 'Aller Anfang',
         'desc': 'Der erste Eintrag.',
@@ -93,33 +114,57 @@ class ProfileView extends StatelessWidget {
         'color': Colors.blue,
         'unlocked': totalEntries >= 1,
       },
+      // --- DISZIPLIN ---
       {
         'title': 'Dranbleiber',
         'desc': 'Du hast an 7 verschiedenen Tagen getrackt.',
-        'icon': Icons.directions_run_rounded, // Icon geändert, passt besser
+        'icon': Icons.directions_run_rounded,
         'color': Colors.orange,
-        'unlocked': uniqueDaysCount >= 7, // <--- KORRIGIERT: Nutzt jetzt uniqueDaysCount
+        'unlocked': uniqueDaysCount >= 7,
+      },
+      {
+        'title': 'Wochenend-Held', // NEU
+        'desc': '10 Einträge am Wochenende. Du bleibst auch in der Freizeit dran.',
+        'icon': Icons.weekend_rounded,
+        'color': Colors.teal,
+        'unlocked': weekendCount >= 10,
       },
       {
         'title': 'Veteran',
-        'desc': '100 Einträge. Das ist Disziplin!',
+        'desc': '100 Einträge. Das ist echte Disziplin!',
         'icon': Icons.military_tech_rounded,
         'color': Colors.redAccent,
         'unlocked': totalEntries >= 100,
       },
+      // --- VERHALTEN ---
       {
-        'title': 'Nachteule II',
+        'title': 'Nachteule',
         'desc': '20x spät abends getrackt.',
         'icon': Icons.nights_stay_rounded,
         'color': Colors.indigo,
         'unlocked': nightCount >= 20,
       },
       {
+        'title': 'Schlaf-Wächter', // NEU
+        'desc': '30x deinen Schlaf protokolliert. Gesundheit geht vor!',
+        'icon': Icons.bedtime_rounded,
+        'color': Colors.deepPurple,
+        'unlocked': sleepTrackedCount >= 30,
+      },
+      // --- PERSÖNLICHKEIT ---
+      {
         'title': 'Tagebuch',
         'desc': '50 ausführliche Notizen geschrieben.',
         'icon': Icons.menu_book_rounded,
         'color': Colors.brown,
         'unlocked': noteCount >= 50,
+      },
+      {
+        'title': 'Kontext-Profi', // NEU
+        'desc': '20 Einträge mit vielen Tags (3+). Du magst Details.',
+        'icon': Icons.label_important_rounded,
+        'color': Colors.cyan,
+        'unlocked': detailedCount >= 20,
       },
       {
         'title': 'Optimist',
@@ -176,7 +221,7 @@ class ProfileView extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 11, // Etwas kleiner, falls Titel lang sind
                     color: isUnlocked ? Colors.black87 : Colors.grey.shade400
                   ),
                 ),

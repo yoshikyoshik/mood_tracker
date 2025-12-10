@@ -1,3 +1,4 @@
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:lottie/lottie.dart';
@@ -44,6 +45,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   bool _isPro = false;
   String? _stripeCustomerId;
 
+  String _appVersion = "";
+
   final Set<String> _customTagNames = {};
 
   final Map<String, List<String>> _baseTagsByCategory = {
@@ -66,6 +69,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     _initializeTagsMap();
     _initializeData();
     _checkSubscription();
+    _loadAppVersion();
   }
 
   void _initializeTagsMap() {
@@ -312,6 +316,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           )
                         : ProfileView(
                             profileName: currentProfileName,
+                            email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail",
+                            version: _appVersion,
                             entries: _allEntries,
                             isPro: _isPro,
                             onLogout: _signOut,
@@ -372,6 +378,16 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       ),
     );
   }
+
+  Future<void> _loadAppVersion() async {
+  final info = await PackageInfo.fromPlatform();
+  if (mounted) {
+    setState(() {
+      // Format: "v1.0.0 (1)"
+      _appVersion = "v${info.version} (${info.buildNumber})";
+    });
+  }
+}
 
   Future<void> _initializeData() async {
     await _loadProfiles();
