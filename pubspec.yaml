@@ -47,6 +47,8 @@ dependencies:
   path_provider: ^2.1.5
   flutter_heatmap_calendar: ^1.0.5
   package_info_plus: ^9.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -102,3 +104,23 @@ flutter:
   # see https://flutter.dev/to/font-from-package
   assets:
     - assets/success.json
+
+# --- KONFIGURATION FÜR APP ICON ---
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/logo.png"
+  min_sdk_android: 21 # Wichtig für moderne Icons
+  adaptive_icon_background: "#3F51B5" # Dein Indigo als Hintergrund
+  adaptive_icon_foreground: "assets/icon/logo.png" # Das Logo selbst
+
+# --- KONFIGURATION FÜR SPLASH SCREEN ---
+flutter_native_splash:
+  color: "#3F51B5" # Dein Indigo als Hintergrundfarbe des Startbildschirms
+  image: "assets/icon/logo.png" # Das Logo in der Mitte
+  android_12:
+    image: "assets/icon/logo.png"
+    color: "#3F51B5"
+  android: true
+  ios: true
+  fullscreen: true

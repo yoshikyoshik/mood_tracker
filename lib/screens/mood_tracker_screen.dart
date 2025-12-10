@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../models/mood_entry.dart';
 import '../models/profile.dart';
@@ -66,10 +67,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeTagsMap();
-    _initializeData();
-    _checkSubscription();
-    _loadAppVersion();
+    // Hier KEIN AudioRecorder, sondern unsere Lade-Logik:
+    _initializeAll(); 
   }
 
   void _initializeTagsMap() {
@@ -389,10 +388,53 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 }
 
-  Future<void> _initializeData() async {
-    await _loadProfiles();
-    await _loadEntries();
-    await _loadCustomTags();
+  Future<void> _initializeAll() async {
+    // --- SICHERHEITSNETZ ---
+    // Falls irgendwas hängt (Datenbank, Internet), erzwingen wir 
+    // nach 3 Sekunden das Entfernen des Splash-Screens.
+    // So kommt der Nutzer auf jeden Fall in die App.
+    Timer(const Duration(seconds: 3), () {
+      debugPrint("⏰ Safety Timeout: Splash Screen entfernt.");
+      FlutterNativeSplash.remove();
+    });
+
+    try {
+      debugPrint("🚀 Starte Initialisierung...");
+      
+      // 1. App Version laden (geht meist schnell)
+      await _loadAppVersion();
+      debugPrint("✅ Version geladen: $_appVersion");
+
+      // 2. Prüfen: Ist überhaupt ein User eingeloggt?
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        debugPrint("ℹ️ Kein User eingeloggt. Breche Datenladen ab.");
+        // Wenn kein User da ist, können wir keine Profile laden.
+        // Der Splash geht durch den Timer oder das finally weg.
+        return; 
+      }
+
+      // 3. Wichtige Daten laden
+      // Wir laden Profile zuerst, da andere Dinge davon abhängen könnten
+      await _loadProfiles();
+      debugPrint("✅ Profile geladen");
+
+      // 4. Den Rest parallel laden
+      await Future.wait([
+        _loadEntries(),
+        _loadCustomTags(),
+        _checkSubscription(),
+      ]);
+      debugPrint("✅ Restliche Daten geladen");
+      
+      _initializeTagsMap();
+
+    } catch (e) {
+      debugPrint("🛑 Kritischer Ladefehler: $e");
+    } finally {
+      // Normaler Weg: Wenn alles fertig ist (und schneller als 3s war)
+      FlutterNativeSplash.remove(); 
+    }
   }
 
   Future<void> _loadCustomTags() async {
