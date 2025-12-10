@@ -7,11 +7,11 @@ import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
-import 'locked_insights.dart';
+// import 'locked_insights.dart'; // <-- Brauchen wir nicht mehr, wir bauen das schicker hier direkt ein
 
 class StatsView extends StatefulWidget {
-  final List<MoodEntry> entries;     // Meine Einträge
-  final List<MoodEntry> allEntries;  // NEU: Alle Einträge (für Family Context)
+  final List<MoodEntry> entries;
+  final List<MoodEntry> allEntries;
   final String profileName;
   final bool isPro;
   final VoidCallback onUnlockPressed;
@@ -19,7 +19,7 @@ class StatsView extends StatefulWidget {
   const StatsView({
     super.key,
     required this.entries,
-    required this.allEntries, // <--- NEU
+    required this.allEntries,
     required this.profileName,
     required this.isPro,
     required this.onUnlockPressed,
@@ -87,13 +87,18 @@ class _StatsViewState extends State<StatsView> {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         children: [
-          // 0. PREDICTION CARD (NEU!)
-          if (widget.entries.length >= 3) // Nur zeigen, wenn wir ein paar Daten haben
+          // 0. PREDICTION CARD
+          // Korrekte Syntax für Listen: Kein { }, kein , innerhalb der Zweige
+          if (!widget.isPro)
+            _buildLockedPredictionCard()
+          else if (widget.entries.length < 5)
+            _buildEmptyPredictionCard()
+          else
             _buildPredictionCard(),
 
           const SizedBox(height: 16),
 
-          // 1. HEATMAP CARD (Jahresübersicht)
+          // 1. HEATMAP CARD
           _buildCard(
             title: "Jahres-Verlauf",
             icon: Icons.calendar_month,
@@ -132,6 +137,11 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
+          // --- NEU: MEILENSTEINE (GAMIFICATION B) ---
+          _buildBadgesCard(),
+
+          const SizedBox(height: 16),
+
           // 2. CHART CARD
           _buildCard(
             title: "Stimmung & Schlaf",
@@ -165,11 +175,11 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
-          // 3. AI COACH CARD
+          // 3. AI COACH CARD (PRO FEATURE)
           if (widget.isPro)
             _buildAICard()
           else
-            LockedInsights(onUnlockPressed: widget.onUnlockPressed),
+            _buildLockedAICard(), // <--- Einheitlicher Teaser
 
           const SizedBox(height: 16),
 
@@ -198,12 +208,263 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // --- NEU: VORHERSAGE MIT FAMILIEN-FAKTOR ---
+// --- NEU: MEILENSTEINE (BADGES) ---
+  Widget _buildBadgesCard() {
+    // Statistiken berechnen
+    final totalEntries = widget.entries.length;
+    // Nachteule: Einträge zwischen 22:00 und 04:00 Uhr
+    final nightCount = widget.entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
+    // Frühaufsteher: Einträge zwischen 05:00 und 09:00 Uhr
+    final morningCount = widget.entries.where((e) => e.timestamp.hour >= 5 && e.timestamp.hour < 9).length;
+    // Reflektor: Einträge mit Notiz
+    final notesCount = widget.entries.where((e) => e.note != null && e.note!.isNotEmpty).length;
+    // Tage: Einzigartige Tage
+    final uniqueDays = widget.entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
+
+    // Badges definieren
+    final badges = [
+      {
+        'title': 'Der Anfang',
+        'desc': 'Dein erster Eintrag. Willkommen!',
+        'icon': Icons.flag_rounded,
+        'color': Colors.blue,
+        'unlocked': totalEntries >= 1,
+      },
+      {
+        'title': 'Dranbleiber',
+        'desc': 'Du hast an 7 verschiedenen Tagen getrackt.',
+        'icon': Icons.date_range_rounded,
+        'color': Colors.green,
+        'unlocked': uniqueDays >= 7,
+      },
+      {
+        'title': 'Nachteule',
+        'desc': '5 Einträge nach 22 Uhr. Du lebst nachts auf!',
+        'icon': Icons.nights_stay_rounded,
+        'color': Colors.indigo,
+        'unlocked': nightCount >= 5,
+      },
+      {
+        'title': 'Early Bird',
+        'desc': '5 Einträge vor 9 Uhr morgens. Respekt!',
+        'icon': Icons.wb_twilight_rounded,
+        'color': Colors.orange,
+        'unlocked': morningCount >= 5,
+      },
+      {
+        'title': 'Denker',
+        'desc': '5 Einträge mit Notiz. Du reflektierst gerne.',
+        'icon': Icons.edit_note_rounded,
+        'color': Colors.purple,
+        'unlocked': notesCount >= 5,
+      },
+      {
+        'title': 'Profi',
+        'desc': '30 Einträge gesamt. Du hast den Dreh raus!',
+        'icon': Icons.emoji_events_rounded,
+        'color': Colors.redAccent,
+        'unlocked': totalEntries >= 30,
+      },
+    ];
+
+    return _buildCard(
+      title: "Deine Meilensteine",
+      icon: Icons.military_tech_rounded, // Oder WorkspacePremium
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Wrap(
+          spacing: 20, // Horizontaler Abstand
+          runSpacing: 24, // Vertikaler Abstand
+          alignment: WrapAlignment.center,
+          children: badges.map((badge) {
+            final isUnlocked = badge['unlocked'] as bool;
+            final color = badge['color'] as Color;
+            
+            return Tooltip(
+              message: badge['desc'] as String,
+              triggerMode: TooltipTriggerMode.tap, // Auf Handy: Antippen für Info
+              showDuration: const Duration(seconds: 3),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 50, height: 50,
+                    decoration: BoxDecoration(
+                      color: isUnlocked ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isUnlocked ? color.withValues(alpha: 0.5) : Colors.grey.shade300,
+                        width: 2
+                      ),
+                      boxShadow: isUnlocked ? [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                    ),
+                    child: Icon(
+                      badge['icon'] as IconData,
+                      color: isUnlocked ? color : Colors.grey.shade300,
+                      size: 26
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    badge['title'] as String,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: isUnlocked ? Colors.black87 : Colors.grey.shade400
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // --- PRO TEASER CARDS (MARKETING) ---
+
+// --- KALIBRIERUNGS-KARTE (PRO, ABER WENIG DATEN) ---
+  Widget _buildEmptyPredictionCard() {
+    final int count = widget.entries.length;
+    final int target = 5; // <--- NEUES ZIEL
+    final int missing = target - count;
+    final double progress = count / target.toDouble();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade400, Colors.cyan.shade600],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                child: const Icon(Icons.show_chart, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 15),
+              const Text("AI Kalibrierung...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Deine Smart Forecast wird eingerichtet. Wir benötigen noch $missing Einträge, um erste Muster zu erkennen.",
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 15),
+          // Fortschrittsbalken
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text("$count / $target Einträge", style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Teaser für Prediction (Lila Gradient)
+  Widget _buildLockedPredictionCard() {
+    return GestureDetector(
+      onTap: widget.onUnlockPressed,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade900.withValues(alpha: 0.8), Colors.indigo.shade900.withValues(alpha: 0.8)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.deepPurple.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.lock_outline, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Smart Forecast", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text("Wie wird dein Tag morgen? Basierend auf deinem Schlaf, Trend und Wochentag.", style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white54),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Teaser für AI Coach (Dunkles Indigo/Schwarz Gradient)
+  Widget _buildLockedAICard() {
+    return GestureDetector(
+      onTap: widget.onUnlockPressed,
+      child: _buildCard(
+        title: "AI Wochen-Coach",
+        icon: Icons.auto_awesome, // Schloss Icon kommt innen
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_person_outlined, size: 48, color: Colors.indigo),
+              const SizedBox(height: 15),
+              const Text("Tiefenanalyse deiner Woche", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text(
+                "Lass die KI deine Notizen, Schlafdaten und Muster auswerten und erhalte persönliche Tipps.",
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: widget.onUnlockPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                ),
+                child: const Text("Freischalten"),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- DIE ECHTE PREDICTION ---
   Widget _buildPredictionCard() {
-    // 1. Morgen bestimmen
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     
-    // --- FAKTOR 1: MEIN WOCHENTAG (Historisch) ---
+    // Faktor 1: Wochentag
     final weekdayEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
     double weekdayAvg = 0;
     if (weekdayEntries.isNotEmpty) {
@@ -212,7 +473,7 @@ class _StatsViewState extends State<StatsView> {
       weekdayAvg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / (widget.entries.isEmpty ? 1 : widget.entries.length);
     }
 
-    // --- FAKTOR 2: MEIN TREND (Letzte 3 Tage) ---
+    // Faktor 2: Trend
     final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     double trendAvg = weekdayAvg; 
     if (recentEntries.isNotEmpty) {
@@ -221,21 +482,16 @@ class _StatsViewState extends State<StatsView> {
       trendAvg = recentSubset.fold(0.0, (sum, e) => sum + e.score) / takeCount;
     }
 
-    // --- FAKTOR 3: SCHLAF (Letzte Nacht) ---
+    // Faktor 3: Schlaf
     double sleepImpact = 0;
     if (recentEntries.isNotEmpty && recentEntries.first.sleepRating != null) {
       final lastSleep = recentEntries.first.sleepRating!;
-      // FIX: Jetzt mit geschweiften Klammern für den Linter
-      if (lastSleep < 5.0) {
-        sleepImpact = -0.8;
-      } else if (lastSleep > 7.0) {
-        sleepImpact = 0.3;
-      }
+      if (lastSleep < 5.0) { sleepImpact = -0.8; } 
+      else if (lastSleep > 7.0) { sleepImpact = 0.3; }
     }
 
-    // --- FAKTOR 4: HOUSEHOLD VIBE (Die anderen Profile) ---
+    // Faktor 4: Household Vibe
     final myEntryIds = widget.entries.map((e) => e.id).toSet();
-    
     final otherEntriesRecent = widget.allEntries.where((e) {
       final isNotMine = !myEntryIds.contains(e.id);
       final isRecent = DateTime.now().difference(e.timestamp).inHours < 24;
@@ -247,7 +503,6 @@ class _StatsViewState extends State<StatsView> {
 
     if (otherEntriesRecent.isNotEmpty) {
       final householdAvg = otherEntriesRecent.fold(0.0, (sum, e) => sum + e.score) / otherEntriesRecent.length;
-      
       if (householdAvg < 4.0) {
         householdImpact = -0.6; 
         familyText = "Die Stimmung im Haus war zuletzt angespannt.";
@@ -257,11 +512,10 @@ class _StatsViewState extends State<StatsView> {
       }
     }
 
-    // --- GESAMTSCORE ---
+    // Score
     final double predictionScore = (weekdayAvg * 0.45) + (trendAvg * 0.45) + sleepImpact + householdImpact;
     final double finalScore = predictionScore.clamp(0.0, 10.0);
 
-    // Text generieren
     String title = "Trend für morgen";
     String text = "";
     IconData icon = Icons.lightbulb_outline;
@@ -286,15 +540,9 @@ class _StatsViewState extends State<StatsView> {
       colors = [Colors.teal.shade400, Colors.teal.shade700];
     }
 
-    // Zusätze anhängen
-    if (sleepImpact < 0) {
-      text += " Tipp: Geh heute früher schlafen.";
-    }
-    if (familyText.isNotEmpty) {
-      text += " $familyText";
-    }
+    if (sleepImpact < 0) text += " Tipp: Geh heute früher schlafen.";
+    if (familyText.isNotEmpty) text += " $familyText";
 
-    // UI Bauen
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -321,13 +569,11 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // Helper für Wochentagsnamen (manuell, falls Intl locale nicht gesetzt)
   String getWeekdayName(int weekday) {
     const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
     return days[weekday - 1];
   }
 
-  // --- HELPER: CARD BUILDER ---
   Widget _buildCard({required String title, required IconData icon, required Widget child}) {
     return Container(
       decoration: BoxDecoration(
@@ -364,7 +610,6 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // --- CHART HELPERS ---
   Widget _buildInteractiveChart() {
     final sorted = List<MoodEntry>.from(widget.entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     final chartData = sorted.length > 14 ? sorted.sublist(sorted.length - 14) : sorted;

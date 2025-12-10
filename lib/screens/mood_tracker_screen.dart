@@ -240,6 +240,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                       // Rechte Seite: Icons
                       Row(
                         children: [
+                          _buildStreakBadge(),
                           if (!_isPro) 
                             IconButton(
                               icon: const Icon(Icons.diamond_outlined), 
@@ -629,6 +630,45 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     } catch (e) { debugPrint("Lade-Fehler: $e"); if (mounted) setState(() => _isLoading = false); }
   }
 
+  // Berechnet, wie viele Tage in Folge getrackt wurden
+  int _calculateStreak() {
+    if (_allEntries.isEmpty) return 0;
+
+    // 1. Eindeutige Tage extrahieren (ohne Uhrzeit), sortiert von neu nach alt
+    final uniqueDates = _allEntries
+        .map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a)); // Neueste zuerst
+
+    if (uniqueDates.isEmpty) return 0;
+
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    // Wenn der neueste Eintrag weder heute noch gestern ist, ist der Streak gerissen (0)
+    if (uniqueDates.first.isBefore(yesterday)) {
+      return 0;
+    }
+
+    int streak = 0;
+    DateTime checkDate = uniqueDates.first; // Wir starten beim aktuellsten Eintrag (Heute oder Gestern)
+
+    // Wir zählen rückwärts
+    for (var date in uniqueDates) {
+      // Ist dieses Datum genau das erwartete 'checkDate'?
+      if (DateUtils.isSameDay(date, checkDate)) {
+        streak++;
+        // Das nächste Datum, das wir erwarten, ist einen Tag davor
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else {
+        // Lücke gefunden -> Streak endet hier
+        break;
+      }
+    }
+    return streak;
+  }
+
   void _createNewProfile() {
     if (!_isPro && _profiles.isNotEmpty) {
       _showPremiumSheet(context, "Mehrere Profile", "In der Free-Version hast du ein Profil.\nMöchtest du Profile für Partner, Kinder oder Haustiere anlegen?");
@@ -860,6 +900,75 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
             );
         });
       },
+    );
+  }
+
+  Widget _buildStreakBadge() {
+    final int streak = _calculateStreak();
+    
+    // Farben & Icons basierend auf Streak-Länge
+    Color color;
+    IconData icon = Icons.local_fire_department_outlined; 
+    bool isLegendary = false; 
+
+    if (streak < 3) {
+      color = Colors.grey.shade400; 
+    } else if (streak < 8) {
+      color = Colors.amber.shade700; // Etwas dunkleres Gelb für Lesbarkeit auf Weiß
+      icon = Icons.local_fire_department; 
+    } else if (streak < 15) {
+      color = Colors.orange.shade700; 
+      icon = Icons.local_fire_department;
+    } else if (streak < 29) {
+      color = Colors.redAccent.shade700; 
+      icon = Icons.whatshot; 
+    } else {
+      color = Colors.deepPurpleAccent; 
+      isLegendary = true;
+      icon = Icons.auto_awesome; 
+    }
+
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$streak Tage in Folge! Weiter so! 🔥")));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Etwas mehr Platz
+        margin: const EdgeInsets.only(right: 8), 
+        decoration: BoxDecoration(
+          // FIX: Weißer Hintergrund für perfekten Kontrast (außer bei Legendär)
+          color: isLegendary ? null : Colors.white,
+          gradient: isLegendary 
+              ? LinearGradient(colors: [Colors.indigo.shade400, Colors.purple.shade400]) 
+              : null,
+          borderRadius: BorderRadius.circular(20), // Schöne runde "Pille"
+          // Zarter Rahmen, damit es sich auch auf weißem Hintergrund (falls vorhanden) abhebt
+          border: isLegendary ? null : Border.all(color: Colors.black.withValues(alpha: 0.05)),
+          // Kleiner Schatten für "Pop"-Effekt
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2)
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isLegendary ? Colors.white : color),
+            const SizedBox(width: 5),
+            Text(
+              "$streak", 
+              style: TextStyle(
+                fontWeight: FontWeight.w800, 
+                color: isLegendary ? Colors.white : color,
+                fontSize: 13
+              )
+            ),
+          ],
+        ),
+      ),
     );
   }
 
