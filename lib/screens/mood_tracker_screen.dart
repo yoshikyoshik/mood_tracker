@@ -14,6 +14,7 @@ import '../models/profile.dart';
 import '../models/subscription.dart';
 import '../widgets/mood_input_view.dart';
 import '../widgets/stats_view.dart';
+import '../widgets/profile_view.dart'; // <--- WICHTIG: Der neue Import
 import '../utils/mood_utils.dart';
 
 class MoodTrackerScreen extends StatefulWidget {
@@ -240,22 +241,17 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                       // Rechte Seite: Icons
                       Row(
                         children: [
+                          // Streak Badge (Flamme)
                           _buildStreakBadge(),
+
                           if (!_isPro) 
                             IconButton(
                               icon: const Icon(Icons.diamond_outlined), 
                               color: primaryColor,
                               onPressed: _startCheckout
                             ),
-                          if (_isPro) 
-                            IconButton(
-                              icon: const Icon(Icons.settings_outlined), 
-                              color: headerTextColor, 
-                              onPressed: _openCustomerPortal
-                            ),
                           
                           IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
-                          IconButton(icon: Icon(Icons.logout, color: headerTextColor), onPressed: _signOut),
                         ],
                       )
                     ],
@@ -306,13 +302,24 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           onEditEntry: _showEditSheet,
                           onManageCustomTag: _showTagOptions,
                         )
-                      : StatsView(
-                          entries: relevantEntries,
-                          allEntries: _allEntries,
-                          profileName: currentProfileName,
-                          isPro: _isPro,
-                          onUnlockPressed: _startCheckout,
-                        ),
+                      : _selectedIndex == 1 
+                        ? StatsView(
+                            entries: relevantEntries,
+                            allEntries: _allEntries,
+                            profileName: currentProfileName,
+                            isPro: _isPro,
+                            onUnlockPressed: _startCheckout,
+                          )
+                        : ProfileView(
+                            profileName: currentProfileName,
+                            entries: _allEntries,
+                            isPro: _isPro,
+                            onLogout: _signOut,
+                            onManageSubscription: _isPro ? _openCustomerPortal : _startCheckout,
+                            onContactSupport: () {
+                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Support-Feature kommt bald!")));
+                            },
+                          ),
                   ),
                 ),
               ),
@@ -355,6 +362,11 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
               selectedIcon: Icon(Icons.insights, color: primaryColor),
               label: 'Statistik',
             ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person, color: primaryColor),
+              label: 'Profil',
+            ),
           ],
         ),
       ),
@@ -395,7 +407,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     } catch (e) { debugPrint("Tag-Fehler: $e"); }
   }
 
-  // --- TAG MANAGEMENT (JETZT ALS BOTTOM SHEETS) ---
+  // --- TAG MANAGEMENT ---
   void _showTagOptions(String tagName) {
     showModalBottomSheet(
       context: context,
@@ -421,8 +433,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 
   Future<void> _deleteCustomTag(String tagName) async {
-    // Kleiner Alert für Löschen ist okay, aber Sheet ist schöner:
-    // Wir lassen hier den Alert der Einfachheit halber, da es eine Warnung ist.
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -444,7 +454,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   Future<void> _editCustomTagName(String oldName) async {
     String newName = oldName;
-    // BOTTOM SHEET STATT DIALOG
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -483,7 +492,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   Future<void> _moveCustomTagCategory(String tagName) async {
     String selectedCategory = _baseTagsByCategory.keys.first;
     final categories = _baseTagsByCategory.keys.toList();
-    
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -523,8 +531,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     String newTag = "";
     String selectedCategory = "Freizeit & Umwelt";
     final categories = _baseTagsByCategory.keys.toList();
-    
-    // BOTTOM SHEET
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -609,11 +615,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   Future<void> _changeProfile(String? newId) async {
     if (newId != null) {
       setState(() => _selectedProfileId = newId);
-      
-      // FIX: Statt nur die Map zu resetten, laden wir die Custom Tags neu.
-      // Das resettet die Map automatisch UND fügt die eigenen Tags wieder hinzu.
       await _loadCustomTags(); 
-      
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_profile_id', newId);
       _loadEntries(); 
@@ -630,55 +632,15 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     } catch (e) { debugPrint("Lade-Fehler: $e"); if (mounted) setState(() => _isLoading = false); }
   }
 
-  // Berechnet, wie viele Tage in Folge getrackt wurden
-  int _calculateStreak() {
-    if (_allEntries.isEmpty) return 0;
-
-    // 1. Eindeutige Tage extrahieren (ohne Uhrzeit), sortiert von neu nach alt
-    final uniqueDates = _allEntries
-        .map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a)); // Neueste zuerst
-
-    if (uniqueDates.isEmpty) return 0;
-
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    // Wenn der neueste Eintrag weder heute noch gestern ist, ist der Streak gerissen (0)
-    if (uniqueDates.first.isBefore(yesterday)) {
-      return 0;
-    }
-
-    int streak = 0;
-    DateTime checkDate = uniqueDates.first; // Wir starten beim aktuellsten Eintrag (Heute oder Gestern)
-
-    // Wir zählen rückwärts
-    for (var date in uniqueDates) {
-      // Ist dieses Datum genau das erwartete 'checkDate'?
-      if (DateUtils.isSameDay(date, checkDate)) {
-        streak++;
-        // Das nächste Datum, das wir erwarten, ist einen Tag davor
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else {
-        // Lücke gefunden -> Streak endet hier
-        break;
-      }
-    }
-    return streak;
-  }
-
   void _createNewProfile() {
     if (!_isPro && _profiles.isNotEmpty) {
       _showPremiumSheet(context, "Mehrere Profile", "In der Free-Version hast du ein Profil.\nMöchtest du Profile für Partner, Kinder oder Haustiere anlegen?");
       setState(() {}); 
       return;
     }
-    // NEU: Bottom Sheet statt Dialog
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Wichtig für Tastatur
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (dialogCtx) { 
@@ -719,7 +681,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     bool tracking = profile.isCycleTracking;
     DateTime? lastPeriod = profile.lastPeriodDate;
 
-    // NEU: Modernes Bottom Sheet
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -737,86 +698,32 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                 const SizedBox(height: 20),
                 const Text("Profil bearbeiten", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: nameCtrl, 
-                  decoration: InputDecoration(labelText: "Name", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))
-                ),
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: "Name", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
                 const SizedBox(height: 20),
                 
-                // Zyklus Schalter Modern
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.water_drop, color: Colors.pinkAccent),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("Zyklus tracken", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("Berechnet Zyklustage", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: tracking, 
-                        // FIX: activeColor ist veraltet. Wir nutzen die modernen Eigenschaften:
-                        activeTrackColor: Colors.pinkAccent, // Die Spur wird pink
-                        thumbColor: const WidgetStatePropertyAll(Colors.white), // Der Knopf bleibt weiß
-                        onChanged: (val) => setDialogState(() => tracking = val)
-                      ),
-                    ],
-                  ),
+                  child: Row(children: [const Icon(Icons.water_drop, color: Colors.pinkAccent), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Zyklus tracken", style: TextStyle(fontWeight: FontWeight.bold)), Text("Berechnet Zyklustage", style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])), Switch(value: tracking, activeTrackColor: Colors.pinkAccent, thumbColor: const WidgetStatePropertyAll(Colors.white), onChanged: (val) => setDialogState(() => tracking = val))]),
                 ),
 
                 if (tracking) ...[
                   const SizedBox(height: 10),
                   InkWell(
                     onTap: () async {
-                      // NEU: Nutzt jetzt auch das moderne Sheet
-                      final picked = await _showModernDatePicker(lastPeriod ?? DateTime.now());
-                      
-                      if (picked != null) {
-                        setDialogState(() => lastPeriod = picked);
-                      }
+                      final picked = await _showModernDatePicker(lastPeriod ?? DateTime.now()); 
+                      if (picked != null) setDialogState(() => lastPeriod = picked); 
                     },
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today, color: Colors.grey),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Start letzte Periode", style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text(lastPeriod == null ? "Bitte wählen" : DateFormat('dd.MM.yyyy').format(lastPeriod!), style: TextStyle(color: Colors.indigo.shade400, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ],
-                      ),
+                      child: Row(children: [const Icon(Icons.calendar_today, color: Colors.grey), const SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Start letzte Periode", style: TextStyle(fontWeight: FontWeight.bold)), Text(lastPeriod == null ? "Bitte wählen" : DateFormat('dd.MM.yyyy').format(lastPeriod!), style: TextStyle(color: Colors.indigo.shade400, fontWeight: FontWeight.bold))])]),
                     ),
                   ),
                 ],
 
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final newName = nameCtrl.text.trim();
-                      if (newName.isNotEmpty) {
-                        await _updateProfile(profile.id, newName, tracking, lastPeriod);
-                        if (mounted) Navigator.of(context).pop();
-                      }
-                    }, 
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: const Text("Speichern")
-                  ),
-                )
+                SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { final newName = nameCtrl.text.trim(); if (newName.isNotEmpty) { await _updateProfile(profile.id, newName, tracking, lastPeriod); if (mounted) Navigator.of(context).pop(); } }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: const Text("Speichern")))
               ],
             ),
           );
@@ -827,21 +734,10 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   Future<void> _updateProfile(String id, String name, bool tracking, DateTime? lastPeriod) async {
     try {
-      await Supabase.instance.client.from('profiles').update({
-        'name': name,
-        'is_cycle_tracking': tracking,
-        'last_period_date': lastPeriod?.toIso8601String(), 
-      }).eq('id', id);
-      
+      await Supabase.instance.client.from('profiles').update({'name': name, 'is_cycle_tracking': tracking, 'last_period_date': lastPeriod?.toIso8601String()}).eq('id', id);
       await _loadProfiles(); 
-      
-      // FIX: Auch hier Custom Tags neu laden, statt nur _initializeTagsMap()
-      // Damit bleiben deine Tags erhalten, auch wenn du den Zyklus an/aus schaltest.
       await _loadCustomTags();
-      
-    } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: $e")));
-    }
+    } catch (e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Fehler: $e"))); }
   }
 
   Future<void> _saveEntry() async {
@@ -903,75 +799,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     );
   }
 
-  Widget _buildStreakBadge() {
-    final int streak = _calculateStreak();
-    
-    // Farben & Icons basierend auf Streak-Länge
-    Color color;
-    IconData icon = Icons.local_fire_department_outlined; 
-    bool isLegendary = false; 
-
-    if (streak < 3) {
-      color = Colors.grey.shade400; 
-    } else if (streak < 8) {
-      color = Colors.amber.shade700; // Etwas dunkleres Gelb für Lesbarkeit auf Weiß
-      icon = Icons.local_fire_department; 
-    } else if (streak < 15) {
-      color = Colors.orange.shade700; 
-      icon = Icons.local_fire_department;
-    } else if (streak < 29) {
-      color = Colors.redAccent.shade700; 
-      icon = Icons.whatshot; 
-    } else {
-      color = Colors.deepPurpleAccent; 
-      isLegendary = true;
-      icon = Icons.auto_awesome; 
-    }
-
-    return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$streak Tage in Folge! Weiter so! 🔥")));
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Etwas mehr Platz
-        margin: const EdgeInsets.only(right: 8), 
-        decoration: BoxDecoration(
-          // FIX: Weißer Hintergrund für perfekten Kontrast (außer bei Legendär)
-          color: isLegendary ? null : Colors.white,
-          gradient: isLegendary 
-              ? LinearGradient(colors: [Colors.indigo.shade400, Colors.purple.shade400]) 
-              : null,
-          borderRadius: BorderRadius.circular(20), // Schöne runde "Pille"
-          // Zarter Rahmen, damit es sich auch auf weißem Hintergrund (falls vorhanden) abhebt
-          border: isLegendary ? null : Border.all(color: Colors.black.withValues(alpha: 0.05)),
-          // Kleiner Schatten für "Pop"-Effekt
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2)
-            )
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: isLegendary ? Colors.white : color),
-            const SizedBox(width: 5),
-            Text(
-              "$streak", 
-              style: TextStyle(
-                fontWeight: FontWeight.w800, 
-                color: isLegendary ? Colors.white : color,
-                fontSize: 13
-              )
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _signOut() async { await Supabase.instance.client.auth.signOut(); }
 
   Future<void> _startCheckout() async {
@@ -1002,12 +829,95 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 
   Future<void> _pickDate() async {
-    // Ruft jetzt unseren modernen Kalender auf
     final DateTime? picked = await _showModernDatePicker(_selectedDate);
-    
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+    if (picked != null && picked != _selectedDate) { setState(() => _selectedDate = picked); }
+  }
+
+  Future<DateTime?> _showModernDatePicker(DateTime initialDate) async {
+    DateTime tempDate = initialDate;
+    return await showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      isScrollControlled: true, 
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 20),
+                const Text("Datum wählen", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Theme(
+                  data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Colors.indigo, onPrimary: Colors.white, onSurface: Colors.black87)),
+                  child: CalendarDatePicker(initialDate: tempDate, firstDate: DateTime(2023), lastDate: DateTime.now(), onDateChanged: (newDate) { setSheetState(() => tempDate = newDate); }),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(onPressed: () => Navigator.pop(ctx, tempDate), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: const Text("AUSWÄHLEN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                ),
+                const SizedBox(height: 10), 
+              ],
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  int _calculateStreak() {
+    if (_allEntries.isEmpty) return 0;
+    final uniqueDates = _allEntries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().toList()..sort((a, b) => b.compareTo(a));
+    if (uniqueDates.isEmpty) return 0;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (uniqueDates.first.isBefore(yesterday)) { return 0; }
+    int streak = 0;
+    DateTime checkDate = uniqueDates.first; 
+    for (var date in uniqueDates) {
+      if (DateUtils.isSameDay(date, checkDate)) { streak++; checkDate = checkDate.subtract(const Duration(days: 1)); } else { break; }
     }
+    return streak;
+  }
+
+  Widget _buildStreakBadge() {
+    final int streak = _calculateStreak();
+    Color color;
+    IconData icon = Icons.local_fire_department_outlined; 
+    bool isLegendary = false; 
+
+    if (streak < 3) { color = Colors.grey.shade400; } 
+    else if (streak < 8) { color = Colors.amber.shade700; icon = Icons.local_fire_department; } 
+    else if (streak < 15) { color = Colors.orange.shade700; icon = Icons.local_fire_department; } 
+    else if (streak < 29) { color = Colors.redAccent.shade700; icon = Icons.whatshot; } 
+    else { color = Colors.deepPurpleAccent; isLegendary = true; icon = Icons.auto_awesome; }
+
+    return InkWell(
+      onTap: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$streak Tage in Folge! Weiter so! 🔥"))); },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
+        margin: const EdgeInsets.only(right: 8), 
+        decoration: BoxDecoration(
+          color: isLegendary ? null : Colors.white,
+          gradient: isLegendary ? LinearGradient(colors: [Colors.indigo.shade400, Colors.purple.shade400]) : null,
+          borderRadius: BorderRadius.circular(20), 
+          border: isLegendary ? null : Border.all(color: Colors.black.withValues(alpha: 0.05)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isLegendary ? Colors.white : color),
+            const SizedBox(width: 5),
+            Text("$streak", style: TextStyle(fontWeight: FontWeight.w800, color: isLegendary ? Colors.white : color, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showPremiumSheet(BuildContext context, String title, String message) {
@@ -1029,73 +939,4 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
       ),
     );
   }
-
-// Neuer, moderner Kalender im Sheet-Design
-  Future<DateTime?> _showModernDatePicker(DateTime initialDate) async {
-    DateTime tempDate = initialDate;
-
-    return await showModalBottomSheet<DateTime>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      isScrollControlled: true, // Damit er genug Platz hat
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Der kleine graue Griff
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-                const SizedBox(height: 20),
-                
-                // Titel
-                const Text("Datum wählen", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-
-                // Der Kalender selbst (eingebettet)
-                Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: Colors.indigo, // Farbe für den ausgewählten Tag
-                      onPrimary: Colors.white,
-                      onSurface: Colors.black87,
-                    ),
-                  ),
-                  child: CalendarDatePicker(
-                    initialDate: tempDate,
-                    firstDate: DateTime(2023),
-                    lastDate: DateTime.now(),
-                    onDateChanged: (newDate) {
-                      setSheetState(() => tempDate = newDate);
-                    },
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Bestätigen Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, tempDate),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: const Text("AUSWÄHLEN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(height: 10), // Abstand unten für iOS Home Bar
-              ],
-            ),
-          );
-        }
-      ),
-    );
-  }
-
 }

@@ -137,11 +137,6 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
-          // --- NEU: MEILENSTEINE (GAMIFICATION B) ---
-          _buildBadgesCard(),
-
-          const SizedBox(height: 16),
-
           // 2. CHART CARD
           _buildCard(
             title: "Stimmung & Schlaf",
@@ -208,121 +203,7 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-// --- NEU: MEILENSTEINE (BADGES) ---
-  Widget _buildBadgesCard() {
-    // Statistiken berechnen
-    final totalEntries = widget.entries.length;
-    // Nachteule: Einträge zwischen 22:00 und 04:00 Uhr
-    final nightCount = widget.entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
-    // Frühaufsteher: Einträge zwischen 05:00 und 09:00 Uhr
-    final morningCount = widget.entries.where((e) => e.timestamp.hour >= 5 && e.timestamp.hour < 9).length;
-    // Reflektor: Einträge mit Notiz
-    final notesCount = widget.entries.where((e) => e.note != null && e.note!.isNotEmpty).length;
-    // Tage: Einzigartige Tage
-    final uniqueDays = widget.entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
-
-    // Badges definieren
-    final badges = [
-      {
-        'title': 'Der Anfang',
-        'desc': 'Dein erster Eintrag. Willkommen!',
-        'icon': Icons.flag_rounded,
-        'color': Colors.blue,
-        'unlocked': totalEntries >= 1,
-      },
-      {
-        'title': 'Dranbleiber',
-        'desc': 'Du hast an 7 verschiedenen Tagen getrackt.',
-        'icon': Icons.date_range_rounded,
-        'color': Colors.green,
-        'unlocked': uniqueDays >= 7,
-      },
-      {
-        'title': 'Nachteule',
-        'desc': '5 Einträge nach 22 Uhr. Du lebst nachts auf!',
-        'icon': Icons.nights_stay_rounded,
-        'color': Colors.indigo,
-        'unlocked': nightCount >= 5,
-      },
-      {
-        'title': 'Early Bird',
-        'desc': '5 Einträge vor 9 Uhr morgens. Respekt!',
-        'icon': Icons.wb_twilight_rounded,
-        'color': Colors.orange,
-        'unlocked': morningCount >= 5,
-      },
-      {
-        'title': 'Denker',
-        'desc': '5 Einträge mit Notiz. Du reflektierst gerne.',
-        'icon': Icons.edit_note_rounded,
-        'color': Colors.purple,
-        'unlocked': notesCount >= 5,
-      },
-      {
-        'title': 'Profi',
-        'desc': '30 Einträge gesamt. Du hast den Dreh raus!',
-        'icon': Icons.emoji_events_rounded,
-        'color': Colors.redAccent,
-        'unlocked': totalEntries >= 30,
-      },
-    ];
-
-    return _buildCard(
-      title: "Deine Meilensteine",
-      icon: Icons.military_tech_rounded, // Oder WorkspacePremium
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Wrap(
-          spacing: 20, // Horizontaler Abstand
-          runSpacing: 24, // Vertikaler Abstand
-          alignment: WrapAlignment.center,
-          children: badges.map((badge) {
-            final isUnlocked = badge['unlocked'] as bool;
-            final color = badge['color'] as Color;
-            
-            return Tooltip(
-              message: badge['desc'] as String,
-              triggerMode: TooltipTriggerMode.tap, // Auf Handy: Antippen für Info
-              showDuration: const Duration(seconds: 3),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 50, height: 50,
-                    decoration: BoxDecoration(
-                      color: isUnlocked ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isUnlocked ? color.withValues(alpha: 0.5) : Colors.grey.shade300,
-                        width: 2
-                      ),
-                      boxShadow: isUnlocked ? [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
-                    ),
-                    child: Icon(
-                      badge['icon'] as IconData,
-                      color: isUnlocked ? color : Colors.grey.shade300,
-                      size: 26
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    badge['title'] as String,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: isUnlocked ? Colors.black87 : Colors.grey.shade400
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // --- PRO TEASER CARDS (MARKETING) ---
+// --- PRO TEASER CARDS (MARKETING) ---
 
 // --- KALIBRIERUNGS-KARTE (PRO, ABER WENIG DATEN) ---
   Widget _buildEmptyPredictionCard() {
