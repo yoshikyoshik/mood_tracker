@@ -1,4 +1,4 @@
-package com.example.mood_tracker
+package com.luviosphere.app
 
 import io.flutter.embedding.android.FlutterActivity
 
