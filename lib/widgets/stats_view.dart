@@ -7,7 +7,7 @@ import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
-// import 'locked_insights.dart'; // <-- Brauchen wir nicht mehr, wir bauen das schicker hier direkt ein
+import '../l10n/generated/app_localizations.dart'; // <--- WICHTIG: Import
 
 class StatsView extends StatefulWidget {
   final List<MoodEntry> entries;
@@ -42,6 +42,7 @@ class _StatsViewState extends State<StatsView> {
       final weekEntries = widget.entries.where((e) => e.timestamp.isAfter(sevenDaysAgo)).toList();
       
       if (weekEntries.isEmpty) {
+        // Hinweis: Für Fehlermeldungen könnten wir später auch Keys anlegen
         setState(() { _isAnalyzing = false; _analysisResult = "Keine Einträge in den letzten 7 Tagen gefunden."; });
         return;
       }
@@ -82,28 +83,29 @@ class _StatsViewState extends State<StatsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // <--- Zugriff auf Texte
+
     return Container(
       color: const Color(0xFFF5F7FA), 
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         children: [
           // 0. PREDICTION CARD
-          // Korrekte Syntax für Listen: Kein { }, kein , innerhalb der Zweige
           if (!widget.isPro)
-            _buildLockedPredictionCard()
+            _buildLockedPredictionCard(l10n)
           else if (widget.entries.length < 5)
             _buildEmptyPredictionCard()
           else
-            _buildPredictionCard(),
+            _buildPredictionCard(l10n),
 
           const SizedBox(height: 16),
 
           // 1. HEATMAP CARD
           _buildCard(
-            title: "Jahres-Verlauf",
+            title: l10n.statsYearly, // LOKALISIERT
             icon: Icons.calendar_month,
             child: widget.entries.isEmpty 
-              ? const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("Noch keine Daten.")))
+              ? Padding(padding: const EdgeInsets.all(20), child: Center(child: Text(l10n.statsNoData)))
               : Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: SingleChildScrollView(
@@ -139,7 +141,7 @@ class _StatsViewState extends State<StatsView> {
 
           // 2. CHART CARD
           _buildCard(
-            title: "Stimmung & Schlaf",
+            title: l10n.statsChartTitle, // LOKALISIERT
             icon: Icons.show_chart,
             child: Column(
               children: [
@@ -147,8 +149,8 @@ class _StatsViewState extends State<StatsView> {
                 SizedBox(
                   height: 250,
                   child: widget.entries.isEmpty 
-                    ? const Center(child: Text("Keine Daten"))
-                    : _buildInteractiveChart(),
+                    ? Center(child: Text(l10n.statsNoData))
+                    : _buildInteractiveChart(l10n), // l10n übergeben
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -156,11 +158,11 @@ class _StatsViewState extends State<StatsView> {
                   children: [
                     Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.black87, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    const Text("Stimmung", style: TextStyle(fontSize: 12)),
+                    Text(l10n.statsMood, style: const TextStyle(fontSize: 12)), // LOKALISIERT
                     const SizedBox(width: 20),
                     Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.indigoAccent.withValues(alpha: 0.5), shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    const Text("Schlaf", style: TextStyle(fontSize: 12)),
+                    Text(l10n.statsSleep, style: const TextStyle(fontSize: 12)), // LOKALISIERT
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -172,21 +174,21 @@ class _StatsViewState extends State<StatsView> {
 
           // 3. AI COACH CARD (PRO FEATURE)
           if (widget.isPro)
-            _buildAICard()
+            _buildAICard(l10n)
           else
-            _buildLockedAICard(), // <--- Einheitlicher Teaser
+            _buildLockedAICard(l10n),
 
           const SizedBox(height: 16),
 
           // 4. WOCHENTAGS STATS
           _buildCard(
-            title: "Muster nach Wochentag",
+            title: l10n.statsPatternDay, // LOKALISIERT
             icon: Icons.bar_chart,
             child: SizedBox(
               height: 220,
               child: Padding(
                 padding: const EdgeInsets.only(top: 20.0),
-                child: _buildBarChart(),
+                child: _buildBarChart(l10n),
               ),
             ),
           ),
@@ -195,7 +197,7 @@ class _StatsViewState extends State<StatsView> {
 
           // 5. INSIGHTS / TAGS
           if (widget.entries.isNotEmpty)
-            _buildInsightsCard(),
+            _buildInsightsCard(l10n),
             
           const SizedBox(height: 40),
         ],
@@ -205,10 +207,10 @@ class _StatsViewState extends State<StatsView> {
 
 // --- PRO TEASER CARDS (MARKETING) ---
 
-// --- KALIBRIERUNGS-KARTE (PRO, ABER WENIG DATEN) ---
+// --- KALIBRIERUNGS-KARTE ---
   Widget _buildEmptyPredictionCard() {
     final int count = widget.entries.length;
-    final int target = 5; // <--- NEUES ZIEL
+    final int target = 5; 
     final int missing = target - count;
     final double progress = count / target.toDouble();
 
@@ -238,11 +240,10 @@ class _StatsViewState extends State<StatsView> {
           ),
           const SizedBox(height: 12),
           Text(
-            "Deine Smart Forecast wird eingerichtet. Wir benötigen noch $missing Einträge, um erste Muster zu erkennen.",
+            "Deine Smart Forecast wird eingerichtet. Wir benötigen noch $missing Einträge.",
             style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 15),
-          // Fortschrittsbalken
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
@@ -262,8 +263,8 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // Teaser für Prediction (Lila Gradient)
-  Widget _buildLockedPredictionCard() {
+  // Teaser für Prediction
+  Widget _buildLockedPredictionCard(AppLocalizations l10n) {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
       child: Container(
@@ -284,13 +285,13 @@ class _StatsViewState extends State<StatsView> {
               child: const Icon(Icons.lock_outline, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Smart Forecast", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  SizedBox(height: 4),
-                  Text("Wie wird dein Tag morgen? Basierend auf deinem Schlaf, Trend und Wochentag.", style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                  Text(l10n.statsTrendTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  const Text("Wie wird dein Tag morgen? Basierend auf deinem Schlaf, Trend und Wochentag.", style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
                 ],
               ),
             ),
@@ -301,13 +302,13 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // Teaser für AI Coach (Dunkles Indigo/Schwarz Gradient)
-  Widget _buildLockedAICard() {
+  // Teaser für AI Coach
+  Widget _buildLockedAICard(AppLocalizations l10n) {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
       child: _buildCard(
-        title: "AI Wochen-Coach",
-        icon: Icons.auto_awesome, // Schloss Icon kommt innen
+        title: "AI Wochen-Coach", // Kann optional auch durch l10n.statsAiIntro ersetzt werden, wenn gewünscht
+        icon: Icons.auto_awesome, 
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24),
@@ -319,7 +320,7 @@ class _StatsViewState extends State<StatsView> {
               const Text("Tiefenanalyse deiner Woche", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               const SizedBox(height: 8),
               Text(
-                "Lass die KI deine Notizen, Schlafdaten und Muster auswerten und erhalte persönliche Tipps.",
+                l10n.statsAiIntro,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
                 textAlign: TextAlign.center,
               ),
@@ -332,7 +333,7 @@ class _StatsViewState extends State<StatsView> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                 ),
-                child: const Text("Freischalten"),
+                child: Text(l10n.becomePro),
               )
             ],
           ),
@@ -342,7 +343,7 @@ class _StatsViewState extends State<StatsView> {
   }
 
   // --- DIE ECHTE PREDICTION ---
-  Widget _buildPredictionCard() {
+  Widget _buildPredictionCard(AppLocalizations l10n) {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     
     // Faktor 1: Wochentag
@@ -397,31 +398,34 @@ class _StatsViewState extends State<StatsView> {
     final double predictionScore = (weekdayAvg * 0.45) + (trendAvg * 0.45) + sleepImpact + householdImpact;
     final double finalScore = predictionScore.clamp(0.0, 10.0);
 
-    String title = "Trend für morgen";
+    String title = l10n.statsTrendTitle;
     String text = "";
     IconData icon = Icons.lightbulb_outline;
     List<Color> colors = [Colors.deepPurple.shade400, Colors.indigo.shade600];
 
-    final weekdayName = getWeekdayName(tomorrow.weekday);
+    // Formatierung des Wochentags passend zur Sprache
+    final weekdayName = DateFormat('EEEE', l10n.localeName).format(tomorrow);
+    final scoreString = finalScore.toStringAsFixed(1);
 
     if (finalScore >= 7.5) {
-      title = "Gute Aussichten! ☀️";
-      text = "Morgen ist $weekdayName. Deine Daten und das Umfeld deuten auf einen starken Tag hin (Ø ${finalScore.toStringAsFixed(1)}).";
+      title = l10n.statsTrendGood;
+      // NEU: Nutzung der Parameter {day} und {score}
+      text = l10n.predTextGood(weekdayName, scoreString);
       icon = Icons.wb_sunny_rounded;
       colors = [Colors.orange.shade400, Colors.deepOrange.shade600];
     } else if (finalScore <= 4.5) {
-      title = "Achtsam bleiben 💜";
-      text = "Für $weekdayName sagen die Daten etwas weniger Energie voraus (Ø ${finalScore.toStringAsFixed(1)}).";
+      title = l10n.statsTrendBad;
+      text = l10n.predTextBad(weekdayName, scoreString);
       icon = Icons.spa_rounded;
       colors = [Colors.purple.shade300, Colors.deepPurple.shade700];
     } else {
-      title = "Solider Tag erwartet 🌱";
-      text = "Die Prognose für $weekdayName ist ausgeglichen (Ø ${finalScore.toStringAsFixed(1)}).";
+      title = l10n.statsTrendNormal;
+      text = l10n.predTextNormal(weekdayName, scoreString);
       icon = Icons.insights_rounded;
       colors = [Colors.teal.shade400, Colors.teal.shade700];
     }
 
-    if (sleepImpact < 0) text += " Tipp: Geh heute früher schlafen.";
+    if (sleepImpact < 0) text += " ${l10n.tipSleep}";
     if (familyText.isNotEmpty) text += " $familyText";
 
     return Container(
@@ -439,20 +443,28 @@ class _StatsViewState extends State<StatsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(l10n.statsTrendTitle.toUpperCase(),
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0)),
                 const SizedBox(height: 4),
-                Text(text, style: TextStyle(color: Colors.white.withValues(alpha: 0.95), fontSize: 13, height: 1.4)),
+                Text(title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(text,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
               ],
             ),
           )
         ],
       ),
     );
-  }
-
-  String getWeekdayName(int weekday) {
-    const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-    return days[weekday - 1];
   }
 
   Widget _buildCard({required String title, required IconData icon, required Widget child}) {
@@ -491,7 +503,7 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  Widget _buildInteractiveChart() {
+  Widget _buildInteractiveChart(AppLocalizations l10n) {
     final sorted = List<MoodEntry>.from(widget.entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     final chartData = sorted.length > 14 ? sorted.sublist(sorted.length - 14) : sorted;
 
@@ -552,12 +564,13 @@ class _StatsViewState extends State<StatsView> {
                 final entry = chartData[spot.x.toInt()];
                 
                 if (isMood) {
+                  final mood = MoodUtils.getMoodData(spot.y, l10n); // <--- L10N ÜBERGEBEN
                   return LineTooltipItem(
                     "${DateFormat('dd.MM').format(entry.timestamp)}\n",
                     const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                     children: [
                       TextSpan(
-                        text: "Stimmung: ${spot.y.toStringAsFixed(1)}\n",
+                        text: "${mood['emoji']} ${mood['label']}: ${spot.y.toStringAsFixed(1)}\n",
                         style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       if (entry.note != null && entry.note!.isNotEmpty)
@@ -569,7 +582,7 @@ class _StatsViewState extends State<StatsView> {
                   );
                 } else {
                   return LineTooltipItem(
-                    "Schlaf: ${spot.y.toStringAsFixed(1)} h",
+                    "${l10n.statsSleep}: ${spot.y.toStringAsFixed(1)} h",
                     const TextStyle(color: Colors.indigoAccent, fontSize: 12, fontWeight: FontWeight.bold),
                   );
                 }
@@ -605,7 +618,7 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  Widget _buildBarChart() {
+  Widget _buildBarChart(AppLocalizations l10n) {
     final Map<int, List<double>> dayScores = {};
     for (var i = 1; i <= 7; i++) { dayScores[i] = []; }
     for (var e in widget.entries) { dayScores[e.timestamp.weekday]!.add(e.score); }
@@ -641,10 +654,12 @@ class _StatsViewState extends State<StatsView> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+                // Hier nutzen wir DateFormat, um Wochentage passend zur Sprache anzuzeigen
+                final dayName = DateFormat('EEE', l10n.localeName).format(DateTime(2023, 10, 2 + value.toInt())); // 2.10.23 war ein Montag
+                
                 final index = value.toInt() - 1;
-                if (index < 0 || index >= days.length) return const SizedBox.shrink();
-                return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(days[index], style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600)));
+                if (index < 0 || index >= 7) return const SizedBox.shrink();
+                return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(dayName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600)));
               },
             ),
           ),
@@ -656,9 +671,9 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  Widget _buildAICard() {
+  Widget _buildAICard(AppLocalizations l10n) {
     return _buildCard(
-      title: "AI Wochen-Coach",
+      title: "AI Wochen-Coach", // Kannst du durch l10n.statsAiIntro ersetzen, wenn es der Titel sein soll
       icon: Icons.auto_awesome,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -666,7 +681,7 @@ class _StatsViewState extends State<StatsView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_analysisResult == null && !_isAnalyzing)
-              Text("Lass deine Woche von der KI analysieren. Sie findet Muster in deinem Schlaf, Zyklus und deinen Notizen.", style: TextStyle(color: Colors.black87.withValues(alpha: 0.7), height: 1.5)),
+              Text(l10n.statsAiIntro, style: TextStyle(color: Colors.black87.withValues(alpha: 0.7), height: 1.5)),
 
             if (_isAnalyzing)
               const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())),
@@ -686,7 +701,7 @@ class _StatsViewState extends State<StatsView> {
                   child: ElevatedButton.icon(
                     onPressed: _analyzeWeek,
                     icon: const Icon(Icons.psychology),
-                    label: Text(_analysisResult == null ? "Woche analysieren" : "Analyse aktualisieren"),
+                    label: Text(_analysisResult == null ? l10n.statsAiButton : l10n.statsAiButtonUpdate),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ),
@@ -697,7 +712,7 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  Widget _buildInsightsCard() {
+  Widget _buildInsightsCard(AppLocalizations l10n) {
     final totalSum = widget.entries.fold(0.0, (sum, e) => sum + e.score);
     final globalAvg = totalSum / widget.entries.length;
     final Map<String, List<double>> tagScores = {};
@@ -720,12 +735,19 @@ class _StatsViewState extends State<StatsView> {
     impacts.sort((a, b) => (b['impact'].abs() as double).compareTo((a['impact'].abs() as double)));
 
     return _buildCard(
-      title: "Einflussfaktoren",
+      title: l10n.statsInsights,
       icon: Icons.trending_up,
       child: impacts.isEmpty 
         ? const Padding(padding: EdgeInsets.all(20), child: Text("Tracke mehr Tags, um Muster zu erkennen."))
         : Column(
             children: impacts.take(5).map((item) {
+              final rawTag = item['tag'] as String;
+              
+              // --- HIER IST DER FIX: ---
+              // Wir nutzen den Helper, um den DB-Namen in den lokalisierten Namen zu wandeln
+              final localizedTagName = MoodUtils.getLocalizedTagLabel(rawTag, l10n); 
+              // -------------------------
+
               final impact = item['impact'] as double;
               final isPositive = impact > 0;
               final color = isPositive ? Colors.green : Colors.redAccent;
@@ -745,7 +767,8 @@ class _StatsViewState extends State<StatsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item['tag'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          // Hier zeigen wir den übersetzten Namen an
+                          Text(localizedTagName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           Text("${item['count']}x · Ø ${item['avg'].toStringAsFixed(1)}", style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                         ],
                       ),

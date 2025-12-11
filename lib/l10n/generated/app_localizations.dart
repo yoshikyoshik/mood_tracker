@@ -409,6 +409,558 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Schlaf'**
   String get statsSleep;
+
+  /// No description provided for @inputMoodTerrible.
+  ///
+  /// In de, this message translates to:
+  /// **'Schrecklich'**
+  String get inputMoodTerrible;
+
+  /// No description provided for @inputMoodBad.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlecht'**
+  String get inputMoodBad;
+
+  /// No description provided for @inputMoodOkay.
+  ///
+  /// In de, this message translates to:
+  /// **'Okay'**
+  String get inputMoodOkay;
+
+  /// No description provided for @inputMoodGood.
+  ///
+  /// In de, this message translates to:
+  /// **'Gut'**
+  String get inputMoodGood;
+
+  /// No description provided for @inputMoodFantastic.
+  ///
+  /// In de, this message translates to:
+  /// **'Fantastisch'**
+  String get inputMoodFantastic;
+
+  /// No description provided for @dialogNewProfileTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Neues Profil erstellen'**
+  String get dialogNewProfileTitle;
+
+  /// No description provided for @dialogEditProfileTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Profil bearbeiten'**
+  String get dialogEditProfileTitle;
+
+  /// No description provided for @dialogNameLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get dialogNameLabel;
+
+  /// No description provided for @dialogCycleTracking.
+  ///
+  /// In de, this message translates to:
+  /// **'Zyklus tracken'**
+  String get dialogCycleTracking;
+
+  /// No description provided for @dialogCycleDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Berechnet Zyklustage'**
+  String get dialogCycleDesc;
+
+  /// No description provided for @dialogPeriodStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Start letzte Periode'**
+  String get dialogPeriodStart;
+
+  /// No description provided for @dialogSelectDate.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum wählen'**
+  String get dialogSelectDate;
+
+  /// No description provided for @dialogAdd.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinzufügen'**
+  String get dialogAdd;
+
+  /// No description provided for @dialogMoveCategory.
+  ///
+  /// In de, this message translates to:
+  /// **'Kategorie verschieben'**
+  String get dialogMoveCategory;
+
+  /// No description provided for @dialogRenameTag.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag umbenennen'**
+  String get dialogRenameTag;
+
+  /// No description provided for @dialogDeleteTagTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag \'{tag}\' löschen?'**
+  String dialogDeleteTagTitle(String tag);
+
+  /// No description provided for @dialogDeleteTagContent.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Tag wird aus der Auswahl entfernt.'**
+  String get dialogDeleteTagContent;
+
+  /// No description provided for @dialogEditTagTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Optionen für \'{tag}\''**
+  String dialogEditTagTitle(String tag);
+
+  /// No description provided for @statsYearly.
+  ///
+  /// In de, this message translates to:
+  /// **'Jahres-Verlauf'**
+  String get statsYearly;
+
+  /// No description provided for @statsNoData.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Daten.'**
+  String get statsNoData;
+
+  /// No description provided for @statsPatternDay.
+  ///
+  /// In de, this message translates to:
+  /// **'Muster nach Wochentag'**
+  String get statsPatternDay;
+
+  /// No description provided for @statsInsights.
+  ///
+  /// In de, this message translates to:
+  /// **'Einflussfaktoren'**
+  String get statsInsights;
+
+  /// No description provided for @statsAiIntro.
+  ///
+  /// In de, this message translates to:
+  /// **'Lass deine Woche von der KI analysieren.'**
+  String get statsAiIntro;
+
+  /// No description provided for @statsAiButton.
+  ///
+  /// In de, this message translates to:
+  /// **'Woche analysieren'**
+  String get statsAiButton;
+
+  /// No description provided for @statsAiButtonUpdate.
+  ///
+  /// In de, this message translates to:
+  /// **'Analyse aktualisieren'**
+  String get statsAiButtonUpdate;
+
+  /// No description provided for @statsTrendTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Trend für morgen'**
+  String get statsTrendTitle;
+
+  /// No description provided for @statsTrendGood.
+  ///
+  /// In de, this message translates to:
+  /// **'Gute Aussichten! ☀️'**
+  String get statsTrendGood;
+
+  /// No description provided for @statsTrendNormal.
+  ///
+  /// In de, this message translates to:
+  /// **'Solider Tag erwartet 🌱'**
+  String get statsTrendNormal;
+
+  /// No description provided for @statsTrendBad.
+  ///
+  /// In de, this message translates to:
+  /// **'Achtsam bleiben 💜'**
+  String get statsTrendBad;
+
+  /// No description provided for @categorySocial.
+  ///
+  /// In de, this message translates to:
+  /// **'Soziales'**
+  String get categorySocial;
+
+  /// No description provided for @categoryBodyMind.
+  ///
+  /// In de, this message translates to:
+  /// **'Körper & Geist'**
+  String get categoryBodyMind;
+
+  /// No description provided for @categoryObligations.
+  ///
+  /// In de, this message translates to:
+  /// **'Pflichten'**
+  String get categoryObligations;
+
+  /// No description provided for @categoryLeisure.
+  ///
+  /// In de, this message translates to:
+  /// **'Freizeit & Umwelt'**
+  String get categoryLeisure;
+
+  /// No description provided for @categoryCycle.
+  ///
+  /// In de, this message translates to:
+  /// **'Zyklus & Körper'**
+  String get categoryCycle;
+
+  /// No description provided for @categoryOther.
+  ///
+  /// In de, this message translates to:
+  /// **'Sonstiges'**
+  String get categoryOther;
+
+  /// No description provided for @tagFamily.
+  ///
+  /// In de, this message translates to:
+  /// **'Familie'**
+  String get tagFamily;
+
+  /// No description provided for @tagRelationship.
+  ///
+  /// In de, this message translates to:
+  /// **'Beziehung'**
+  String get tagRelationship;
+
+  /// No description provided for @tagFriends.
+  ///
+  /// In de, this message translates to:
+  /// **'Freunde'**
+  String get tagFriends;
+
+  /// No description provided for @tagParty.
+  ///
+  /// In de, this message translates to:
+  /// **'Party'**
+  String get tagParty;
+
+  /// No description provided for @tagSport.
+  ///
+  /// In de, this message translates to:
+  /// **'Sport'**
+  String get tagSport;
+
+  /// No description provided for @tagSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlaf'**
+  String get tagSleep;
+
+  /// No description provided for @tagFood.
+  ///
+  /// In de, this message translates to:
+  /// **'Essen'**
+  String get tagFood;
+
+  /// No description provided for @tagHealth.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesundheit'**
+  String get tagHealth;
+
+  /// No description provided for @tagMeditation.
+  ///
+  /// In de, this message translates to:
+  /// **'Meditation'**
+  String get tagMeditation;
+
+  /// No description provided for @tagWork.
+  ///
+  /// In de, this message translates to:
+  /// **'Arbeit'**
+  String get tagWork;
+
+  /// No description provided for @tagSchool.
+  ///
+  /// In de, this message translates to:
+  /// **'Schule'**
+  String get tagSchool;
+
+  /// No description provided for @tagHomework.
+  ///
+  /// In de, this message translates to:
+  /// **'Hausaufgaben'**
+  String get tagHomework;
+
+  /// No description provided for @tagUni.
+  ///
+  /// In de, this message translates to:
+  /// **'Uni'**
+  String get tagUni;
+
+  /// No description provided for @tagHousehold.
+  ///
+  /// In de, this message translates to:
+  /// **'Haushalt'**
+  String get tagHousehold;
+
+  /// No description provided for @tagHobby.
+  ///
+  /// In de, this message translates to:
+  /// **'Hobby'**
+  String get tagHobby;
+
+  /// No description provided for @tagTravel.
+  ///
+  /// In de, this message translates to:
+  /// **'Reisen'**
+  String get tagTravel;
+
+  /// No description provided for @tagWeather.
+  ///
+  /// In de, this message translates to:
+  /// **'Wetter'**
+  String get tagWeather;
+
+  /// No description provided for @tagGaming.
+  ///
+  /// In de, this message translates to:
+  /// **'Gaming'**
+  String get tagGaming;
+
+  /// No description provided for @tagReading.
+  ///
+  /// In de, this message translates to:
+  /// **'Lesen'**
+  String get tagReading;
+
+  /// No description provided for @tagMusic.
+  ///
+  /// In de, this message translates to:
+  /// **'Musik'**
+  String get tagMusic;
+
+  /// No description provided for @tagPeriodLight.
+  ///
+  /// In de, this message translates to:
+  /// **'Periode (Leicht)'**
+  String get tagPeriodLight;
+
+  /// No description provided for @tagPeriodMedium.
+  ///
+  /// In de, this message translates to:
+  /// **'Periode (Mittel)'**
+  String get tagPeriodMedium;
+
+  /// No description provided for @tagPeriodHeavy.
+  ///
+  /// In de, this message translates to:
+  /// **'Periode (Stark)'**
+  String get tagPeriodHeavy;
+
+  /// No description provided for @tagSpotting.
+  ///
+  /// In de, this message translates to:
+  /// **'Schmierblutung'**
+  String get tagSpotting;
+
+  /// No description provided for @tagCramps.
+  ///
+  /// In de, this message translates to:
+  /// **'Regelschmerzen'**
+  String get tagCramps;
+
+  /// No description provided for @tagPMS.
+  ///
+  /// In de, this message translates to:
+  /// **'PMS'**
+  String get tagPMS;
+
+  /// No description provided for @tagOvulation.
+  ///
+  /// In de, this message translates to:
+  /// **'Eisprung'**
+  String get tagOvulation;
+
+  /// No description provided for @unknownProfile.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbekannt'**
+  String get unknownProfile;
+
+  /// No description provided for @btnSelect.
+  ///
+  /// In de, this message translates to:
+  /// **'AUSWÄHLEN'**
+  String get btnSelect;
+
+  /// No description provided for @maybeLater.
+  ///
+  /// In de, this message translates to:
+  /// **'Vielleicht später'**
+  String get maybeLater;
+
+  /// No description provided for @premiumTeaserTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Mehrere Profile'**
+  String get premiumTeaserTitle;
+
+  /// No description provided for @premiumTeaserMessage.
+  ///
+  /// In de, this message translates to:
+  /// **'In der Free-Version hast du ein Profil.\nMöchtest du Profile für Partner, Kinder oder Haustiere anlegen?'**
+  String get premiumTeaserMessage;
+
+  /// No description provided for @snackSaved.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeichert'**
+  String get snackSaved;
+
+  /// No description provided for @snackDeleted.
+  ///
+  /// In de, this message translates to:
+  /// **'Gelöscht'**
+  String get snackDeleted;
+
+  /// No description provided for @snackTagDeleted.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag gelöscht'**
+  String get snackTagDeleted;
+
+  /// No description provided for @snackError.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehler: {error}'**
+  String snackError(String error);
+
+  /// No description provided for @dialogNewTagName.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuer Name'**
+  String get dialogNewTagName;
+
+  /// No description provided for @dialogNewTagPlaceholder.
+  ///
+  /// In de, this message translates to:
+  /// **'Name (z.B. Yoga)'**
+  String get dialogNewTagPlaceholder;
+
+  /// No description provided for @labelCategory.
+  ///
+  /// In de, this message translates to:
+  /// **'Kategorie'**
+  String get labelCategory;
+
+  /// No description provided for @labelDescription.
+  ///
+  /// In de, this message translates to:
+  /// **'Bezeichnung'**
+  String get labelDescription;
+
+  /// No description provided for @predTextGood.
+  ///
+  /// In de, this message translates to:
+  /// **'Morgen ist {day}. Deine Daten und das Umfeld deuten auf einen starken Tag hin (Ø {score}).'**
+  String predTextGood(String day, String score);
+
+  /// No description provided for @predTextBad.
+  ///
+  /// In de, this message translates to:
+  /// **'Für {day} sagen die Daten etwas weniger Energie voraus (Ø {score}).'**
+  String predTextBad(String day, String score);
+
+  /// No description provided for @predTextNormal.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Prognose für {day} ist ausgeglichen (Ø {score}).'**
+  String predTextNormal(String day, String score);
+
+  /// No description provided for @tipSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Tipp: Geh heute früher schlafen.'**
+  String get tipSleep;
+
+  /// No description provided for @tipFamilyBad.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Stimmung im Haus war zuletzt angespannt.'**
+  String get tipFamilyBad;
+
+  /// No description provided for @tipFamilyGood.
+  ///
+  /// In de, this message translates to:
+  /// **'Positive Vibes im Haushalt geben dir Rückenwind!'**
+  String get tipFamilyGood;
+
+  /// No description provided for @authLoginTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Willkommen zurück'**
+  String get authLoginTitle;
+
+  /// No description provided for @authRegisterTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuen Account erstellen'**
+  String get authRegisterTitle;
+
+  /// No description provided for @authEmailLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'E-Mail'**
+  String get authEmailLabel;
+
+  /// No description provided for @authPasswordLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort'**
+  String get authPasswordLabel;
+
+  /// No description provided for @authLoginButton.
+  ///
+  /// In de, this message translates to:
+  /// **'Login'**
+  String get authLoginButton;
+
+  /// No description provided for @authRegisterButton.
+  ///
+  /// In de, this message translates to:
+  /// **'Registrieren'**
+  String get authRegisterButton;
+
+  /// No description provided for @authHaveAccount.
+  ///
+  /// In de, this message translates to:
+  /// **'Ich habe schon einen Account'**
+  String get authHaveAccount;
+
+  /// No description provided for @authNoAccount.
+  ///
+  /// In de, this message translates to:
+  /// **'Registrieren'**
+  String get authNoAccount;
+
+  /// No description provided for @authLoading.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade...'**
+  String get authLoading;
+
+  /// No description provided for @authError.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehler: {message}'**
+  String authError(String message);
+
+  /// No description provided for @authSuccessVerify.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte bestätige deine E-Mail!'**
+  String get authSuccessVerify;
 }
 
 class _AppLocalizationsDelegate
