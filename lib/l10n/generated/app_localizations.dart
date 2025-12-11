@@ -169,6 +169,246 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'{count} Tage in Folge! Weiter so! 🔥'**
   String streakMessage(int count);
+
+  /// No description provided for @settings.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstellungen'**
+  String get settings;
+
+  /// No description provided for @language.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprache'**
+  String get language;
+
+  /// No description provided for @becomePro.
+  ///
+  /// In de, this message translates to:
+  /// **'Pro werden'**
+  String get becomePro;
+
+  /// No description provided for @manageSub.
+  ///
+  /// In de, this message translates to:
+  /// **'Abo verwalten'**
+  String get manageSub;
+
+  /// No description provided for @contactSupport.
+  ///
+  /// In de, this message translates to:
+  /// **'Support kontaktieren'**
+  String get contactSupport;
+
+  /// No description provided for @logout.
+  ///
+  /// In de, this message translates to:
+  /// **'Abmelden'**
+  String get logout;
+
+  /// No description provided for @version.
+  ///
+  /// In de, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @proMember.
+  ///
+  /// In de, this message translates to:
+  /// **'PRO MITGLIED'**
+  String get proMember;
+
+  /// No description provided for @freeUser.
+  ///
+  /// In de, this message translates to:
+  /// **'FREE USER'**
+  String get freeUser;
+
+  /// No description provided for @achievements.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Erfolge'**
+  String get achievements;
+
+  /// No description provided for @badgeStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Aller Anfang'**
+  String get badgeStart;
+
+  /// No description provided for @badgeStartDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Der erste Eintrag.'**
+  String get badgeStartDesc;
+
+  /// No description provided for @badgeStreak.
+  ///
+  /// In de, this message translates to:
+  /// **'Dranbleiber'**
+  String get badgeStreak;
+
+  /// No description provided for @badgeStreakDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'An 7 verschiedenen Tagen getrackt.'**
+  String get badgeStreakDesc;
+
+  /// No description provided for @badgeWeekend.
+  ///
+  /// In de, this message translates to:
+  /// **'Wochenend-Held'**
+  String get badgeWeekend;
+
+  /// No description provided for @badgeWeekendDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'10 Einträge am Wochenende.'**
+  String get badgeWeekendDesc;
+
+  /// No description provided for @badgeVeteran.
+  ///
+  /// In de, this message translates to:
+  /// **'Veteran'**
+  String get badgeVeteran;
+
+  /// No description provided for @badgeVeteranDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'100 Einträge insgesamt.'**
+  String get badgeVeteranDesc;
+
+  /// No description provided for @badgeNightOwl.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachteule'**
+  String get badgeNightOwl;
+
+  /// No description provided for @badgeNightOwlDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'20x spät abends getrackt.'**
+  String get badgeNightOwlDesc;
+
+  /// No description provided for @badgeSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlaf-Wächter'**
+  String get badgeSleep;
+
+  /// No description provided for @badgeSleepDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'30x Schlaf protokolliert.'**
+  String get badgeSleepDesc;
+
+  /// No description provided for @badgeJournal.
+  ///
+  /// In de, this message translates to:
+  /// **'Tagebuch'**
+  String get badgeJournal;
+
+  /// No description provided for @badgeJournalDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'50 ausführliche Notizen.'**
+  String get badgeJournalDesc;
+
+  /// No description provided for @badgeContext.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontext-Profi'**
+  String get badgeContext;
+
+  /// No description provided for @badgeContextDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'20 Einträge mit vielen Tags.'**
+  String get badgeContextDesc;
+
+  /// No description provided for @badgeOptimist.
+  ///
+  /// In de, this message translates to:
+  /// **'Optimist'**
+  String get badgeOptimist;
+
+  /// No description provided for @badgeOptimistDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'50x sehr gute Laune (8+).'**
+  String get badgeOptimistDesc;
+
+  /// No description provided for @inputHowAreYou.
+  ///
+  /// In de, this message translates to:
+  /// **'Wie geht es dir?'**
+  String get inputHowAreYou;
+
+  /// No description provided for @inputSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlaf erfassen'**
+  String get inputSleep;
+
+  /// No description provided for @inputNoteHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Notiz hinzufügen...'**
+  String get inputNoteHint;
+
+  /// No description provided for @inputNoTags.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Tags gewählt'**
+  String get inputNoTags;
+
+  /// No description provided for @inputAddTag.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag hinzufügen'**
+  String get inputAddTag;
+
+  /// No description provided for @inputEdit.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag bearbeiten'**
+  String get inputEdit;
+
+  /// No description provided for @statsAnalysis.
+  ///
+  /// In de, this message translates to:
+  /// **'Woche analysieren'**
+  String get statsAnalysis;
+
+  /// No description provided for @statsAnalysisWait.
+  ///
+  /// In de, this message translates to:
+  /// **'Analysiere...'**
+  String get statsAnalysisWait;
+
+  /// No description provided for @statsAnalysisError.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehler bei Analyse'**
+  String get statsAnalysisError;
+
+  /// No description provided for @statsChartTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimmung & Schlaf'**
+  String get statsChartTitle;
+
+  /// No description provided for @statsMood.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimmung'**
+  String get statsMood;
+
+  /// No description provided for @statsSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlaf'**
+  String get statsSleep;
 }
 
 class _AppLocalizationsDelegate

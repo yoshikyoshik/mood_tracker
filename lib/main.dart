@@ -1,68 +1,117 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'theme/app_theme.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
-
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/generated/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Wichtig für Speicher
 
-// Wir importieren nur noch den "AuthGate" Screen, 
-// alles andere ist hinter den Kulissen versteckt.
 import 'screens/auth_gate.dart';
 
+// Import für die Lokalisierung (Plan B Pfad)
+import 'l10n/generated/app_localizations.dart';
+
+import 'screens/mood_tracker_screen.dart';
+import 'theme/app_theme.dart';
+
 Future<void> main() async {
-  // Bindung initialisieren, damit wir den Splash kontrollieren können
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   
-  // Splash Screen "festhalten" bis wir sagen: "Weg damit!"
+  // Splash Screen aktivieren
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // --- HIER DEINE SUPABASE INIT DATEN EINFÜGEN ---
 
   await Supabase.initialize(
     // URL und Key hier einfügen:
     url: 'https://kbskcoyhqsnzoasntqlk.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtic2tjb3locXNuem9hc250cWxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NDc5MTEsImV4cCI6MjA4MDQyMzkxMX0.V8iEnHCb7PF3vFhY5ULUL5rbE0M_U73GYkV267BHKK0',
   );
+// 2. Datum-Formate laden (OHNE await, damit es nicht blockiert, falls Netzwerk langsam ist)
+  // Oder wir setzen es in ein try-catch
+  try {
+      await initializeDateFormatting('de_DE', null);
+  } catch (e) {
+      debugPrint("Fehler beim Laden der Datumsformate: $e");
+  }
 
-  runApp(const MoodApp());
+  runApp(const MyApp());
 
-  // --- FIX: DAS SICHERHEITSNETZ ---
-  // Wir entfernen den Splash-Screen nach 2 Sekunden automatisch.
-  // Das stellt sicher, dass man auch den Login-Screen sieht, 
-  // falls man nicht direkt auf den MoodTracker kommt.
-  Future.delayed(const Duration(seconds: 2), () {
-    debugPrint("⏰ Main Timeout: Splash Screen entfernt.");
+  // 3. BRUTALES SICHERHEITSNETZ
+  // Wir entfernen den Splash Screen nach 1 Sekunde, egal was passiert.
+  // Damit wir sehen, ob die App weiß bleibt oder einen Fehler wirft.
+  Future.delayed(const Duration(milliseconds: 500), () {
+    debugPrint("🚀 FORCED REMOVE: Splash Screen entfernt.");
     FlutterNativeSplash.remove();
   });
-
 }
 
-class MoodApp extends StatelessWidget {
-  const MoodApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  // Statische Methode, damit wir von überall die Sprache ändern können
+  static void setLocale(BuildContext context, Locale newLocale) {
+    _MyAppState state = context.findAncestorStateOfType<_MyAppState>()!;
+    state.setLocale(newLocale);
+  }
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Locale? _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? languageCode = prefs.getString('language_code');
+    if (languageCode != null) {
+      setState(() {
+        _locale = Locale(languageCode);
+      });
+    }
+  }
+
+  void setLocale(Locale newLocale) async {
+    setState(() {
+      _locale = newLocale;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', newLocale.languageCode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-  title: 'LuvioSphere', // Hier noch hardcoded Fallback
-  debugShowCheckedModeBanner: false,
-  theme: AppTheme.lightTheme,
+      title: 'LuvioSphere',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      
+      // Hier wird die Sprache gesetzt (oder null für System-Standard)
+      locale: _locale,
 
-  // --- NEUE LOKALISIERUNG ---
-  localizationsDelegates: [
-    AppLocalizations.delegate, // Unsere eigenen Texte
-    GlobalMaterialLocalizations.delegate, // Flutter Standard-Texte (Datumswähler, etc.)
-    GlobalWidgetsLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-  ],
-  supportedLocales: const [
-    Locale('de'), // Deutsch
-    Locale('en'), // Englisch
-    Locale('ru'), // Russisch
-    Locale('es'), // Spanisch
-    Locale('zh'), // Chinesisch
-  ],
-  // --------------------------
-
-  home: const AuthGate(),
-);
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('de'), // Deutsch
+        Locale('en'), // Englisch
+        Locale('ru'), // Russisch
+        Locale('es'), // Spanisch
+        Locale('zh'), // Chinesisch
+      ],
+      // Wir prüfen direkt beim Start: Ist jemand da?
+home: Supabase.instance.client.auth.currentUser == null 
+    ? const AuthGate() // Oder wie dein Login-Screen heißt
+    : const MoodTrackerScreen(),
+    );
   }
 }

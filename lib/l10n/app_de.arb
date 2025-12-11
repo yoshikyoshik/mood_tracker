@@ -10,11 +10,49 @@
   "delete": "Löschen",
   "edit": "Bearbeiten",
   "streakMessage": "{count} Tage in Folge! Weiter so! 🔥",
-  "@streakMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  }
+  "@streakMessage": { "placeholders": { "count": { "type": "int" } } },
+  
+  "settings": "Einstellungen",
+  "language": "Sprache",
+  "becomePro": "Pro werden",
+  "manageSub": "Abo verwalten",
+  "contactSupport": "Support kontaktieren",
+  "logout": "Abmelden",
+  "version": "Version",
+  "proMember": "PRO MITGLIED",
+  "freeUser": "FREE USER",
+
+  "achievements": "Deine Erfolge",
+  "badgeStart": "Aller Anfang",
+  "badgeStartDesc": "Der erste Eintrag.",
+  "badgeStreak": "Dranbleiber",
+  "badgeStreakDesc": "An 7 verschiedenen Tagen getrackt.",
+  "badgeWeekend": "Wochenend-Held",
+  "badgeWeekendDesc": "10 Einträge am Wochenende.",
+  "badgeVeteran": "Veteran",
+  "badgeVeteranDesc": "100 Einträge insgesamt.",
+  "badgeNightOwl": "Nachteule",
+  "badgeNightOwlDesc": "20x spät abends getrackt.",
+  "badgeSleep": "Schlaf-Wächter",
+  "badgeSleepDesc": "30x Schlaf protokolliert.",
+  "badgeJournal": "Tagebuch",
+  "badgeJournalDesc": "50 ausführliche Notizen.",
+  "badgeContext": "Kontext-Profi",
+  "badgeContextDesc": "20 Einträge mit vielen Tags.",
+  "badgeOptimist": "Optimist",
+  "badgeOptimistDesc": "50x sehr gute Laune (8+).",
+
+  "inputHowAreYou": "Wie geht es dir?",
+  "inputSleep": "Schlaf erfassen",
+  "inputNoteHint": "Notiz hinzufügen...",
+  "inputNoTags": "Keine Tags gewählt",
+  "inputAddTag": "Tag hinzufügen",
+  "inputEdit": "Tag bearbeiten",
+  
+  "statsAnalysis": "Woche analysieren",
+  "statsAnalysisWait": "Analysiere...",
+  "statsAnalysisError": "Fehler bei Analyse",
+  "statsChartTitle": "Stimmung & Schlaf",
+  "statsMood": "Stimmung",
+  "statsSleep": "Schlaf"
 }
