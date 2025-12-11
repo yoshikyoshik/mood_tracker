@@ -13,6 +13,7 @@ class ProfileView extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback onManageSubscription;
   final VoidCallback onContactSupport;
+  final VoidCallback onStartTutorial;
 
   const ProfileView({
     super.key,
@@ -24,6 +25,7 @@ class ProfileView extends StatelessWidget {
     required this.onLogout,
     required this.onManageSubscription,
     required this.onContactSupport,
+    required this.onStartTutorial,
   });
 
   // --- NEU: SPRACH-DIALOG ---
@@ -325,6 +327,15 @@ class ProfileView extends StatelessWidget {
             title: Text(l10n.language),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showLanguageDialog(context),
+          ),
+          const Divider(height: 1),
+
+          // TUTORIAL STARTEN (NEU)
+          ListTile(
+            leading: const Icon(Icons.help_outline, color: Colors.indigo),
+            title: Text(l10n.tutorialStart), // "Tutorial starten"
+            trailing: const Icon(Icons.play_circle_outline, size: 20, color: Colors.indigo),
+            onTap: onStartTutorial, // Ruft den Callback auf
           ),
           const Divider(height: 1),
 

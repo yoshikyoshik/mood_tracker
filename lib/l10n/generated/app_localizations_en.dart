@@ -490,4 +490,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutorialProfileDesc =>
       'Manage your data, settings, and exports here.';
+
+  @override
+  String get tutorialStart => 'Start Tutorial';
 }

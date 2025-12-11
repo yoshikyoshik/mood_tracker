@@ -420,6 +420,21 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                             isPro: _isPro,
                             onLogout: _signOut,
                             onManageSubscription: _isPro ? _openCustomerPortal : _startCheckout,
+                            // NEU HINZUFÜGEN:
+                            onStartTutorial: () async {
+                              // 1. Tab wechseln
+                              setState(() => _selectedIndex = 0);
+                              
+                              // 2. Warten (await)
+                              await Future.delayed(const Duration(milliseconds: 300));
+                              
+                              // 3. Sicherheitscheck: Ist der Context noch da?
+                              if (!context.mounted) return;
+
+                              // 4. Tutorial starten
+                              // ignore: deprecated_member_use
+                              ShowCaseWidget.of(context).startShowCase([_one, _two, _three, _four]);
+                            },
                             onContactSupport: () {
                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.contactSupport)));
                             },

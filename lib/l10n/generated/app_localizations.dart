@@ -1027,6 +1027,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Verwalte hier deine Daten, Einstellungen und Export-Funktionen.'**
   String get tutorialProfileDesc;
+
+  /// No description provided for @tutorialStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Tutorial starten'**
+  String get tutorialStart;
 }
 
 class _AppLocalizationsDelegate
