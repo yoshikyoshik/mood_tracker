@@ -165,5 +165,18 @@
   "authLoading": "Lade...",
   "authError": "Fehler: {message}",
   "@authError": { "placeholders": { "message": { "type": "String" } } },
-  "authSuccessVerify": "Bitte bestätige deine E-Mail!"
+  "authSuccessVerify": "Bitte bestätige deine E-Mail!",
+
+  "legal": "Rechtliches",
+  "imprint": "Impressum",
+  "privacy": "Datenschutz",
+
+  "tutorialMoodTitle": "Deine Stimmung",
+  "tutorialMoodDesc": "Bewege den Slider, um festzuhalten, wie du dich fühlst.",
+  "tutorialSaveTitle": "Speichern",
+  "tutorialSaveDesc": "Tippe hier, um deinen Eintrag in das Tagebuch zu schreiben.",
+  "tutorialStatsTitle": "Deine Erkenntnisse",
+  "tutorialStatsDesc": "Hier siehst du Charts und Muster zu deiner Stimmung.",
+  "tutorialProfileTitle": "Dein Profil",
+  "tutorialProfileDesc": "Verwalte hier deine Daten, Einstellungen und Export-Funktionen."
 }

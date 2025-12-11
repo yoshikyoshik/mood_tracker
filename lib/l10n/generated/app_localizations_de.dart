@@ -455,4 +455,41 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authSuccessVerify => 'Bitte bestätige deine E-Mail!';
+
+  @override
+  String get legal => 'Rechtliches';
+
+  @override
+  String get imprint => 'Impressum';
+
+  @override
+  String get privacy => 'Datenschutz';
+
+  @override
+  String get tutorialMoodTitle => 'Deine Stimmung';
+
+  @override
+  String get tutorialMoodDesc =>
+      'Bewege den Slider, um festzuhalten, wie du dich fühlst.';
+
+  @override
+  String get tutorialSaveTitle => 'Speichern';
+
+  @override
+  String get tutorialSaveDesc =>
+      'Tippe hier, um deinen Eintrag in das Tagebuch zu schreiben.';
+
+  @override
+  String get tutorialStatsTitle => 'Deine Erkenntnisse';
+
+  @override
+  String get tutorialStatsDesc =>
+      'Hier siehst du Charts und Muster zu deiner Stimmung.';
+
+  @override
+  String get tutorialProfileTitle => 'Dein Profil';
+
+  @override
+  String get tutorialProfileDesc =>
+      'Verwalte hier deine Daten, Einstellungen und Export-Funktionen.';
 }

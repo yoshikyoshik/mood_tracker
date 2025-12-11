@@ -12,372 +12,372 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appTitle => 'LuvioSphere';
 
   @override
-  String get today => 'Today';
+  String get today => 'Hoy';
 
   @override
-  String get moodEntry => 'Entry';
+  String get moodEntry => 'Entrada';
 
   @override
-  String get statistics => 'Statistics';
+  String get statistics => 'Estadísticas';
 
   @override
-  String get profile => 'Profile';
+  String get profile => 'Perfil';
 
   @override
-  String get newProfile => 'New...';
+  String get newProfile => 'Nuevo...';
 
   @override
-  String get save => 'Save';
+  String get save => 'Guardar';
 
   @override
-  String get cancel => 'Cancel';
+  String get cancel => 'Cancelar';
 
   @override
-  String get delete => 'Delete';
+  String get delete => 'Eliminar';
 
   @override
-  String get edit => 'Edit';
+  String get edit => 'Editar';
 
   @override
   String streakMessage(int count) {
-    return '$count day streak! Keep it up! 🔥';
+    return '¡Racha de $count días! ¡Sigue así! 🔥';
   }
 
   @override
-  String get settings => 'Settings';
+  String get settings => 'Ajustes';
 
   @override
-  String get language => 'Language';
+  String get language => 'Idioma';
 
   @override
-  String get becomePro => 'Become Pro';
+  String get becomePro => 'Hazte Pro';
 
   @override
-  String get manageSub => 'Manage Subscription';
+  String get manageSub => 'Gestionar suscripción';
 
   @override
-  String get contactSupport => 'Contact Support';
+  String get contactSupport => 'Contactar soporte';
 
   @override
-  String get logout => 'Logout';
+  String get logout => 'Cerrar sesión';
 
   @override
-  String get version => 'Version';
+  String get version => 'Versión';
 
   @override
-  String get proMember => 'PRO MEMBER';
+  String get proMember => 'MIEMBRO PRO';
 
   @override
-  String get freeUser => 'FREE USER';
+  String get freeUser => 'USUARIO GRATUITO';
 
   @override
-  String get achievements => 'Your Achievements';
+  String get achievements => 'Tus logros';
 
   @override
-  String get badgeStart => 'The Beginning';
+  String get badgeStart => 'El comienzo';
 
   @override
-  String get badgeStartDesc => 'Your first entry.';
+  String get badgeStartDesc => 'Tu primera entrada.';
 
   @override
-  String get badgeStreak => 'Consistent';
+  String get badgeStreak => 'Constante';
 
   @override
-  String get badgeStreakDesc => 'Tracked on 7 different days.';
+  String get badgeStreakDesc => 'Registrado en 7 días diferentes.';
 
   @override
-  String get badgeWeekend => 'Weekend Hero';
+  String get badgeWeekend => 'Héroe de fin de semana';
 
   @override
-  String get badgeWeekendDesc => '10 entries on weekends.';
+  String get badgeWeekendDesc => '10 entradas en fines de semana.';
 
   @override
-  String get badgeVeteran => 'Veteran';
+  String get badgeVeteran => 'Veterano';
 
   @override
-  String get badgeVeteranDesc => '100 entries in total.';
+  String get badgeVeteranDesc => '100 entradas en total.';
 
   @override
-  String get badgeNightOwl => 'Night Owl';
+  String get badgeNightOwl => 'Noctámbulo';
 
   @override
-  String get badgeNightOwlDesc => '20 entries late at night.';
+  String get badgeNightOwlDesc => '20 entradas tarde en la noche.';
 
   @override
-  String get badgeSleep => 'Sleep Guardian';
+  String get badgeSleep => 'Guardián del sueño';
 
   @override
-  String get badgeSleepDesc => 'Logged sleep 30 times.';
+  String get badgeSleepDesc => 'Sueño registrado 30 veces.';
 
   @override
-  String get badgeJournal => 'Journalist';
+  String get badgeJournal => 'Periodista';
 
   @override
-  String get badgeJournalDesc => '50 detailed notes written.';
+  String get badgeJournalDesc => '50 notas detalladas escritas.';
 
   @override
-  String get badgeContext => 'Context Pro';
+  String get badgeContext => 'Pro del contexto';
 
   @override
-  String get badgeContextDesc => '20 entries with many tags.';
+  String get badgeContextDesc => '20 entradas con muchas etiquetas.';
 
   @override
-  String get badgeOptimist => 'Optimist';
+  String get badgeOptimist => 'Optimista';
 
   @override
-  String get badgeOptimistDesc => '50x very good mood (8+).';
+  String get badgeOptimistDesc => '50x estado de ánimo muy bueno (8+).';
 
   @override
-  String get inputHowAreYou => 'How are you?';
+  String get inputHowAreYou => '¿Cómo estás?';
 
   @override
-  String get inputSleep => 'Track Sleep';
+  String get inputSleep => 'Registrar sueño';
 
   @override
-  String get inputNoteHint => 'Add a note...';
+  String get inputNoteHint => 'Añadir nota...';
 
   @override
-  String get inputNoTags => 'No tags selected';
+  String get inputNoTags => 'Sin etiquetas';
 
   @override
-  String get inputAddTag => 'Add Tag';
+  String get inputAddTag => 'Añadir etiqueta';
 
   @override
-  String get inputEdit => 'Edit Tag';
+  String get inputEdit => 'Editar etiqueta';
 
   @override
-  String get statsAnalysis => 'Analyze Week';
+  String get statsAnalysis => 'Analizar semana';
 
   @override
-  String get statsAnalysisWait => 'Analyzing...';
+  String get statsAnalysisWait => 'Analizando...';
 
   @override
-  String get statsAnalysisError => 'Analysis Error';
+  String get statsAnalysisError => 'Error de análisis';
 
   @override
-  String get statsChartTitle => 'Mood & Sleep';
+  String get statsChartTitle => 'Ánimo y Sueño';
 
   @override
-  String get statsMood => 'Mood';
+  String get statsMood => 'Ánimo';
 
   @override
-  String get statsSleep => 'Sleep';
+  String get statsSleep => 'Sueño';
 
   @override
   String get inputMoodTerrible => 'Terrible';
 
   @override
-  String get inputMoodBad => 'Bad';
+  String get inputMoodBad => 'Mal';
 
   @override
-  String get inputMoodOkay => 'Okay';
+  String get inputMoodOkay => 'Regular';
 
   @override
-  String get inputMoodGood => 'Good';
+  String get inputMoodGood => 'Bien';
 
   @override
-  String get inputMoodFantastic => 'Fantastic';
+  String get inputMoodFantastic => 'Fantástico';
 
   @override
-  String get dialogNewProfileTitle => 'Create New Profile';
+  String get dialogNewProfileTitle => 'Crear nuevo perfil';
 
   @override
-  String get dialogEditProfileTitle => 'Edit Profile';
+  String get dialogEditProfileTitle => 'Editar perfil';
 
   @override
-  String get dialogNameLabel => 'Name';
+  String get dialogNameLabel => 'Nombre';
 
   @override
-  String get dialogCycleTracking => 'Track Cycle';
+  String get dialogCycleTracking => 'Seguimiento del ciclo';
 
   @override
-  String get dialogCycleDesc => 'Calculates cycle days';
+  String get dialogCycleDesc => 'Calcula los días del ciclo';
 
   @override
-  String get dialogPeriodStart => 'Start of last period';
+  String get dialogPeriodStart => 'Inicio del último periodo';
 
   @override
-  String get dialogSelectDate => 'Select Date';
+  String get dialogSelectDate => 'Seleccionar fecha';
 
   @override
-  String get dialogAdd => 'Add';
+  String get dialogAdd => 'Añadir';
 
   @override
-  String get dialogMoveCategory => 'Move Category';
+  String get dialogMoveCategory => 'Mover categoría';
 
   @override
-  String get dialogRenameTag => 'Rename tag';
+  String get dialogRenameTag => 'Renombrar etiqueta';
 
   @override
   String dialogDeleteTagTitle(String tag) {
-    return 'Delete tag \'$tag\'?';
+    return '¿Eliminar etiqueta \'$tag\'?';
   }
 
   @override
   String get dialogDeleteTagContent =>
-      'This tag will be removed from selection.';
+      'Esta etiqueta se eliminará de la selección.';
 
   @override
   String dialogEditTagTitle(String tag) {
-    return 'Options for \'$tag\'';
+    return 'Opciones para \'$tag\'';
   }
 
   @override
-  String get statsYearly => 'Yearly Overview';
+  String get statsYearly => 'Resumen anual';
 
   @override
-  String get statsNoData => 'No data yet.';
+  String get statsNoData => 'Aún no hay datos.';
 
   @override
-  String get statsPatternDay => 'Patterns by Weekday';
+  String get statsPatternDay => 'Patrones por día';
 
   @override
-  String get statsInsights => 'Influencing Factors';
+  String get statsInsights => 'Factores influyentes';
 
   @override
-  String get statsAiIntro => 'Let AI analyze your week.';
+  String get statsAiIntro => 'Deja que la IA analice tu semana.';
 
   @override
-  String get statsAiButton => 'Analyze Week';
+  String get statsAiButton => 'Analizar semana';
 
   @override
-  String get statsAiButtonUpdate => 'Update Analysis';
+  String get statsAiButtonUpdate => 'Actualizar análisis';
 
   @override
-  String get statsTrendTitle => 'Forecast for tomorrow';
+  String get statsTrendTitle => 'Pronóstico para mañana';
 
   @override
-  String get statsTrendGood => 'Good Outlook! ☀️';
+  String get statsTrendGood => '¡Buen panorama! ☀️';
 
   @override
-  String get statsTrendNormal => 'Solid Day Ahead 🌱';
+  String get statsTrendNormal => 'Día sólido por delante 🌱';
 
   @override
-  String get statsTrendBad => 'Stay Mindful 💜';
+  String get statsTrendBad => 'Sé consciente 💜';
 
   @override
   String get categorySocial => 'Social';
 
   @override
-  String get categoryBodyMind => 'Body & Mind';
+  String get categoryBodyMind => 'Cuerpo y Mente';
 
   @override
-  String get categoryObligations => 'Obligations';
+  String get categoryObligations => 'Obligaciones';
 
   @override
-  String get categoryLeisure => 'Leisure & Environment';
+  String get categoryLeisure => 'Ocio y Entorno';
 
   @override
-  String get categoryCycle => 'Cycle & Body';
+  String get categoryCycle => 'Ciclo y Cuerpo';
 
   @override
-  String get categoryOther => 'Other';
+  String get categoryOther => 'Otros';
 
   @override
-  String get tagFamily => 'Family';
+  String get tagFamily => 'Familia';
 
   @override
-  String get tagRelationship => 'Relationship';
+  String get tagRelationship => 'Pareja';
 
   @override
-  String get tagFriends => 'Friends';
+  String get tagFriends => 'Amigos';
 
   @override
-  String get tagParty => 'Party';
+  String get tagParty => 'Fiesta';
 
   @override
-  String get tagSport => 'Sports';
+  String get tagSport => 'Deporte';
 
   @override
-  String get tagSleep => 'Sleep';
+  String get tagSleep => 'Sueño';
 
   @override
-  String get tagFood => 'Food';
+  String get tagFood => 'Comida';
 
   @override
-  String get tagHealth => 'Health';
+  String get tagHealth => 'Salud';
 
   @override
-  String get tagMeditation => 'Meditation';
+  String get tagMeditation => 'Meditación';
 
   @override
-  String get tagWork => 'Work';
+  String get tagWork => 'Trabajo';
 
   @override
-  String get tagSchool => 'School';
+  String get tagSchool => 'Escuela';
 
   @override
-  String get tagHomework => 'Homework';
+  String get tagHomework => 'Tareas';
 
   @override
-  String get tagUni => 'University';
+  String get tagUni => 'Uni';
 
   @override
-  String get tagHousehold => 'Household';
+  String get tagHousehold => 'Hogar';
 
   @override
   String get tagHobby => 'Hobby';
 
   @override
-  String get tagTravel => 'Travel';
+  String get tagTravel => 'Viajes';
 
   @override
-  String get tagWeather => 'Weather';
+  String get tagWeather => 'Clima';
 
   @override
   String get tagGaming => 'Gaming';
 
   @override
-  String get tagReading => 'Reading';
+  String get tagReading => 'Lectura';
 
   @override
-  String get tagMusic => 'Music';
+  String get tagMusic => 'Música';
 
   @override
-  String get tagPeriodLight => 'Period (Light)';
+  String get tagPeriodLight => 'Periodo (Leve)';
 
   @override
-  String get tagPeriodMedium => 'Period (Medium)';
+  String get tagPeriodMedium => 'Periodo (Medio)';
 
   @override
-  String get tagPeriodHeavy => 'Period (Heavy)';
+  String get tagPeriodHeavy => 'Periodo (Fuerte)';
 
   @override
-  String get tagSpotting => 'Spotting';
+  String get tagSpotting => 'Manchado';
 
   @override
-  String get tagCramps => 'Cramps';
+  String get tagCramps => 'Cólicos';
 
   @override
-  String get tagPMS => 'PMS';
+  String get tagPMS => 'SPM';
 
   @override
-  String get tagOvulation => 'Ovulation';
+  String get tagOvulation => 'Ovulación';
 
   @override
-  String get unknownProfile => 'Unknown';
+  String get unknownProfile => 'Desconocido';
 
   @override
-  String get btnSelect => 'SELECT';
+  String get btnSelect => 'SELECCIONAR';
 
   @override
-  String get maybeLater => 'Maybe later';
+  String get maybeLater => 'Quizás más tarde';
 
   @override
-  String get premiumTeaserTitle => 'Multiple Profiles';
+  String get premiumTeaserTitle => 'Varios perfiles';
 
   @override
   String get premiumTeaserMessage =>
-      'In the free version, you have one profile.\nDo you want to add profiles for partners, children, or pets?';
+      'En la versión gratuita tienes un perfil.\n¿Quieres añadir perfiles para tu pareja, hijos o mascotas?';
 
   @override
-  String get snackSaved => 'Saved';
+  String get snackSaved => 'Guardado';
 
   @override
-  String get snackDeleted => 'Deleted';
+  String get snackDeleted => 'Eliminado';
 
   @override
-  String get snackTagDeleted => 'Tag deleted';
+  String get snackTagDeleted => 'Etiqueta eliminada';
 
   @override
   String snackError(String error) {
@@ -385,67 +385,67 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dialogNewTagName => 'New name';
+  String get dialogNewTagName => 'Nuevo nombre';
 
   @override
-  String get dialogNewTagPlaceholder => 'Name (e.g. Yoga)';
+  String get dialogNewTagPlaceholder => 'Nombre (ej. Yoga)';
 
   @override
-  String get labelCategory => 'Category';
+  String get labelCategory => 'Categoría';
 
   @override
-  String get labelDescription => 'Description';
+  String get labelDescription => 'Descripción';
 
   @override
   String predTextGood(String day, String score) {
-    return 'Tomorrow is $day. Your data and environment suggest a strong day ahead (Ø $score).';
+    return 'Mañana es $day. Tus datos y entorno sugieren un día fuerte por delante (Ø $score).';
   }
 
   @override
   String predTextBad(String day, String score) {
-    return 'For $day, data predicts slightly lower energy levels (Ø $score).';
+    return 'Para el $day, los datos predicen niveles de energía un poco más bajos (Ø $score).';
   }
 
   @override
   String predTextNormal(String day, String score) {
-    return 'The forecast for $day is balanced (Ø $score).';
+    return 'El pronóstico para el $day es equilibrado (Ø $score).';
   }
 
   @override
-  String get tipSleep => 'Tip: Go to sleep earlier today.';
+  String get tipSleep => 'Consejo: Ve a dormir más temprano hoy.';
 
   @override
-  String get tipFamilyBad => 'Household vibes were tense recently.';
+  String get tipFamilyBad => 'El ambiente en casa ha estado tenso últimamente.';
 
   @override
-  String get tipFamilyGood => 'Positive household vibes give you a boost!';
+  String get tipFamilyGood => '¡El buen ambiente en casa te da impulso!';
 
   @override
-  String get authLoginTitle => 'Welcome back';
+  String get authLoginTitle => 'Bienvenido de nuevo';
 
   @override
-  String get authRegisterTitle => 'Create new account';
+  String get authRegisterTitle => 'Crear cuenta nueva';
 
   @override
-  String get authEmailLabel => 'E-Mail';
+  String get authEmailLabel => 'Correo electrónico';
 
   @override
-  String get authPasswordLabel => 'Password';
+  String get authPasswordLabel => 'Contraseña';
 
   @override
-  String get authLoginButton => 'Login';
+  String get authLoginButton => 'Iniciar sesión';
 
   @override
-  String get authRegisterButton => 'Register';
+  String get authRegisterButton => 'Registrarse';
 
   @override
-  String get authHaveAccount => 'I already have an account';
+  String get authHaveAccount => 'Ya tengo una cuenta';
 
   @override
-  String get authNoAccount => 'Register';
+  String get authNoAccount => 'Registrarse';
 
   @override
-  String get authLoading => 'Loading...';
+  String get authLoading => 'Cargando...';
 
   @override
   String authError(String message) {
@@ -453,5 +453,41 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get authSuccessVerify => 'Please verify your email!';
+  String get authSuccessVerify => '¡Por favor verifica tu correo!';
+
+  @override
+  String get legal => 'Legal';
+
+  @override
+  String get imprint => 'Imprint';
+
+  @override
+  String get privacy => 'Privacy Policy';
+
+  @override
+  String get tutorialMoodTitle => 'Your Mood';
+
+  @override
+  String get tutorialMoodDesc =>
+      'Move the slider to capture how you feel right now.';
+
+  @override
+  String get tutorialSaveTitle => 'Save Entry';
+
+  @override
+  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+
+  @override
+  String get tutorialStatsTitle => 'Your Insights';
+
+  @override
+  String get tutorialStatsDesc =>
+      'Discover charts and patterns about your mood here.';
+
+  @override
+  String get tutorialProfileTitle => 'Your Profile';
+
+  @override
+  String get tutorialProfileDesc =>
+      'Manage your data, settings, and exports here.';
 }

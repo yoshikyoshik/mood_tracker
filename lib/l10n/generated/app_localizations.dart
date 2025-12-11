@@ -961,6 +961,72 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Bitte bestätige deine E-Mail!'**
   String get authSuccessVerify;
+
+  /// No description provided for @legal.
+  ///
+  /// In de, this message translates to:
+  /// **'Rechtliches'**
+  String get legal;
+
+  /// No description provided for @imprint.
+  ///
+  /// In de, this message translates to:
+  /// **'Impressum'**
+  String get imprint;
+
+  /// No description provided for @privacy.
+  ///
+  /// In de, this message translates to:
+  /// **'Datenschutz'**
+  String get privacy;
+
+  /// No description provided for @tutorialMoodTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Stimmung'**
+  String get tutorialMoodTitle;
+
+  /// No description provided for @tutorialMoodDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Bewege den Slider, um festzuhalten, wie du dich fühlst.'**
+  String get tutorialMoodDesc;
+
+  /// No description provided for @tutorialSaveTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get tutorialSaveTitle;
+
+  /// No description provided for @tutorialSaveDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Tippe hier, um deinen Eintrag in das Tagebuch zu schreiben.'**
+  String get tutorialSaveDesc;
+
+  /// No description provided for @tutorialStatsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Erkenntnisse'**
+  String get tutorialStatsTitle;
+
+  /// No description provided for @tutorialStatsDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier siehst du Charts und Muster zu deiner Stimmung.'**
+  String get tutorialStatsDesc;
+
+  /// No description provided for @tutorialProfileTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Profil'**
+  String get tutorialProfileTitle;
+
+  /// No description provided for @tutorialProfileDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwalte hier deine Daten, Einstellungen und Export-Funktionen.'**
+  String get tutorialProfileDesc;
 }
 
 class _AppLocalizationsDelegate

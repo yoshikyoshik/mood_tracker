@@ -12,446 +12,481 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appTitle => 'LuvioSphere';
 
   @override
-  String get today => 'Today';
+  String get today => 'Сегодня';
 
   @override
-  String get moodEntry => 'Entry';
+  String get moodEntry => 'Запись';
 
   @override
-  String get statistics => 'Statistics';
+  String get statistics => 'Статистика';
 
   @override
-  String get profile => 'Profile';
+  String get profile => 'Профиль';
 
   @override
-  String get newProfile => 'New...';
+  String get newProfile => 'Новый...';
 
   @override
-  String get save => 'Save';
+  String get save => 'Сохранить';
 
   @override
-  String get cancel => 'Cancel';
+  String get cancel => 'Отмена';
 
   @override
-  String get delete => 'Delete';
+  String get delete => 'Удалить';
 
   @override
-  String get edit => 'Edit';
+  String get edit => 'Изменить';
 
   @override
   String streakMessage(int count) {
-    return '$count day streak! Keep it up! 🔥';
+    return 'Серия: $count дн.! Так держать! 🔥';
   }
 
   @override
-  String get settings => 'Settings';
+  String get settings => 'Настройки';
 
   @override
-  String get language => 'Language';
+  String get language => 'Язык';
 
   @override
-  String get becomePro => 'Become Pro';
+  String get becomePro => 'Стать Pro';
 
   @override
-  String get manageSub => 'Manage Subscription';
+  String get manageSub => 'Управление подпиской';
 
   @override
-  String get contactSupport => 'Contact Support';
+  String get contactSupport => 'Написать в поддержку';
 
   @override
-  String get logout => 'Logout';
+  String get logout => 'Выйти';
 
   @override
-  String get version => 'Version';
+  String get version => 'Версия';
 
   @override
-  String get proMember => 'PRO MEMBER';
+  String get proMember => 'PRO АККАУНТ';
 
   @override
-  String get freeUser => 'FREE USER';
+  String get freeUser => 'БЕСПЛАТНЫЙ АККАУНТ';
 
   @override
-  String get achievements => 'Your Achievements';
+  String get achievements => 'Твои достижения';
 
   @override
-  String get badgeStart => 'The Beginning';
+  String get badgeStart => 'Начало';
 
   @override
-  String get badgeStartDesc => 'Your first entry.';
+  String get badgeStartDesc => 'Твоя первая запись.';
 
   @override
-  String get badgeStreak => 'Consistent';
+  String get badgeStreak => 'Постоянство';
 
   @override
-  String get badgeStreakDesc => 'Tracked on 7 different days.';
+  String get badgeStreakDesc => 'Записи в 7 разных дней.';
 
   @override
-  String get badgeWeekend => 'Weekend Hero';
+  String get badgeWeekend => 'Герой выходных';
 
   @override
-  String get badgeWeekendDesc => '10 entries on weekends.';
+  String get badgeWeekendDesc => '10 записей в выходные.';
 
   @override
-  String get badgeVeteran => 'Veteran';
+  String get badgeVeteran => 'Ветеран';
 
   @override
-  String get badgeVeteranDesc => '100 entries in total.';
+  String get badgeVeteranDesc => 'Всего 100 записей.';
 
   @override
-  String get badgeNightOwl => 'Night Owl';
+  String get badgeNightOwl => 'Сова';
 
   @override
-  String get badgeNightOwlDesc => '20 entries late at night.';
+  String get badgeNightOwlDesc => '20 записей поздно ночью.';
 
   @override
-  String get badgeSleep => 'Sleep Guardian';
+  String get badgeSleep => 'Хранитель сна';
 
   @override
-  String get badgeSleepDesc => 'Logged sleep 30 times.';
+  String get badgeSleepDesc => 'Сон записан 30 раз.';
 
   @override
-  String get badgeJournal => 'Journalist';
+  String get badgeJournal => 'Журналист';
 
   @override
-  String get badgeJournalDesc => '50 detailed notes written.';
+  String get badgeJournalDesc => '50 подробных заметок.';
 
   @override
-  String get badgeContext => 'Context Pro';
+  String get badgeContext => 'Профи контекста';
 
   @override
-  String get badgeContextDesc => '20 entries with many tags.';
+  String get badgeContextDesc => '20 записей с множеством тегов.';
 
   @override
-  String get badgeOptimist => 'Optimist';
+  String get badgeOptimist => 'Оптимист';
 
   @override
-  String get badgeOptimistDesc => '50x very good mood (8+).';
+  String get badgeOptimistDesc => '50x отл. настроение (8+).';
 
   @override
-  String get inputHowAreYou => 'How are you?';
+  String get inputHowAreYou => 'Как ты?';
 
   @override
-  String get inputSleep => 'Track Sleep';
+  String get inputSleep => 'Записать сон';
 
   @override
-  String get inputNoteHint => 'Add a note...';
+  String get inputNoteHint => 'Добавить заметку...';
 
   @override
-  String get inputNoTags => 'No tags selected';
+  String get inputNoTags => 'Теги не выбраны';
 
   @override
-  String get inputAddTag => 'Add Tag';
+  String get inputAddTag => 'Добавить тег';
 
   @override
-  String get inputEdit => 'Edit Tag';
+  String get inputEdit => 'Изменить тег';
 
   @override
-  String get statsAnalysis => 'Analyze Week';
+  String get statsAnalysis => 'Анализ недели';
 
   @override
-  String get statsAnalysisWait => 'Analyzing...';
+  String get statsAnalysisWait => 'Анализирую...';
 
   @override
-  String get statsAnalysisError => 'Analysis Error';
+  String get statsAnalysisError => 'Ошибка анализа';
 
   @override
-  String get statsChartTitle => 'Mood & Sleep';
+  String get statsChartTitle => 'Настроение и сон';
 
   @override
-  String get statsMood => 'Mood';
+  String get statsMood => 'Настроение';
 
   @override
-  String get statsSleep => 'Sleep';
+  String get statsSleep => 'Сон';
 
   @override
-  String get inputMoodTerrible => 'Terrible';
+  String get inputMoodTerrible => 'Ужасно';
 
   @override
-  String get inputMoodBad => 'Bad';
+  String get inputMoodBad => 'Плохо';
 
   @override
-  String get inputMoodOkay => 'Okay';
+  String get inputMoodOkay => 'Нормально';
 
   @override
-  String get inputMoodGood => 'Good';
+  String get inputMoodGood => 'Хорошо';
 
   @override
-  String get inputMoodFantastic => 'Fantastic';
+  String get inputMoodFantastic => 'Отлично';
 
   @override
-  String get dialogNewProfileTitle => 'Create New Profile';
+  String get dialogNewProfileTitle => 'Создать профиль';
 
   @override
-  String get dialogEditProfileTitle => 'Edit Profile';
+  String get dialogEditProfileTitle => 'Редактировать профиль';
 
   @override
-  String get dialogNameLabel => 'Name';
+  String get dialogNameLabel => 'Имя';
 
   @override
-  String get dialogCycleTracking => 'Track Cycle';
+  String get dialogCycleTracking => 'Отслеживать цикл';
 
   @override
-  String get dialogCycleDesc => 'Calculates cycle days';
+  String get dialogCycleDesc => 'Считает дни цикла';
 
   @override
-  String get dialogPeriodStart => 'Start of last period';
+  String get dialogPeriodStart => 'Начало последних месячных';
 
   @override
-  String get dialogSelectDate => 'Select Date';
+  String get dialogSelectDate => 'Выбрать дату';
 
   @override
-  String get dialogAdd => 'Add';
+  String get dialogAdd => 'Добавить';
 
   @override
-  String get dialogMoveCategory => 'Move Category';
+  String get dialogMoveCategory => 'Переместить категорию';
 
   @override
-  String get dialogRenameTag => 'Rename tag';
+  String get dialogRenameTag => 'Переименовать тег';
 
   @override
   String dialogDeleteTagTitle(String tag) {
-    return 'Delete tag \'$tag\'?';
+    return 'Удалить тег \'$tag\'?';
   }
 
   @override
-  String get dialogDeleteTagContent =>
-      'This tag will be removed from selection.';
+  String get dialogDeleteTagContent => 'Этот тег будет убран из выбранного.';
 
   @override
   String dialogEditTagTitle(String tag) {
-    return 'Options for \'$tag\'';
+    return 'Опции для \'$tag\'';
   }
 
   @override
-  String get statsYearly => 'Yearly Overview';
+  String get statsYearly => 'Обзор года';
 
   @override
-  String get statsNoData => 'No data yet.';
+  String get statsNoData => 'Нет данных.';
 
   @override
-  String get statsPatternDay => 'Patterns by Weekday';
+  String get statsPatternDay => 'Паттерны по дням';
 
   @override
-  String get statsInsights => 'Influencing Factors';
+  String get statsInsights => 'Влияющие факторы';
 
   @override
-  String get statsAiIntro => 'Let AI analyze your week.';
+  String get statsAiIntro => 'Пусть ИИ проанализирует неделю.';
 
   @override
-  String get statsAiButton => 'Analyze Week';
+  String get statsAiButton => 'Анализ недели';
 
   @override
-  String get statsAiButtonUpdate => 'Update Analysis';
+  String get statsAiButtonUpdate => 'Обновить анализ';
 
   @override
-  String get statsTrendTitle => 'Forecast for tomorrow';
+  String get statsTrendTitle => 'Прогноз на завтра';
 
   @override
-  String get statsTrendGood => 'Good Outlook! ☀️';
+  String get statsTrendGood => 'Хороший прогноз! ☀️';
 
   @override
-  String get statsTrendNormal => 'Solid Day Ahead 🌱';
+  String get statsTrendNormal => 'Стабильный день 🌱';
 
   @override
-  String get statsTrendBad => 'Stay Mindful 💜';
+  String get statsTrendBad => 'Будь внимательнее 💜';
 
   @override
-  String get categorySocial => 'Social';
+  String get categorySocial => 'Общение';
 
   @override
-  String get categoryBodyMind => 'Body & Mind';
+  String get categoryBodyMind => 'Тело и разум';
 
   @override
-  String get categoryObligations => 'Obligations';
+  String get categoryObligations => 'Обязанности';
 
   @override
-  String get categoryLeisure => 'Leisure & Environment';
+  String get categoryLeisure => 'Досуг и среда';
 
   @override
-  String get categoryCycle => 'Cycle & Body';
+  String get categoryCycle => 'Цикл и тело';
 
   @override
-  String get categoryOther => 'Other';
+  String get categoryOther => 'Другое';
 
   @override
-  String get tagFamily => 'Family';
+  String get tagFamily => 'Семья';
 
   @override
-  String get tagRelationship => 'Relationship';
+  String get tagRelationship => 'Отношения';
 
   @override
-  String get tagFriends => 'Friends';
+  String get tagFriends => 'Друзья';
 
   @override
-  String get tagParty => 'Party';
+  String get tagParty => 'Вечеринка';
 
   @override
-  String get tagSport => 'Sports';
+  String get tagSport => 'Спорт';
 
   @override
-  String get tagSleep => 'Sleep';
+  String get tagSleep => 'Сон';
 
   @override
-  String get tagFood => 'Food';
+  String get tagFood => 'Еда';
 
   @override
-  String get tagHealth => 'Health';
+  String get tagHealth => 'Здоровье';
 
   @override
-  String get tagMeditation => 'Meditation';
+  String get tagMeditation => 'Медитация';
 
   @override
-  String get tagWork => 'Work';
+  String get tagWork => 'Работа';
 
   @override
-  String get tagSchool => 'School';
+  String get tagSchool => 'Школа';
 
   @override
-  String get tagHomework => 'Homework';
+  String get tagHomework => 'Дом. задание';
 
   @override
-  String get tagUni => 'University';
+  String get tagUni => 'Универ';
 
   @override
-  String get tagHousehold => 'Household';
+  String get tagHousehold => 'Быт';
 
   @override
-  String get tagHobby => 'Hobby';
+  String get tagHobby => 'Хобби';
 
   @override
-  String get tagTravel => 'Travel';
+  String get tagTravel => 'Путешествия';
 
   @override
-  String get tagWeather => 'Weather';
+  String get tagWeather => 'Погода';
 
   @override
-  String get tagGaming => 'Gaming';
+  String get tagGaming => 'Игры';
 
   @override
-  String get tagReading => 'Reading';
+  String get tagReading => 'Чтение';
 
   @override
-  String get tagMusic => 'Music';
+  String get tagMusic => 'Музыка';
 
   @override
-  String get tagPeriodLight => 'Period (Light)';
+  String get tagPeriodLight => 'Месячные (Скудные)';
 
   @override
-  String get tagPeriodMedium => 'Period (Medium)';
+  String get tagPeriodMedium => 'Месячные (Умеренные)';
 
   @override
-  String get tagPeriodHeavy => 'Period (Heavy)';
+  String get tagPeriodHeavy => 'Месячные (Обильные)';
 
   @override
-  String get tagSpotting => 'Spotting';
+  String get tagSpotting => 'Мажущие';
 
   @override
-  String get tagCramps => 'Cramps';
+  String get tagCramps => 'Спазмы';
 
   @override
-  String get tagPMS => 'PMS';
+  String get tagPMS => 'ПМС';
 
   @override
-  String get tagOvulation => 'Ovulation';
+  String get tagOvulation => 'Овуляция';
 
   @override
-  String get unknownProfile => 'Unknown';
+  String get unknownProfile => 'Неизвестно';
 
   @override
-  String get btnSelect => 'SELECT';
+  String get btnSelect => 'ВЫБРАТЬ';
 
   @override
-  String get maybeLater => 'Maybe later';
+  String get maybeLater => 'Может позже';
 
   @override
-  String get premiumTeaserTitle => 'Multiple Profiles';
+  String get premiumTeaserTitle => 'Несколько профилей';
 
   @override
   String get premiumTeaserMessage =>
-      'In the free version, you have one profile.\nDo you want to add profiles for partners, children, or pets?';
+      'В бесплатной версии у тебя один профиль.\nХочешь добавить профили для партнера, детей или питомцев?';
 
   @override
-  String get snackSaved => 'Saved';
+  String get snackSaved => 'Сохранено';
 
   @override
-  String get snackDeleted => 'Deleted';
+  String get snackDeleted => 'Удалено';
 
   @override
-  String get snackTagDeleted => 'Tag deleted';
+  String get snackTagDeleted => 'Тег удален';
 
   @override
   String snackError(String error) {
-    return 'Error: $error';
+    return 'Ошибка: $error';
   }
 
   @override
-  String get dialogNewTagName => 'New name';
+  String get dialogNewTagName => 'Новое имя';
 
   @override
-  String get dialogNewTagPlaceholder => 'Name (e.g. Yoga)';
+  String get dialogNewTagPlaceholder => 'Имя (напр. Йога)';
 
   @override
-  String get labelCategory => 'Category';
+  String get labelCategory => 'Категория';
 
   @override
-  String get labelDescription => 'Description';
+  String get labelDescription => 'Описание';
 
   @override
   String predTextGood(String day, String score) {
-    return 'Tomorrow is $day. Your data and environment suggest a strong day ahead (Ø $score).';
+    return 'Завтра $day. Данные и среда обещают сильный день (Ø $score).';
   }
 
   @override
   String predTextBad(String day, String score) {
-    return 'For $day, data predicts slightly lower energy levels (Ø $score).';
+    return 'На $day прогноз показывает уровень энергии чуть ниже (Ø $score).';
   }
 
   @override
   String predTextNormal(String day, String score) {
-    return 'The forecast for $day is balanced (Ø $score).';
+    return 'Прогноз на $day сбалансированный (Ø $score).';
   }
 
   @override
-  String get tipSleep => 'Tip: Go to sleep earlier today.';
+  String get tipSleep => 'Совет: Ляг спать пораньше сегодня.';
 
   @override
-  String get tipFamilyBad => 'Household vibes were tense recently.';
+  String get tipFamilyBad => 'Дома было напряженно в последнее время.';
 
   @override
-  String get tipFamilyGood => 'Positive household vibes give you a boost!';
+  String get tipFamilyGood => 'Позитив дома придает тебе сил!';
 
   @override
-  String get authLoginTitle => 'Welcome back';
+  String get authLoginTitle => 'С возвращением';
 
   @override
-  String get authRegisterTitle => 'Create new account';
+  String get authRegisterTitle => 'Создать аккаунт';
 
   @override
   String get authEmailLabel => 'E-Mail';
 
   @override
-  String get authPasswordLabel => 'Password';
+  String get authPasswordLabel => 'Пароль';
 
   @override
-  String get authLoginButton => 'Login';
+  String get authLoginButton => 'Войти';
 
   @override
-  String get authRegisterButton => 'Register';
+  String get authRegisterButton => 'Регистрация';
 
   @override
-  String get authHaveAccount => 'I already have an account';
+  String get authHaveAccount => 'У меня уже есть аккаунт';
 
   @override
-  String get authNoAccount => 'Register';
+  String get authNoAccount => 'Регистрация';
 
   @override
-  String get authLoading => 'Loading...';
+  String get authLoading => 'Загрузка...';
 
   @override
   String authError(String message) {
-    return 'Error: $message';
+    return 'Ошибка: $message';
   }
 
   @override
-  String get authSuccessVerify => 'Please verify your email!';
+  String get authSuccessVerify => 'Пожалуйста, подтверди email!';
+
+  @override
+  String get legal => 'Legal';
+
+  @override
+  String get imprint => 'Imprint';
+
+  @override
+  String get privacy => 'Privacy Policy';
+
+  @override
+  String get tutorialMoodTitle => 'Your Mood';
+
+  @override
+  String get tutorialMoodDesc =>
+      'Move the slider to capture how you feel right now.';
+
+  @override
+  String get tutorialSaveTitle => 'Save Entry';
+
+  @override
+  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+
+  @override
+  String get tutorialStatsTitle => 'Your Insights';
+
+  @override
+  String get tutorialStatsDesc =>
+      'Discover charts and patterns about your mood here.';
+
+  @override
+  String get tutorialProfileTitle => 'Your Profile';
+
+  @override
+  String get tutorialProfileDesc =>
+      'Manage your data, settings, and exports here.';
 }

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart'; 
 import 'package:http/http.dart' as http; 
 import 'dart:convert';
+import 'package:showcaseview/showcaseview.dart'; // Wichtig für Tutorial
 
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
@@ -36,6 +37,10 @@ class MoodInputView extends StatefulWidget {
   final Function(String) onDeleteEntry;
   final Function(MoodEntry) onEditEntry;
   final Function(String) onManageCustomTag;
+  
+  // Tutorial Keys
+  final GlobalKey showcaseKeySlider;
+  final GlobalKey showcaseKeySave;
 
   const MoodInputView({
     super.key,
@@ -61,6 +66,8 @@ class MoodInputView extends StatefulWidget {
     required this.onDeleteEntry,
     required this.onEditEntry,
     required this.onManageCustomTag,
+    required this.showcaseKeySlider,
+    required this.showcaseKeySave,
   });
 
   @override
@@ -87,48 +94,6 @@ class _MoodInputViewState extends State<MoodInputView> {
     _timer?.cancel();
     _audioRecorder.dispose();
     super.dispose();
-  }
-
-  // --- HELPER ZUR ÜBERSETZUNG DER TAGS ---
-  // Wandelt DB-Strings ("Familie") in lokalisierte Strings ("Family") um
-  String _getLocalizedTagLabel(String rawTag, AppLocalizations l10n) {
-    switch (rawTag) {
-      // Soziales
-      case 'Familie': case 'Family': return l10n.tagFamily;
-      case 'Beziehung': case 'Relationship': return l10n.tagRelationship;
-      case 'Freunde': case 'Friends': return l10n.tagFriends;
-      case 'Party': return l10n.tagParty;
-      // Körper
-      case 'Sport': return l10n.tagSport;
-      case 'Schlaf': case 'Sleep': return l10n.tagSleep;
-      case 'Essen': case 'Food': return l10n.tagFood;
-      case 'Gesundheit': case 'Health': return l10n.tagHealth;
-      case 'Meditation': return l10n.tagMeditation;
-      // Pflichten
-      case 'Arbeit': case 'Work': return l10n.tagWork;
-      case 'Schule': case 'School': return l10n.tagSchool;
-      case 'Hausaufgaben': case 'Homework': return l10n.tagHomework;
-      case 'Uni': case 'University': return l10n.tagUni;
-      case 'Haushalt': case 'Household': return l10n.tagHousehold;
-      // Freizeit
-      case 'Hobby': return l10n.tagHobby;
-      case 'Reisen': case 'Travel': return l10n.tagTravel;
-      case 'Wetter': case 'Weather': return l10n.tagWeather;
-      case 'Gaming': return l10n.tagGaming;
-      case 'Lesen': case 'Reading': return l10n.tagReading;
-      case 'Musik': case 'Music': return l10n.tagMusic;
-      // Zyklus
-      case 'Periode (Leicht)': case 'Period (Light)': return l10n.tagPeriodLight;
-      case 'Periode (Mittel)': case 'Period (Medium)': return l10n.tagPeriodMedium;
-      case 'Periode (Stark)': case 'Period (Heavy)': return l10n.tagPeriodHeavy;
-      case 'Schmierblutung': case 'Spotting': return l10n.tagSpotting;
-      case 'Regelschmerzen': case 'Cramps': return l10n.tagCramps;
-      case 'PMS': return l10n.tagPMS;
-      case 'Ovulation': case 'Eisprung': return l10n.tagOvulation;
-      
-      // Fallback für Custom Tags (bleiben wie sie sind)
-      default: return rawTag;
-    }
   }
 
   Future<void> _startRecording() async {
@@ -288,16 +253,21 @@ class _MoodInputViewState extends State<MoodInputView> {
                     thumbColor: Colors.white,
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
                   ),
-                  child: Slider(
-                    value: widget.currentMoodValue, 
-                    min: 0.0, 
-                    max: 10.0, 
-                    onChanged: widget.showSuccessAnimation ? null : (val) { 
-                      if (val.floor() != widget.currentMoodValue.floor()) { 
-                        HapticFeedback.selectionClick(); 
-                      } 
-                      widget.onMoodChanged(val); 
-                    }
+                  child: Showcase( // TUTORIAL WRAPPER
+                    key: widget.showcaseKeySlider,
+                    title: l10n.tutorialMoodTitle,
+                    description: l10n.tutorialMoodDesc,
+                    child: Slider(
+                      value: widget.currentMoodValue, 
+                      min: 0.0, 
+                      max: 10.0, 
+                      onChanged: widget.showSuccessAnimation ? null : (val) { 
+                        if (val.floor() != widget.currentMoodValue.floor()) { 
+                          HapticFeedback.selectionClick(); 
+                        } 
+                        widget.onMoodChanged(val); 
+                      }
+                    ),
                   ),
                 ),
               ),
@@ -456,17 +426,23 @@ class _MoodInputViewState extends State<MoodInputView> {
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, -4))], 
             border: const Border(top: BorderSide(color: Color(0xFFF5F5F5), width: 1))
           ),
-          child: ElevatedButton(
-            onPressed: widget.showSuccessAnimation ? null : widget.onSave, 
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black87, 
-              foregroundColor: Colors.white, 
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), 
-              padding: const EdgeInsets.symmetric(vertical: 16), 
-              elevation: 4, 
-              shadowColor: Colors.black.withValues(alpha: 0.2)
-            ), 
-            child: Text(l10n.save.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5))
+          child: Showcase( // TUTORIAL WRAPPER
+            key: widget.showcaseKeySave,
+            title: l10n.tutorialSaveTitle,
+            description: l10n.tutorialSaveDesc,
+            targetShapeBorder: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            child: ElevatedButton(
+              onPressed: widget.showSuccessAnimation ? null : widget.onSave, 
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87, 
+                foregroundColor: Colors.white, 
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), 
+                padding: const EdgeInsets.symmetric(vertical: 16), 
+                elevation: 4, 
+                shadowColor: Colors.black.withValues(alpha: 0.2)
+              ), 
+              child: Text(l10n.save.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5))
+            ),
           ),
         ),
 
@@ -549,7 +525,7 @@ class _MoodInputViewState extends State<MoodInputView> {
                                   children: [
                                     if (entry.note != null && entry.note!.isNotEmpty) 
                                       Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)), 
-                                    Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(_getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) // <--- HIER: ÜBERSETZUNG ANGEWENDET
+                                    Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) // HIER IST DIE KORREKTUR
                                   ]
                                 ),
                               ),

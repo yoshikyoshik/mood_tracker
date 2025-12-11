@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/mood_entry.dart';
 import '../l10n/generated/app_localizations.dart'; // Zugriff auf Texte
 import '../main.dart'; // Zugriff auf MyApp für setLocale
@@ -90,6 +91,22 @@ class ProfileView extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _launchURL(BuildContext context, String urlString) async {
+    final uri = Uri.parse(urlString);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback, falls der Browser nicht aufgeht
+        if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Webseite nicht öffnen")));
+        }
+      }
+    } catch (e) {
+      debugPrint("Fehler beim Öffnen: $e");
+    }
   }
 
   @override
@@ -292,7 +309,7 @@ class ProfileView extends StatelessWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Zugriff holen
+    final l10n = AppLocalizations.of(context)!; 
 
     return Container(
       decoration: BoxDecoration(
@@ -302,7 +319,7 @@ class ProfileView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // --- SPRACHE (NEU) ---
+          // SPRACHE
           ListTile(
             leading: const Icon(Icons.language, color: Colors.indigo),
             title: Text(l10n.language),
@@ -311,11 +328,12 @@ class ProfileView extends StatelessWidget {
           ),
           const Divider(height: 1),
 
+          // PRO / ABO
           if (!isPro)
             ListTile(
               leading: const Icon(Icons.diamond, color: Colors.indigo),
               title: Text(l10n.becomePro),
-              subtitle: const Text("Alle Features"), // Hier könntest du auch noch übersetzen
+              subtitle: const Text("Alle Features"), 
               trailing: const Icon(Icons.chevron_right),
               onTap: onManageSubscription,
             ),
@@ -327,6 +345,8 @@ class ProfileView extends StatelessWidget {
               onTap: onManageSubscription,
             ),
           const Divider(height: 1),
+
+          // SUPPORT
           ListTile(
             leading: const Icon(Icons.mail_outline, color: Colors.black87),
             title: Text(l10n.contactSupport),
@@ -334,6 +354,24 @@ class ProfileView extends StatelessWidget {
             onTap: onContactSupport, 
           ),
           const Divider(height: 1),
+
+          // --- NEU: RECHTLICHES ---
+          ListTile(
+            leading: const Icon(Icons.policy, color: Colors.grey),
+            title: Text(l10n.privacy),
+            trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
+            onTap: () => _launchURL(context, 'https://manabsphere.com/privacy.html'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Colors.grey),
+            title: Text(l10n.imprint),
+            trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
+            onTap: () => _launchURL(context, 'https://manabsphere.com/imprint.html'),
+          ),
+          const Divider(height: 1),
+          // ------------------------
+
+          // LOGOUT
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
             title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),

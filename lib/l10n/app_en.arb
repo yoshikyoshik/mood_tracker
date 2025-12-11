@@ -155,5 +155,18 @@
   "authNoAccount": "Register",
   "authLoading": "Loading...",
   "authError": "Error: {message}",
-  "authSuccessVerify": "Please verify your email!"
+  "authSuccessVerify": "Please verify your email!",
+
+  "legal": "Legal",
+  "imprint": "Imprint",
+  "privacy": "Privacy Policy",
+
+  "tutorialMoodTitle": "Your Mood",
+  "tutorialMoodDesc": "Move the slider to capture how you feel right now.",
+  "tutorialSaveTitle": "Save Entry",
+  "tutorialSaveDesc": "Tap here to write your entry to the diary.",
+  "tutorialStatsTitle": "Your Insights",
+  "tutorialStatsDesc": "Discover charts and patterns about your mood here.",
+  "tutorialProfileTitle": "Your Profile",
+  "tutorialProfileDesc": "Manage your data, settings, and exports here."
 }

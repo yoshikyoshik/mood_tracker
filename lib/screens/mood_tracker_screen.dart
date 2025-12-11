@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
@@ -23,14 +24,28 @@ import '../widgets/profile_view.dart';
 import '../utils/mood_utils.dart';
 import 'auth_gate.dart';
 
-class MoodTrackerScreen extends StatefulWidget {
+// 1. DER WRAPPER (Stellt sicher, dass ShowCaseWidget existiert)
+class MoodTrackerScreen extends StatelessWidget {
   const MoodTrackerScreen({super.key});
 
   @override
-  State<MoodTrackerScreen> createState() => _MoodTrackerScreenState();
+  Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
+    return ShowCaseWidget(
+      builder: (context) => const MoodTrackerContent(),
+    );
+  }
 }
 
-class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
+// 2. DER EIGENTLICHE CONTENT (Mit Logik)
+class MoodTrackerContent extends StatefulWidget {
+  const MoodTrackerContent({super.key});
+
+  @override
+  State<MoodTrackerContent> createState() => _MoodTrackerContentState();
+}
+
+class _MoodTrackerContentState extends State<MoodTrackerContent> {
   // State
   int _selectedIndex = 0;
   bool _showSuccessAnimation = false;
@@ -53,9 +68,13 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   String _appVersion = "";
 
   final Set<String> _customTagNames = {};
-
-  // Diese Map wird jetzt dynamisch anhand der Sprache gebaut
   Map<String, List<String>> _combinedTagsByCategory = {};
+
+  // Tutorial Keys
+  final GlobalKey _one = GlobalKey();   // Slider
+  final GlobalKey _two = GlobalKey();   // Save Button
+  final GlobalKey _three = GlobalKey(); // Stats Tab
+  final GlobalKey _four = GlobalKey();  // Profile Tab
 
   List<String> get _allAvailableTags {
     return _combinedTagsByCategory.values.expand((x) => x).toList();
@@ -64,7 +83,27 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeAll(); 
+    _initializeAll();
+    
+    // Tutorial Prüfung nach dem Bauen des UIs
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndStartShowcase());
+  }
+
+  // --- TUTORIAL START LOGIK ---
+  Future<void> _checkAndStartShowcase() async {
+    // WICHTIG: Prüfen, ob der Screen noch existiert
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final bool seen = prefs.getBool('tutorial_seen') ?? false;
+    
+    if (!seen) {
+      if (mounted) {
+        // ignore: deprecated_member_use
+        ShowCaseWidget.of(context).startShowCase([_one, _two, _three, _four]);
+        await prefs.setBool('tutorial_seen', true);
+      }
+    }
   }
 
   // WICHTIG: Wird aufgerufen, wenn sich Abhängigkeiten (wie Sprache) ändern
@@ -77,7 +116,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     }
   }
 
-  // Neue Methode, um die Basis-Tags übersetzt zu holen
+  // --- LOGIC HELPERS ---
+
   Map<String, List<String>> _getLocalizedBaseTags(AppLocalizations l10n) {
     return {
       l10n.categorySocial: [l10n.tagFamily, l10n.tagRelationship, l10n.tagFriends, l10n.tagParty],
@@ -88,16 +128,28 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     };
   }
 
+  // Hilfsmethode: Ordnet alte DB-Strings der aktuellen Sprache zu
+  String _mapDbCategoryToCurrent(String dbCategory, AppLocalizations l10n) {
+    if (_combinedTagsByCategory.containsKey(dbCategory)) return dbCategory;
+
+    // Legacy Mapping
+    if (dbCategory == 'Soziales' || dbCategory == 'Social') return l10n.categorySocial;
+    if (dbCategory == 'Körper & Geist' || dbCategory == 'Body & Mind') return l10n.categoryBodyMind;
+    if (dbCategory == 'Pflichten' || dbCategory == 'Obligations') return l10n.categoryObligations;
+    if (dbCategory == 'Freizeit & Umwelt' || dbCategory == 'Leisure & Nature') return l10n.categoryLeisure;
+    if (dbCategory == 'Zyklus & Körper' || dbCategory == 'Cycle & Body') return l10n.categoryCycle;
+
+    return l10n.categoryOther;
+  }
+
   void _initializeTagsMap() {
     final l10n = AppLocalizations.of(context)!;
     final baseTags = _getLocalizedBaseTags(l10n);
 
-    // Basis Map kopieren
     final newMap = Map<String, List<String>>.from(
       baseTags.map((k, v) => MapEntry(k, List<String>.from(v)))
     );
 
-    // Zyklus Tags hinzufügen, falls nötig
     if (_profiles.isNotEmpty && _selectedProfileId != null) {
       final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: ''));
       
@@ -107,56 +159,72 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           l10n.tagSpotting, l10n.tagCramps, l10n.tagPMS, l10n.tagOvulation
         ];
         
-        // Neue Map erstellen mit Zyklus an erster Stelle
         final combined = <String, List<String>>{
           l10n.categoryCycle: cycleTags,
           ...newMap 
         };
         
-        setState(() {
-           _combinedTagsByCategory = combined;
-        });
+        setState(() { _combinedTagsByCategory = combined; });
         return;
       }
     }
-    setState(() {
-      _combinedTagsByCategory = newMap;
-    });
+    setState(() { _combinedTagsByCategory = newMap; });
   }
+
+  // --- ACTIONS ---
+
+  Future<void> _startCheckout() async {
+    final l10n = AppLocalizations.of(context)!;
+    final user = Supabase.instance.client.auth.currentUser; if (user == null) return;
+    setState(() => _isLoading = true);
+    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
+    try {
+      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-checkout'), body: jsonEncode({'userEmail': user.email, 'userId': user.id, 'priceId': 'price_1SbFNUFoVhyNl27phao8dSGu', 'returnUrl': returnUrl}));
+      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); } 
+    finally { if (mounted) setState(() => _isLoading = false); }
+  }
+
+  Future<void> _openCustomerPortal() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_stripeCustomerId == null) return;
+    setState(() => _isLoading = true);
+    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
+    try {
+      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-portal'), body: jsonEncode({'customerId': _stripeCustomerId, 'returnUrl': returnUrl}));
+      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+    finally { if (mounted) setState(() => _isLoading = false); }
+  }
+
+  void _showPremiumSheet(BuildContext context, String title, String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, spreadRadius: 5)]), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20), const Icon(Icons.diamond, size: 40, color: Colors.indigo), const SizedBox(height: 15), Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center), const SizedBox(height: 10), Text(message, style: TextStyle(fontSize: 15, color: Colors.black87.withValues(alpha: 0.7), height: 1.5), textAlign: TextAlign.center), const SizedBox(height: 30), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { Navigator.pop(ctx); _startCheckout(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 5, shadowColor: Colors.indigo.withValues(alpha: 0.4)), child: Text(l10n.becomePro.toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)))), const SizedBox(height: 10), TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.maybeLater, style: const TextStyle(color: Colors.grey)))])));
+  }
+
+  // --- BUILD METHOD ---
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary; 
-        
-    final bgColor = _selectedIndex == 0 
-        ? MoodUtils.getBackgroundColor(_currentMoodValue) 
-        : const Color(0xFFF2F4F8); 
-
+    final bgColor = _selectedIndex == 0 ? MoodUtils.getBackgroundColor(_currentMoodValue) : const Color(0xFFF2F4F8); 
     final headerTextColor = Colors.black87;
+    final dateString = DateUtils.isSameDay(_selectedDate, DateTime.now()) ? l10n.today : DateFormat('dd.MM.yyyy').format(_selectedDate);
 
-    final dateString = DateUtils.isSameDay(_selectedDate, DateTime.now()) 
-        ? l10n.today : DateFormat('dd.MM.yyyy').format(_selectedDate);
-
-    final relevantEntries = (_selectedProfileId == null) 
-        ? <MoodEntry>[] 
-        : _allEntries.where((e) => e.profileId == _selectedProfileId).toList();
-
-    final entriesForDate = relevantEntries.where((entry) {
-      return DateUtils.isSameDay(entry.timestamp, _selectedDate);
-    }).toList();
-
+    final relevantEntries = (_selectedProfileId == null) ? <MoodEntry>[] : _allEntries.where((e) => e.profileId == _selectedProfileId).toList();
+    final entriesForDate = relevantEntries.where((entry) => DateUtils.isSameDay(entry.timestamp, _selectedDate)).toList();
     final currentProfileName = _profiles.isNotEmpty && _selectedProfileId != null
         ? _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: '')).name
-        : l10n.unknownProfile; // LOKALISIERT
+        : l10n.unknownProfile;
     
     int? currentCycleDay;
      if (_profiles.isNotEmpty && _selectedProfileId != null) {
       final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId);
       if (profile.isCycleTracking && profile.lastPeriodDate != null) {
-        final difference = _selectedDate.difference(profile.lastPeriodDate!).inDays;
-        if (difference >= 0) currentCycleDay = difference + 1;
+        final diff = _selectedDate.difference(profile.lastPeriodDate!).inDays;
+        if (diff >= 0) currentCycleDay = diff + 1;
       }
     }
 
@@ -166,12 +234,11 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      
       body: Stack(
         children: [
           Column(
             children: [
-              // --- HEADER AREA ---
+              // HEADER
               SafeArea(
                 bottom: false,
                 child: Padding(
@@ -215,7 +282,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                                   return [
                                     ..._profiles.map((p) {
                                       return Row(
-                                        mainAxisSize: MainAxisSize.min, // Important!
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Flexible(
                                             child: Text(
@@ -276,9 +343,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                       // Right: Icons
                       Row(
                         children: [
-                          // Streak Badge
                           _buildStreakBadge(),
-
                           if (!_isPro) 
                             IconButton(
                               icon: const Icon(Icons.diamond_outlined), 
@@ -293,7 +358,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                   ),
                 ),
               ),
-              
               const SizedBox(height: 10),
 
               // --- CONTENT SHEET ---
@@ -336,6 +400,9 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                           onDeleteEntry: _deleteEntry,
                           onEditEntry: _showEditSheet,
                           onManageCustomTag: _showTagOptions,
+                          // Tutorial Keys übergeben
+                          showcaseKeySlider: _one,
+                          showcaseKeySave: _two,
                         )
                       : _selectedIndex == 1 
                         ? StatsView(
@@ -362,8 +429,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
               ),
             ],
           ),
-
-          // Lottie Success Animation
           if (_showSuccessAnimation)
             IgnorePointer(
               child: Container(
@@ -375,13 +440,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
             ),
         ],
       ),
-      
-      // Bottom Navigation Bar
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.black12, width: 0.5)),
-        ),
+        decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.black12, width: 0.5))),
         child: NavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -389,26 +449,22 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) => setState(() => _selectedIndex = index),
           destinations: [
+            NavigationDestination(icon: const Icon(Icons.add_reaction_outlined), selectedIcon: Icon(Icons.add_reaction, color: primaryColor), label: l10n.moodEntry),
             NavigationDestination(
-              icon: const Icon(Icons.add_reaction_outlined),
-              selectedIcon: Icon(Icons.add_reaction, color: primaryColor),
-              label: l10n.moodEntry,
-            ),
+              // ignore: deprecated_member_use
+              icon: Showcase(key: _three, title: l10n.tutorialStatsTitle, description: l10n.tutorialStatsDesc, child: const Icon(Icons.insights_outlined)),
+              selectedIcon: Icon(Icons.insights, color: primaryColor), label: l10n.statistics),
             NavigationDestination(
-              icon: const Icon(Icons.insights_outlined),
-              selectedIcon: Icon(Icons.insights, color: primaryColor),
-              label: l10n.statistics,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person, color: primaryColor),
-              label: l10n.profile,
-            ),
+              // ignore: deprecated_member_use
+              icon: Showcase(key: _four, title: l10n.tutorialProfileTitle, description: l10n.tutorialProfileDesc, child: const Icon(Icons.person_outline)),
+              selectedIcon: Icon(Icons.person, color: primaryColor), label: l10n.profile),
           ],
         ),
       ),
     );
   }
+
+  // --- DATA LOADING ---
 
   Future<void> _loadAppVersion() async {
     final info = await PackageInfo.fromPlatform();
@@ -420,7 +476,6 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 
   Future<void> _initializeAll() async {
-    // Safety Net: Force Splash Removal after 3s
     Timer(const Duration(seconds: 3), () {
       debugPrint("⏰ Safety Timeout: Splash Screen entfernt.");
       FlutterNativeSplash.remove();
@@ -428,9 +483,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
     try {
       debugPrint("🚀 Starte Initialisierung...");
-      
       await _loadAppVersion();
-      
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
         debugPrint("ℹ️ Kein User eingeloggt. Breche Datenladen ab.");
@@ -445,10 +498,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
         _checkSubscription(),
       ]);
       
-      // Map initialisieren (jetzt da wir Kontext haben, passiert das eigentlich im build/didChangeDependencies)
-      if (mounted) {
-        _initializeTagsMap();
-      }
+      if (mounted) _initializeTagsMap();
 
     } catch (e) {
       debugPrint("🛑 Kritischer Ladefehler: $e");
@@ -457,516 +507,57 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     }
   }
 
-  Future<void> _loadCustomTags() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-
-      final response = await Supabase.instance.client.from('user_tags').select('name, category').order('name'); 
-      final data = response as List<dynamic>;
-      
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-
-      setState(() {
-        _initializeTagsMap(); // Setzt die Basis-Kategorien auf Englisch/Deutsch/etc.
-        _customTagNames.clear();
-        
-        for (var item in data) {
-          final tagName = item['name'] as String;
-          final String rawCategory = item['category'] ?? '';
-          
-          // HIER DER FIX: Wir mappen den String aus der DB auf die aktuelle Sprache
-          String category = _mapDbCategoryToCurrent(rawCategory, l10n);
-          
-          // Sicherheitsnetz: Falls selbst das Mapping fehlschlägt, nimm "Sonstiges"
-          if (!_combinedTagsByCategory.containsKey(category)) {
-             category = l10n.categoryOther;
-             if (!_combinedTagsByCategory.containsKey(category)) {
-                _combinedTagsByCategory[category] = [];
-             }
-          }
-          
-          _combinedTagsByCategory[category]?.add(tagName);
-          _customTagNames.add(tagName); 
-        }
-      });
-    } catch (e) { debugPrint("Tag-Fehler: $e"); }
-  }
-
-  // --- TAG MANAGEMENT ---
-  void _showTagOptions(String tagName) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              Padding(padding: const EdgeInsets.all(20.0), child: Text(l10n.dialogEditTagTitle(tagName), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))), 
-              ListTile(leading: const Icon(Icons.edit, color: Colors.blue), title: Text(l10n.edit), onTap: () { Navigator.pop(ctx); _editCustomTagName(tagName); }),
-              ListTile(leading: const Icon(Icons.drive_file_move, color: Colors.orange), title: Text(l10n.dialogMoveCategory), onTap: () { Navigator.pop(ctx); _moveCustomTagCategory(tagName); }),
-              ListTile(leading: const Icon(Icons.delete, color: Colors.red), title: Text(l10n.delete, style: const TextStyle(color: Colors.red)), onTap: () { Navigator.pop(ctx); _deleteCustomTag(tagName); }),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _deleteCustomTag(String tagName) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.dialogDeleteTagTitle(tagName)),
-        content: Text(l10n.dialogDeleteTagContent),
-        actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)), 
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.delete, style: const TextStyle(color: Colors.red)))
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-      await Supabase.instance.client.from('user_tags').delete().eq('user_id', user.id).eq('name', tagName);
-      if (_selectedTags.contains(tagName)) setState(() => _selectedTags.remove(tagName));
-      await _loadCustomTags();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackTagDeleted))); // LOKALISIERT
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-  }
-
-  Future<void> _editCustomTagName(String oldName) async {
-    final l10n = AppLocalizations.of(context)!;
-    String newName = oldName;
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.dialogRenameTag, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // LOKALISIERT
-            const SizedBox(height: 15),
-            TextField(autofocus: true, controller: TextEditingController(text: oldName), onChanged: (val) => newName = val, decoration: InputDecoration(labelText: l10n.dialogNewTagName, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))), // LOKALISIERT
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(onPressed: () async {
-                  if (newName.trim().isNotEmpty && newName != oldName) {
-                    final user = Supabase.instance.client.auth.currentUser;
-                    if (user != null) {
-                      await Supabase.instance.client.from('user_tags').update({'name': newName.trim()}).eq('user_id', user.id).eq('name', oldName);
-                      if (_selectedTags.contains(oldName)) { setState(() { _selectedTags.remove(oldName); _selectedTags.add(newName.trim()); }); }
-                      await _loadCustomTags();
-                      if (mounted) Navigator.of(context).pop();
-                    }
-                  }
-                }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _moveCustomTagCategory(String tagName) async {
-    final l10n = AppLocalizations.of(context)!;
-    // Wir holen uns die aktuellen lokalisierten Kategorien aus der Map
-    final categories = _combinedTagsByCategory.keys.toList();
-    // Default erste Kategorie, falls vorhanden
-    String selectedCategory = categories.isNotEmpty ? categories.first : l10n.categoryOther; 
-    
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.dialogMoveCategory, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // LOKALISIERT
-                const SizedBox(height: 20),
-                InputDecorator(decoration: InputDecoration(labelText: l10n.labelCategory, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: selectedCategory, isDense: true, items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(), onChanged: (val) { if (val != null) setDialogState(() => selectedCategory = val); }))),
-                const SizedBox(height: 25),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(onPressed: () async {
-                      final user = Supabase.instance.client.auth.currentUser;
-                      if (user != null) {
-                        // ACHTUNG: Hier speichern wir den lokalisierten String als Kategorie in die DB. 
-                        // Das ist für eine simple App okay, für Multi-Language-User bräuchte man interne IDs.
-                        await Supabase.instance.client.from('user_tags').update({'category': selectedCategory}).eq('user_id', user.id).eq('name', tagName);
-                        await _loadCustomTags();
-                        if (mounted) Navigator.of(this.context).pop();
-                      }
-                    }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)),
-                )
-              ],
-            ),
-          );
-        }
-      ),
-    );
-  }
-
-  Future<void> _addNewTagDialog() async {
-    final l10n = AppLocalizations.of(context)!;
-    String newTag = "";
-    // Default Kategorie
-    final categories = _combinedTagsByCategory.keys.where((k) => k != l10n.categoryCycle).toList(); // Zyklus meistens nicht manuell
-    String selectedCategory = categories.isNotEmpty ? categories.first : l10n.categoryOther;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 24, right: 24, top: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.dialogNewProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // "Neues..."
-                  const SizedBox(height: 20),
-                  TextField(autofocus: true, decoration: InputDecoration(hintText: l10n.dialogNewTagPlaceholder, labelText: l10n.labelDescription, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), onChanged: (val) => newTag = val),
-                  const SizedBox(height: 20),
-                  InputDecorator(decoration: InputDecoration(labelText: l10n.labelCategory, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: selectedCategory, isDense: true, items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(), onChanged: (val) { if (val != null) { setDialogState(() => selectedCategory = val); } }))),
-                  const SizedBox(height: 25),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(onPressed: () async {
-                        if (newTag.trim().isNotEmpty) {
-                          final user = Supabase.instance.client.auth.currentUser;
-                          if (user != null) {
-                            await Supabase.instance.client.from('user_tags').insert({'user_id': user.id, 'name': newTag.trim(), 'category': selectedCategory });
-                            if (!context.mounted) return;
-                            await _loadCustomTags();
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                          }
-                        }
-                      }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.dialogAdd)),
-                  )
-                ],
-              ),
-            );
-          }
-        );
-      },
-    );
-  }
-
-  // --- LOGIC ---
-  Future<void> _checkSubscription() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-      final data = await Supabase.instance.client.from('subscriptions').select().eq('user_id', user.id).maybeSingle(); 
-      if (data != null) {
-        final sub = Subscription.fromMap(data);
-        if (mounted) setState(() { _isPro = sub.isPro; _stripeCustomerId = sub.customerId; });
-      }
-    } catch (e) { debugPrint("Fehler beim Abo-Check: $e"); }
-  }
-
   Future<void> _loadProfiles() async {
     final l10n = AppLocalizations.of(context)!;
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
-      
-      // 1. Profile aus DB laden
       final response = await Supabase.instance.client.from('profiles').select().order('created_at');
       final data = response as List<dynamic>;
-
-      // Fallback: Wenn leer, Standard-Profil erstellen
-      if (data.isEmpty) {
-        await Supabase.instance.client.from('profiles').insert({'user_id': userId, 'name': 'Ich', 'is_cycle_tracking': false });
-        if (mounted) _loadProfiles(); 
-        return;
-      }
-
-      // 2. "Zuletzt aktiv" ID aus dem Speicher holen
+      if (data.isEmpty) { await Supabase.instance.client.from('profiles').insert({'user_id': userId, 'name': 'Ich', 'is_cycle_tracking': false}); if (mounted) _loadProfiles(); return; }
+      
       final prefs = await SharedPreferences.getInstance();
       final lastProfileId = prefs.getString('last_profile_id');
 
       setState(() {
         _profiles = data.map((json) => Profile.fromJson(json)).toList();
-        
-        // --- HIER IST DER FIX ---
-        // A) Versuche, das gespeicherte Profil wiederherzustellen
-        if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) {
-           _selectedProfileId = lastProfileId;
-        } 
-        // B) Falls nichts gespeichert war (oder Profil gelöscht wurde), nimm das erste
-        else if (_selectedProfileId == null && _profiles.isNotEmpty) {
-          _selectedProfileId = _profiles.first.id;
-        }
-        
-        // Tags für dieses Profil initialisieren
-        _initializeTagsMap(); 
+        if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { _selectedProfileId = lastProfileId; } 
+        else if (_selectedProfileId == null && _profiles.isNotEmpty) { _selectedProfileId = _profiles.first.id; }
+        _initializeTagsMap();
       });
-      
-      // Daten für das gewählte Profil laden
       if (_selectedProfileId != null) _loadEntries();
-      
     } catch (e) { 
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); 
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); 
     }
   }
 
-  Future<void> _changeProfile(String? newId) async {
-    if (newId != null) {
-      setState(() => _selectedProfileId = newId);
-      await _loadCustomTags(); 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_profile_id', newId);
-      _loadEntries(); 
-    }
-  }
-
-  Future<void> _loadEntries() async {
+  Future<void> _loadCustomTags() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-      final response = await Supabase.instance.client.from('mood_entries').select().order('created_at', ascending: false);
+      final response = await Supabase.instance.client.from('user_tags').select('name, category').order('name'); 
       final data = response as List<dynamic>;
-      setState(() { _allEntries = data.map((json) => MoodEntry.fromMap(json)).toList(); _isLoading = false; });
-    } catch (e) { debugPrint("Lade-Fehler: $e"); if (mounted) setState(() => _isLoading = false); }
-  }
-
-  void _createNewProfile() {
-    final l10n = AppLocalizations.of(context)!;
-    if (!_isPro && _profiles.isNotEmpty) {
-      _showPremiumSheet(context, l10n.premiumTeaserTitle, l10n.premiumTeaserMessage); // LOKALISIERT
-      setState(() {}); 
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (dialogCtx) { 
-        final controller = TextEditingController();
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20, left: 24, right: 24, top: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.dialogNewProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              TextField(controller: controller, decoration: InputDecoration(hintText: l10n.dialogNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), autofocus: true),
-              const SizedBox(height: 25),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(onPressed: () async {
-                    final name = controller.text.trim();
-                    if (name.isNotEmpty) {
-                      final userId = Supabase.instance.client.auth.currentUser?.id;
-                      if (userId == null) return;
-                      await Supabase.instance.client.from('profiles').insert({'user_id': userId, 'name': name});
-                      if (mounted) { Navigator.of(context).pop(); _loadProfiles(); }
-                    }
-                  }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _editCurrentProfileDialog() async {
-    final l10n = AppLocalizations.of(context)!;
-    if (_selectedProfileId == null) return;
-    final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId);
-    final nameCtrl = TextEditingController(text: profile.name);
-    bool tracking = profile.isCycleTracking;
-    DateTime? lastPeriod = profile.lastPeriodDate;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (innerCtx, setDialogState) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 20, left: 24, right: 24, top: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                const SizedBox(height: 20),
-                Text(l10n.dialogEditProfileTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.dialogNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-                const SizedBox(height: 20),
-                
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
-                  child: Row(children: [const Icon(Icons.water_drop, color: Colors.pinkAccent), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogCycleTracking, style: const TextStyle(fontWeight: FontWeight.bold)), Text(l10n.dialogCycleDesc, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])), Switch(value: tracking, activeTrackColor: Colors.pinkAccent, thumbColor: const WidgetStatePropertyAll(Colors.white), onChanged: (val) => setDialogState(() => tracking = val))]),
-                ),
-
-                if (tracking) ...[
-                  const SizedBox(height: 10),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await _showModernDatePicker(lastPeriod ?? DateTime.now()); 
-                      if (picked != null) setDialogState(() => lastPeriod = picked); 
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
-                      child: Row(children: [const Icon(Icons.calendar_today, color: Colors.grey), const SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogPeriodStart, style: const TextStyle(fontWeight: FontWeight.bold)), Text(lastPeriod == null ? l10n.dialogSelectDate : DateFormat('dd.MM.yyyy').format(lastPeriod!), style: TextStyle(color: Colors.indigo.shade400, fontWeight: FontWeight.bold))])]),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 30),
-                SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { final newName = nameCtrl.text.trim(); if (newName.isNotEmpty) { await _updateProfile(profile.id, newName, tracking, lastPeriod); if (mounted) Navigator.of(context).pop(); } }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))
-              ],
-            ),
-          );
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _initializeTagsMap(); _customTagNames.clear();
+        for (var item in data) {
+          final tagName = item['name']; 
+          String category = _mapDbCategoryToCurrent(item['category'] ?? '', l10n);
+          if (!_combinedTagsByCategory.containsKey(category)) { category = l10n.categoryOther; if (!_combinedTagsByCategory.containsKey(category)) _combinedTagsByCategory[category] = []; }
+          _combinedTagsByCategory[category]?.add(tagName); _customTagNames.add(tagName);
         }
-      ),
-    );
+      });
+    } catch (e) { debugPrint("Tags Error: $e"); }
   }
 
-  Future<void> _updateProfile(String id, String name, bool tracking, DateTime? lastPeriod) async {
-    final l10n = AppLocalizations.of(context)!;
+  Future<void> _checkSubscription() async {
     try {
-      await Supabase.instance.client.from('profiles').update({'name': name, 'is_cycle_tracking': tracking, 'last_period_date': lastPeriod?.toIso8601String()}).eq('id', id);
-      await _loadProfiles(); 
-      await _loadCustomTags();
-    } catch (e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+      final user = Supabase.instance.client.auth.currentUser; if (user == null) return;
+      final data = await Supabase.instance.client.from('subscriptions').select().eq('user_id', user.id).maybeSingle();
+      if (data != null && mounted) { final sub = Subscription.fromMap(data); setState(() { _isPro = sub.isPro; _stripeCustomerId = sub.customerId; }); }
+    } catch (e) { debugPrint("Sub Error: $e"); }
   }
 
-  Future<void> _saveEntry() async {
-    final l10n = AppLocalizations.of(context)!;
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || _selectedProfileId == null) return;
-    final newEntry = MoodEntry(timestamp: DateTime.now(), score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId);
-    try {
-      final res = await Supabase.instance.client.from('mood_entries').insert({'user_id': user.id, 'profile_id': _selectedProfileId, 'score': newEntry.score, 'sleep_rating': newEntry.sleepRating, 'tags': newEntry.tags.toList(), 'note': newEntry.note}).select().single();
-      final savedEntry = MoodEntry.fromMap(res);
-      setState(() { _allEntries.insert(0, savedEntry); _showSuccessAnimation = true; });
-      Timer(const Duration(milliseconds: 2000), () { if (mounted) { setState(() { _showSuccessAnimation = false; _selectedTags.clear(); _noteController.clear(); }); } });
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-  }
-
-  Future<void> _deleteEntry(String entryId) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      await Supabase.instance.client.from('mood_entries').delete().eq('id', entryId); 
-      setState(() => _allEntries.removeWhere((e) => e.id == entryId));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.delete), duration: const Duration(seconds: 1)));
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-  }
-
-  Future<void> _updateEntry(String entryId, double newScore, double newSleep, Set<String> newTags, String? newNote) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final res = await Supabase.instance.client.from('mood_entries').update({'score': newScore, 'sleep_rating': newSleep, 'tags': newTags.toList(), 'note': newNote}).eq('id', entryId).select().single();
-      final updatedEntry = MoodEntry.fromMap(res);
-      setState(() { final index = _allEntries.indexWhere((e) => e.id == entryId); if (index != -1) _allEntries[index] = updatedEntry; });
-      if (mounted) Navigator.pop(context); 
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-  }
-
-  void _showEditSheet(MoodEntry entry) {
-    final l10n = AppLocalizations.of(context)!;
-    double editScore = entry.score;
-    double editSleep = entry.sleepRating ?? 5.0; 
-    Set<String> editTags = Set.from(entry.tags);
-    final TextEditingController editNoteCtrl = TextEditingController(text: entry.note);
-
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, 
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setSheetState) {
-            final moodData = MoodUtils.getMoodData(editScore, l10n);
-            return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(l10n.edit, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(height: 20),
-                  Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
-                  Slider(value: editScore, min: 0.0, max: 10.0, onChanged: (val) => setSheetState(() => editScore = val)), const SizedBox(height: 20),
-                  Slider(value: editSleep, min: 0.0, max: 10.0, activeColor: Colors.indigo, onChanged: (val) => setSheetState(() => editSleep = val)), const SizedBox(height: 20),
-                  Wrap(spacing: 6, children: _allAvailableTags.map((tag) { final isSelected = editTags.contains(tag); return ChoiceChip(label: Text(tag), selected: isSelected, onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))); }).toList()), const SizedBox(height: 20),
-                  TextField(controller: editNoteCtrl, decoration: InputDecoration(hintText: l10n.inputNoteHint)), const SizedBox(height: 20),
-                  ElevatedButton(onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()), child: Text(l10n.save))
-                ],
-              ),
-            );
-        });
-      },
-    );
-  }
-
-  Future<void> _signOut() async {
-    // 1. Supabase Session beenden
-    await Supabase.instance.client.auth.signOut();
-    
-    // 2. Navigation zum Login-Screen erzwingen
-    if (mounted) {
-      // pushAndRemoveUntil löscht den kompletten Verlauf, damit man nicht "zurück" zum Profil swipen kann
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const AuthGate()), 
-        (route) => false, 
-      );
-    }
-  }
-
-  Future<void> _startCheckout() async {
-    final l10n = AppLocalizations.of(context)!;
-    final user = Supabase.instance.client.auth.currentUser; if (user == null) return;
-    setState(() => _isLoading = true);
-    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
-    try {
-      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-checkout'), body: jsonEncode({'userEmail': user.email, 'userId': user.id, 'priceId': 'price_1SbFNUFoVhyNl27phao8dSGu', 'returnUrl': returnUrl}));
-      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); } 
-    finally { if (mounted) setState(() => _isLoading = false); }
-  }
-
-  Future<void> _openCustomerPortal() async {
-    final l10n = AppLocalizations.of(context)!;
-    if (_stripeCustomerId == null) return;
-    setState(() => _isLoading = true);
-    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
-    try {
-      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-portal'), body: jsonEncode({'customerId': _stripeCustomerId, 'returnUrl': returnUrl}));
-      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-    finally { if (mounted) setState(() => _isLoading = false); }
-  }
+  // --- ACTIONS ---
 
   void _toggleTag(String tag) {
     if (_showSuccessAnimation) return;
@@ -980,74 +571,176 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   Future<DateTime?> _showModernDatePicker(DateTime initialDate) async {
     final l10n = AppLocalizations.of(context)!;
-    DateTime tempDate = initialDate;
-    return await showModalBottomSheet<DateTime>(
+    return showModalBottomSheet<DateTime>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       isScrollControlled: true, 
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-                const SizedBox(height: 20),
-                Text(l10n.dialogSelectDate, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Theme(
-                  data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Colors.indigo, onPrimary: Colors.white, onSurface: Colors.black87)),
-                  child: CalendarDatePicker(initialDate: tempDate, firstDate: DateTime(2023), lastDate: DateTime.now(), onDateChanged: (newDate) { setSheetState(() => tempDate = newDate); }),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(onPressed: () => Navigator.pop(ctx, tempDate), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: Text(l10n.btnSelect, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))), // LOKALISIERT
-                ),
-                const SizedBox(height: 10), 
-              ],
-            ),
-          );
-        }
-      ),
+      builder: (ctx) => StatefulBuilder(builder: (context, setSheetState) {
+          return Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20),
+            Text(l10n.dialogSelectDate, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 10),
+            Theme(data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Colors.indigo, onPrimary: Colors.white, onSurface: Colors.black87)), child: CalendarDatePicker(initialDate: initialDate, firstDate: DateTime(2023), lastDate: DateTime.now(), onDateChanged: (newDate) { setSheetState(() => initialDate = newDate); })),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(ctx, initialDate), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: Text(l10n.btnSelect, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))), const SizedBox(height: 10), 
+          ]));
+      })
     );
   }
 
-  // Hilfsmethode: Ordnet alte DB-Strings der aktuellen Sprache zu
-  String _mapDbCategoryToCurrent(String dbCategory, AppLocalizations l10n) {
-    // 1. Ist die Kategorie schon aktuell? (z.B. DB="Social" und App ist EN)
-    if (_combinedTagsByCategory.containsKey(dbCategory)) {
-      return dbCategory;
-    }
+  Future<void> _loadEntries() async {
+    try {
+      final response = await Supabase.instance.client.from('mood_entries').select().order('created_at', ascending: false);
+      setState(() { _allEntries = (response as List).map((json) => MoodEntry.fromMap(json)).toList(); _isLoading = false; });
+    } catch (e) { if(mounted) setState(() => _isLoading = false); }
+  }
 
-    // 2. Legacy Mapping (Deutsch/Englisch -> Aktuelle Sprache)
-    // Wir prüfen alle Varianten, die in der DB stehen könnten.
-    
-    // SOZIALES
-    if (dbCategory == 'Soziales' || dbCategory == 'Social') {
-      return l10n.categorySocial;
-    }
-    // KÖRPER & GEIST
-    if (dbCategory == 'Körper & Geist' || dbCategory == 'Body & Mind') {
-      return l10n.categoryBodyMind;
-    }
-    // PFLICHTEN
-    if (dbCategory == 'Pflichten' || dbCategory == 'Obligations') {
-      return l10n.categoryObligations;
-    }
-    // FREIZEIT
-    if (dbCategory == 'Freizeit & Umwelt' || dbCategory == 'Leisure & Nature') {
-      return l10n.categoryLeisure;
-    }
-    // ZYKLUS
-    if (dbCategory == 'Zyklus & Körper' || dbCategory == 'Cycle & Body') {
-      return l10n.categoryCycle;
-    }
+  // --- CRUD OPERATIONS ---
 
-    // Fallback: Wenn nichts passt, landet es bei "Sonstiges" (lokalisiert)
-    return l10n.categoryOther;
+  Future<void> _saveEntry() async {
+    final l10n = AppLocalizations.of(context)!;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || _selectedProfileId == null) return;
+    final newEntry = MoodEntry(timestamp: DateTime.now(), score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId!);
+    try {
+      final res = await Supabase.instance.client.from('mood_entries').insert({'user_id': user.id, 'profile_id': _selectedProfileId, 'score': newEntry.score, 'sleep_rating': newEntry.sleepRating, 'tags': newEntry.tags.toList(), 'note': newEntry.note}).select().single();
+      setState(() { _allEntries.insert(0, MoodEntry.fromMap(res)); _showSuccessAnimation = true; _selectedTags.clear(); _noteController.clear(); });
+      Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  Future<void> _deleteEntry(String id) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await Supabase.instance.client.from('mood_entries').delete().eq('id', id); 
+      setState(() => _allEntries.removeWhere((e) => e.id == id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.delete), duration: const Duration(seconds: 1)));
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  Future<void> _updateEntry(String id, double s, double sl, Set<String> t, String? n) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await Supabase.instance.client.from('mood_entries').update({'score': s, 'sleep_rating': sl, 'tags': t.toList(), 'note': n}).eq('id', id);
+      _loadEntries(); if(mounted) Navigator.pop(context);
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  void _showEditSheet(MoodEntry entry) {
+    final l10n = AppLocalizations.of(context)!;
+    double editScore = entry.score; double editSleep = entry.sleepRating ?? 5.0; Set<String> editTags = Set.from(entry.tags); final TextEditingController editNoteCtrl = TextEditingController(text: entry.note);
+    showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (context) {
+        return StatefulBuilder(builder: (context, setSheetState) {
+            final moodData = MoodUtils.getMoodData(editScore, l10n);
+            return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(l10n.edit, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(height: 20),
+                  Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
+                  Slider(value: editScore, min: 0.0, max: 10.0, onChanged: (val) => setSheetState(() => editScore = val)), const SizedBox(height: 20),
+                  Slider(value: editSleep, min: 0.0, max: 10.0, activeColor: Colors.indigo, onChanged: (val) => setSheetState(() => editSleep = val)), const SizedBox(height: 20),
+                  Wrap(spacing: 6, children: _allAvailableTags.map((tag) { final isSelected = editTags.contains(tag); return ChoiceChip(label: Text(tag), selected: isSelected, onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))); }).toList()), const SizedBox(height: 20),
+                  TextField(controller: editNoteCtrl, decoration: InputDecoration(hintText: l10n.inputNoteHint)), const SizedBox(height: 20),
+                  ElevatedButton(onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()), child: Text(l10n.save))
+                ]));
+        });
+      });
+  }
+
+  void _createNewProfile() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_isPro && _profiles.isNotEmpty) { _showPremiumSheet(context, l10n.premiumTeaserTitle, l10n.premiumTeaserMessage); return; }
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) { 
+      final controller = TextEditingController();
+      return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(l10n.dialogNewProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 20),
+        TextField(controller: controller, decoration: InputDecoration(hintText: l10n.dialogNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), autofocus: true), const SizedBox(height: 25),
+        SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async {
+          if (controller.text.isNotEmpty) {
+            await Supabase.instance.client.from('profiles').insert({'user_id': Supabase.instance.client.auth.currentUser!.id, 'name': controller.text.trim()});
+            if (mounted) { Navigator.pop(context); _loadProfiles(); }
+          }
+        }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))
+      ]));
+    });
+  }
+
+  Future<void> _editCurrentProfileDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_selectedProfileId == null) return;
+    final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId);
+    final nameCtrl = TextEditingController(text: profile.name);
+    bool tracking = profile.isCycleTracking;
+    DateTime? lastPeriod = profile.lastPeriodDate;
+
+    await showModalBottomSheet(
+      context: context, isScrollControlled: true, 
+      builder: (ctx) => StatefulBuilder(builder: (innerCtx, setDialogState) {
+        return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(l10n.dialogEditProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 20),
+          TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.dialogNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))), const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [const Icon(Icons.water_drop, color: Colors.pinkAccent), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogCycleTracking, style: const TextStyle(fontWeight: FontWeight.bold)), Text(l10n.dialogCycleDesc, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])), Switch(value: tracking, activeTrackColor: Colors.pinkAccent, onChanged: (v) => setDialogState(() => tracking = v))]),
+          ),
+          if (tracking) InkWell(onTap: () async { final d = await _showModernDatePicker(lastPeriod ?? DateTime.now()); if (d != null) setDialogState(() => lastPeriod = d); }, child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)), child: Row(children: [const Icon(Icons.calendar_today, color: Colors.grey), const SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogPeriodStart, style: const TextStyle(fontWeight: FontWeight.bold)), Text(lastPeriod == null ? l10n.dialogSelectDate : DateFormat('dd.MM.yyyy').format(lastPeriod!), style: TextStyle(color: Colors.indigo.shade400, fontWeight: FontWeight.bold))])]))),
+          const SizedBox(height: 20),
+          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async {
+             await _updateProfile(profile.id, nameCtrl.text, tracking, lastPeriod);
+             if (mounted) Navigator.pop(context);
+          }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))
+        ]));
+      })
+    );
+  }
+
+  Future<void> _updateProfile(String id, String name, bool tracking, DateTime? lastPeriod) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await Supabase.instance.client.from('profiles').update({'name': name, 'is_cycle_tracking': tracking, 'last_period_date': lastPeriod?.toIso8601String()}).eq('id', id);
+      await _loadProfiles(); 
+      await _loadCustomTags();
+    } catch (e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  Future<void> _signOut() async {
+    await Supabase.instance.client.auth.signOut();
+    if(mounted) Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const AuthGate()), (route) => false);
+  }
+
+  Future<void> _changeProfile(String id) async {
+    setState(() => _selectedProfileId = id);
+    final prefs = await SharedPreferences.getInstance(); prefs.setString('last_profile_id', id);
+    _loadCustomTags(); _loadEntries();
+  }
+
+  // --- TAG HELPERS ---
+
+  void _showTagOptions(String tagName) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(context: context, backgroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.only(top: 10), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), Padding(padding: const EdgeInsets.all(20.0), child: Text(l10n.dialogEditTagTitle(tagName), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))), ListTile(leading: const Icon(Icons.edit, color: Colors.blue), title: Text(l10n.edit), onTap: () { Navigator.pop(ctx); _editCustomTagName(tagName); }), ListTile(leading: const Icon(Icons.drive_file_move, color: Colors.orange), title: Text(l10n.dialogMoveCategory), onTap: () { Navigator.pop(ctx); _moveCustomTagCategory(tagName); }), ListTile(leading: const Icon(Icons.delete, color: Colors.red), title: Text(l10n.delete, style: const TextStyle(color: Colors.red)), onTap: () { Navigator.pop(ctx); _deleteCustomTag(tagName); }), const SizedBox(height: 20)]))));
+  }
+
+  void _addNewTagDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    String newTag = ""; final categories = _combinedTagsByCategory.keys.where((k) => k != l10n.categoryCycle).toList(); String selectedCategory = categories.isNotEmpty ? categories.first : l10n.categoryOther;
+    await showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (context) { return StatefulBuilder(builder: (context, setDialogState) { return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogNewProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 20), TextField(autofocus: true, decoration: InputDecoration(hintText: l10n.dialogNewTagPlaceholder, labelText: l10n.labelDescription, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), onChanged: (val) => newTag = val), const SizedBox(height: 20), InputDecorator(decoration: InputDecoration(labelText: l10n.labelCategory, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: selectedCategory, isDense: true, items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(), onChanged: (val) { if (val != null) { setDialogState(() => selectedCategory = val); } }))), const SizedBox(height: 25), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { if (newTag.trim().isNotEmpty) { final user = Supabase.instance.client.auth.currentUser; if (user != null) { await Supabase.instance.client.from('user_tags').insert({'user_id': user.id, 'name': newTag.trim(), 'category': selectedCategory }); if (!context.mounted) return; await _loadCustomTags(); if (!context.mounted) return; Navigator.pop(context); } } }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.dialogAdd))) ])); }); });
+  }
+
+  Future<void> _deleteCustomTag(String tagName) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: Text(l10n.dialogDeleteTagTitle(tagName)), content: Text(l10n.dialogDeleteTagContent), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)), TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.delete, style: const TextStyle(color: Colors.red)))]));
+    if (confirm != true) return;
+    try { final user = Supabase.instance.client.auth.currentUser; if (user == null) return; await Supabase.instance.client.from('user_tags').delete().eq('user_id', user.id).eq('name', tagName); if (_selectedTags.contains(tagName)) setState(() => _selectedTags.remove(tagName)); await _loadCustomTags(); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackTagDeleted))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  Future<void> _editCustomTagName(String oldName) async {
+    final l10n = AppLocalizations.of(context)!; String newName = oldName;
+    await showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (ctx) => Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogRenameTag, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 15), TextField(autofocus: true, controller: TextEditingController(text: oldName), onChanged: (val) => newName = val, decoration: InputDecoration(labelText: l10n.dialogNewTagName, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))), const SizedBox(height: 20), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { if (newName.trim().isNotEmpty && newName != oldName) { final user = Supabase.instance.client.auth.currentUser; if (user != null) { await Supabase.instance.client.from('user_tags').update({'name': newName.trim()}).eq('user_id', user.id).eq('name', oldName); if (_selectedTags.contains(oldName)) { setState(() { _selectedTags.remove(oldName); _selectedTags.add(newName.trim()); }); } await _loadCustomTags(); if (mounted) Navigator.of(context).pop(); } } }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))])));
+  }
+
+  Future<void> _moveCustomTagCategory(String tagName) async {
+    final l10n = AppLocalizations.of(context)!; final categories = _combinedTagsByCategory.keys.toList(); String selectedCategory = categories.isNotEmpty ? categories.first : l10n.categoryOther;
+    await showModalBottomSheet(context: context, backgroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) { return Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogMoveCategory, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 20), InputDecorator(decoration: InputDecoration(labelText: l10n.labelCategory, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: selectedCategory, isDense: true, items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(), onChanged: (val) { if (val != null) setDialogState(() => selectedCategory = val); }))), const SizedBox(height: 25), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { final user = Supabase.instance.client.auth.currentUser; if (user != null) { await Supabase.instance.client.from('user_tags').update({'category': selectedCategory}).eq('user_id', user.id).eq('name', tagName); await _loadCustomTags(); if (mounted) Navigator.of(this.context).pop(); } }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))])); }));
   }
 
   int _calculateStreak() {
@@ -1068,58 +761,8 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   Widget _buildStreakBadge() {
     final l10n = AppLocalizations.of(context)!;
     final int streak = _calculateStreak();
-    Color color;
-    IconData icon = Icons.local_fire_department_outlined; 
-    bool isLegendary = false; 
-
-    if (streak < 3) { color = Colors.grey.shade400; } 
-    else if (streak < 8) { color = Colors.amber.shade700; icon = Icons.local_fire_department; } 
-    else if (streak < 15) { color = Colors.orange.shade700; icon = Icons.local_fire_department; } 
-    else if (streak < 29) { color = Colors.redAccent.shade700; icon = Icons.whatshot; } 
-    else { color = Colors.deepPurpleAccent; isLegendary = true; icon = Icons.auto_awesome; }
-
-    return InkWell(
-      onTap: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.streakMessage(streak)))); },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
-        margin: const EdgeInsets.only(right: 8), 
-        decoration: BoxDecoration(
-          color: isLegendary ? null : Colors.white,
-          gradient: isLegendary ? LinearGradient(colors: [Colors.indigo.shade400, Colors.purple.shade400]) : null,
-          borderRadius: BorderRadius.circular(20), 
-          border: isLegendary ? null : Border.all(color: Colors.black.withValues(alpha: 0.05)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: isLegendary ? Colors.white : color),
-            const SizedBox(width: 5),
-            Text("$streak", style: TextStyle(fontWeight: FontWeight.w800, color: isLegendary ? Colors.white : color, fontSize: 13)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPremiumSheet(BuildContext context, String title, String message) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent, 
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, spreadRadius: 5)]),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20),
-            const Icon(Icons.diamond, size: 40, color: Colors.indigo), const SizedBox(height: 15),
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center), const SizedBox(height: 10),
-            Text(message, style: TextStyle(fontSize: 15, color: Colors.black87.withValues(alpha: 0.7), height: 1.5), textAlign: TextAlign.center), const SizedBox(height: 30),
-            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { Navigator.pop(ctx); _startCheckout(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 5, shadowColor: Colors.indigo.withValues(alpha: 0.4)), child: Text(l10n.becomePro.toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)))),
-            const SizedBox(height: 10),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.maybeLater, style: const TextStyle(color: Colors.grey))), // LOKALISIERT
-          ]),
-      ),
-    );
+    Color color; IconData icon = Icons.local_fire_department_outlined; bool isLegendary = false; 
+    if (streak < 3) { color = Colors.grey.shade400; } else if (streak < 8) { color = Colors.amber.shade700; icon = Icons.local_fire_department; } else if (streak < 15) { color = Colors.orange.shade700; icon = Icons.local_fire_department; } else if (streak < 29) { color = Colors.redAccent.shade700; icon = Icons.whatshot; } else { color = Colors.deepPurpleAccent; isLegendary = true; icon = Icons.auto_awesome; }
+    return InkWell(onTap: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.streakMessage(streak)))); }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: isLegendary ? null : Colors.white, gradient: isLegendary ? LinearGradient(colors: [Colors.indigo.shade400, Colors.purple.shade400]) : null, borderRadius: BorderRadius.circular(20), border: isLegendary ? null : Border.all(color: Colors.black.withValues(alpha: 0.05)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 16, color: isLegendary ? Colors.white : color), const SizedBox(width: 5), Text("$streak", style: TextStyle(fontWeight: FontWeight.w800, color: isLegendary ? Colors.white : color, fontSize: 13))])));
   }
 }

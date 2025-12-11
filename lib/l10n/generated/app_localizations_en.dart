@@ -454,4 +454,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authSuccessVerify => 'Please verify your email!';
+
+  @override
+  String get legal => 'Legal';
+
+  @override
+  String get imprint => 'Imprint';
+
+  @override
+  String get privacy => 'Privacy Policy';
+
+  @override
+  String get tutorialMoodTitle => 'Your Mood';
+
+  @override
+  String get tutorialMoodDesc =>
+      'Move the slider to capture how you feel right now.';
+
+  @override
+  String get tutorialSaveTitle => 'Save Entry';
+
+  @override
+  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+
+  @override
+  String get tutorialStatsTitle => 'Your Insights';
+
+  @override
+  String get tutorialStatsDesc =>
+      'Discover charts and patterns about your mood here.';
+
+  @override
+  String get tutorialProfileTitle => 'Your Profile';
+
+  @override
+  String get tutorialProfileDesc =>
+      'Manage your data, settings, and exports here.';
 }

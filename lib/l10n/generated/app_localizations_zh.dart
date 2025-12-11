@@ -12,446 +12,480 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitle => 'LuvioSphere';
 
   @override
-  String get today => 'Today';
+  String get today => '今天';
 
   @override
-  String get moodEntry => 'Entry';
+  String get moodEntry => '记录';
 
   @override
-  String get statistics => 'Statistics';
+  String get statistics => '统计';
 
   @override
-  String get profile => 'Profile';
+  String get profile => '档案';
 
   @override
-  String get newProfile => 'New...';
+  String get newProfile => '新建...';
 
   @override
-  String get save => 'Save';
+  String get save => '保存';
 
   @override
-  String get cancel => 'Cancel';
+  String get cancel => '取消';
 
   @override
-  String get delete => 'Delete';
+  String get delete => '删除';
 
   @override
-  String get edit => 'Edit';
+  String get edit => '编辑';
 
   @override
   String streakMessage(int count) {
-    return '$count day streak! Keep it up! 🔥';
+    return '连续打卡 $count 天！继续保持！🔥';
   }
 
   @override
-  String get settings => 'Settings';
+  String get settings => '设置';
 
   @override
-  String get language => 'Language';
+  String get language => '语言';
 
   @override
-  String get becomePro => 'Become Pro';
+  String get becomePro => '成为 Pro 会员';
 
   @override
-  String get manageSub => 'Manage Subscription';
+  String get manageSub => '管理订阅';
 
   @override
-  String get contactSupport => 'Contact Support';
+  String get contactSupport => '联系客服';
 
   @override
-  String get logout => 'Logout';
+  String get logout => '退出登录';
 
   @override
-  String get version => 'Version';
+  String get version => '版本';
 
   @override
-  String get proMember => 'PRO MEMBER';
+  String get proMember => 'PRO 会员';
 
   @override
-  String get freeUser => 'FREE USER';
+  String get freeUser => '免费用户';
 
   @override
-  String get achievements => 'Your Achievements';
+  String get achievements => '你的成就';
 
   @override
-  String get badgeStart => 'The Beginning';
+  String get badgeStart => '起步';
 
   @override
-  String get badgeStartDesc => 'Your first entry.';
+  String get badgeStartDesc => '你的第一条记录。';
 
   @override
-  String get badgeStreak => 'Consistent';
+  String get badgeStreak => '持之以恒';
 
   @override
-  String get badgeStreakDesc => 'Tracked on 7 different days.';
+  String get badgeStreakDesc => '在 7 个不同的日子进行了记录。';
 
   @override
-  String get badgeWeekend => 'Weekend Hero';
+  String get badgeWeekend => '周末英雄';
 
   @override
-  String get badgeWeekendDesc => '10 entries on weekends.';
+  String get badgeWeekendDesc => '周末共记录 10 次。';
 
   @override
-  String get badgeVeteran => 'Veteran';
+  String get badgeVeteran => '老手';
 
   @override
-  String get badgeVeteranDesc => '100 entries in total.';
+  String get badgeVeteranDesc => '累计 100 条记录。';
 
   @override
-  String get badgeNightOwl => 'Night Owl';
+  String get badgeNightOwl => '夜猫子';
 
   @override
-  String get badgeNightOwlDesc => '20 entries late at night.';
+  String get badgeNightOwlDesc => '深夜记录 20 次。';
 
   @override
-  String get badgeSleep => 'Sleep Guardian';
+  String get badgeSleep => '睡眠守护者';
 
   @override
-  String get badgeSleepDesc => 'Logged sleep 30 times.';
+  String get badgeSleepDesc => '记录睡眠 30 次。';
 
   @override
-  String get badgeJournal => 'Journalist';
+  String get badgeJournal => '记录员';
 
   @override
-  String get badgeJournalDesc => '50 detailed notes written.';
+  String get badgeJournalDesc => '写了 50 条详细笔记。';
 
   @override
-  String get badgeContext => 'Context Pro';
+  String get badgeContext => '情境大师';
 
   @override
-  String get badgeContextDesc => '20 entries with many tags.';
+  String get badgeContextDesc => '20 条包含多个标签的记录。';
 
   @override
-  String get badgeOptimist => 'Optimist';
+  String get badgeOptimist => '乐观主义者';
 
   @override
-  String get badgeOptimistDesc => '50x very good mood (8+).';
+  String get badgeOptimistDesc => '50 次心情极好 (8+)。';
 
   @override
-  String get inputHowAreYou => 'How are you?';
+  String get inputHowAreYou => '你感觉如何？';
 
   @override
-  String get inputSleep => 'Track Sleep';
+  String get inputSleep => '记录睡眠';
 
   @override
-  String get inputNoteHint => 'Add a note...';
+  String get inputNoteHint => '添加笔记...';
 
   @override
-  String get inputNoTags => 'No tags selected';
+  String get inputNoTags => '未选择标签';
 
   @override
-  String get inputAddTag => 'Add Tag';
+  String get inputAddTag => '添加标签';
 
   @override
-  String get inputEdit => 'Edit Tag';
+  String get inputEdit => '编辑标签';
 
   @override
-  String get statsAnalysis => 'Analyze Week';
+  String get statsAnalysis => '分析本周';
 
   @override
-  String get statsAnalysisWait => 'Analyzing...';
+  String get statsAnalysisWait => '正在分析...';
 
   @override
-  String get statsAnalysisError => 'Analysis Error';
+  String get statsAnalysisError => '分析出错';
 
   @override
-  String get statsChartTitle => 'Mood & Sleep';
+  String get statsChartTitle => '心情与睡眠';
 
   @override
-  String get statsMood => 'Mood';
+  String get statsMood => '心情';
 
   @override
-  String get statsSleep => 'Sleep';
+  String get statsSleep => '睡眠';
 
   @override
-  String get inputMoodTerrible => 'Terrible';
+  String get inputMoodTerrible => '极差';
 
   @override
-  String get inputMoodBad => 'Bad';
+  String get inputMoodBad => '不好';
 
   @override
-  String get inputMoodOkay => 'Okay';
+  String get inputMoodOkay => '一般';
 
   @override
-  String get inputMoodGood => 'Good';
+  String get inputMoodGood => '不错';
 
   @override
-  String get inputMoodFantastic => 'Fantastic';
+  String get inputMoodFantastic => '超棒';
 
   @override
-  String get dialogNewProfileTitle => 'Create New Profile';
+  String get dialogNewProfileTitle => '创建新档案';
 
   @override
-  String get dialogEditProfileTitle => 'Edit Profile';
+  String get dialogEditProfileTitle => '编辑档案';
 
   @override
-  String get dialogNameLabel => 'Name';
+  String get dialogNameLabel => '名称';
 
   @override
-  String get dialogCycleTracking => 'Track Cycle';
+  String get dialogCycleTracking => '追踪经期';
 
   @override
-  String get dialogCycleDesc => 'Calculates cycle days';
+  String get dialogCycleDesc => '计算周期天数';
 
   @override
-  String get dialogPeriodStart => 'Start of last period';
+  String get dialogPeriodStart => '上次经期开始日';
 
   @override
-  String get dialogSelectDate => 'Select Date';
+  String get dialogSelectDate => '选择日期';
 
   @override
-  String get dialogAdd => 'Add';
+  String get dialogAdd => '添加';
 
   @override
-  String get dialogMoveCategory => 'Move Category';
+  String get dialogMoveCategory => '移动类别';
 
   @override
-  String get dialogRenameTag => 'Rename tag';
+  String get dialogRenameTag => '重命名标签';
 
   @override
   String dialogDeleteTagTitle(String tag) {
-    return 'Delete tag \'$tag\'?';
+    return '删除标签 “$tag”？';
   }
 
   @override
-  String get dialogDeleteTagContent =>
-      'This tag will be removed from selection.';
+  String get dialogDeleteTagContent => '此标签将从选项中移除。';
 
   @override
   String dialogEditTagTitle(String tag) {
-    return 'Options for \'$tag\'';
+    return '“$tag” 选项';
   }
 
   @override
-  String get statsYearly => 'Yearly Overview';
+  String get statsYearly => '年度概览';
 
   @override
-  String get statsNoData => 'No data yet.';
+  String get statsNoData => '暂无数据。';
 
   @override
-  String get statsPatternDay => 'Patterns by Weekday';
+  String get statsPatternDay => '每日模式';
 
   @override
-  String get statsInsights => 'Influencing Factors';
+  String get statsInsights => '影响因素';
 
   @override
-  String get statsAiIntro => 'Let AI analyze your week.';
+  String get statsAiIntro => '让 AI 分析你的一周。';
 
   @override
-  String get statsAiButton => 'Analyze Week';
+  String get statsAiButton => '分析本周';
 
   @override
-  String get statsAiButtonUpdate => 'Update Analysis';
+  String get statsAiButtonUpdate => '更新分析';
 
   @override
-  String get statsTrendTitle => 'Forecast for tomorrow';
+  String get statsTrendTitle => '明日预测';
 
   @override
-  String get statsTrendGood => 'Good Outlook! ☀️';
+  String get statsTrendGood => '前景不错！☀️';
 
   @override
-  String get statsTrendNormal => 'Solid Day Ahead 🌱';
+  String get statsTrendNormal => '平稳的一天 🌱';
 
   @override
-  String get statsTrendBad => 'Stay Mindful 💜';
+  String get statsTrendBad => '注意身心 💜';
 
   @override
-  String get categorySocial => 'Social';
+  String get categorySocial => '社交';
 
   @override
-  String get categoryBodyMind => 'Body & Mind';
+  String get categoryBodyMind => '身心';
 
   @override
-  String get categoryObligations => 'Obligations';
+  String get categoryObligations => '责任';
 
   @override
-  String get categoryLeisure => 'Leisure & Environment';
+  String get categoryLeisure => '休闲与环境';
 
   @override
-  String get categoryCycle => 'Cycle & Body';
+  String get categoryCycle => '生理周期';
 
   @override
-  String get categoryOther => 'Other';
+  String get categoryOther => '其他';
 
   @override
-  String get tagFamily => 'Family';
+  String get tagFamily => '家人';
 
   @override
-  String get tagRelationship => 'Relationship';
+  String get tagRelationship => '伴侣';
 
   @override
-  String get tagFriends => 'Friends';
+  String get tagFriends => '朋友';
 
   @override
-  String get tagParty => 'Party';
+  String get tagParty => '聚会';
 
   @override
-  String get tagSport => 'Sports';
+  String get tagSport => '运动';
 
   @override
-  String get tagSleep => 'Sleep';
+  String get tagSleep => '睡眠';
 
   @override
-  String get tagFood => 'Food';
+  String get tagFood => '饮食';
 
   @override
-  String get tagHealth => 'Health';
+  String get tagHealth => '健康';
 
   @override
-  String get tagMeditation => 'Meditation';
+  String get tagMeditation => '冥想';
 
   @override
-  String get tagWork => 'Work';
+  String get tagWork => '工作';
 
   @override
-  String get tagSchool => 'School';
+  String get tagSchool => '学校';
 
   @override
-  String get tagHomework => 'Homework';
+  String get tagHomework => '作业';
 
   @override
-  String get tagUni => 'University';
+  String get tagUni => '大学';
 
   @override
-  String get tagHousehold => 'Household';
+  String get tagHousehold => '家务';
 
   @override
-  String get tagHobby => 'Hobby';
+  String get tagHobby => '爱好';
 
   @override
-  String get tagTravel => 'Travel';
+  String get tagTravel => '旅行';
 
   @override
-  String get tagWeather => 'Weather';
+  String get tagWeather => '天气';
 
   @override
-  String get tagGaming => 'Gaming';
+  String get tagGaming => '游戏';
 
   @override
-  String get tagReading => 'Reading';
+  String get tagReading => '阅读';
 
   @override
-  String get tagMusic => 'Music';
+  String get tagMusic => '音乐';
 
   @override
-  String get tagPeriodLight => 'Period (Light)';
+  String get tagPeriodLight => '经期 (少量)';
 
   @override
-  String get tagPeriodMedium => 'Period (Medium)';
+  String get tagPeriodMedium => '经期 (中量)';
 
   @override
-  String get tagPeriodHeavy => 'Period (Heavy)';
+  String get tagPeriodHeavy => '经期 (大量)';
 
   @override
-  String get tagSpotting => 'Spotting';
+  String get tagSpotting => '点滴出血';
 
   @override
-  String get tagCramps => 'Cramps';
+  String get tagCramps => '痛经';
 
   @override
-  String get tagPMS => 'PMS';
+  String get tagPMS => '经前综合症';
 
   @override
-  String get tagOvulation => 'Ovulation';
+  String get tagOvulation => '排卵期';
 
   @override
-  String get unknownProfile => 'Unknown';
+  String get unknownProfile => '未知';
 
   @override
-  String get btnSelect => 'SELECT';
+  String get btnSelect => '选择';
 
   @override
-  String get maybeLater => 'Maybe later';
+  String get maybeLater => '以后再说';
 
   @override
-  String get premiumTeaserTitle => 'Multiple Profiles';
+  String get premiumTeaserTitle => '多用户档案';
 
   @override
-  String get premiumTeaserMessage =>
-      'In the free version, you have one profile.\nDo you want to add profiles for partners, children, or pets?';
+  String get premiumTeaserMessage => '免费版仅限一个档案。\n想要为伴侣、孩子或宠物添加档案吗？';
 
   @override
-  String get snackSaved => 'Saved';
+  String get snackSaved => '已保存';
 
   @override
-  String get snackDeleted => 'Deleted';
+  String get snackDeleted => '已删除';
 
   @override
-  String get snackTagDeleted => 'Tag deleted';
+  String get snackTagDeleted => '标签已删除';
 
   @override
   String snackError(String error) {
-    return 'Error: $error';
+    return '错误: $error';
   }
 
   @override
-  String get dialogNewTagName => 'New name';
+  String get dialogNewTagName => '新名称';
 
   @override
-  String get dialogNewTagPlaceholder => 'Name (e.g. Yoga)';
+  String get dialogNewTagPlaceholder => '名称 (例如: 瑜伽)';
 
   @override
-  String get labelCategory => 'Category';
+  String get labelCategory => '类别';
 
   @override
-  String get labelDescription => 'Description';
+  String get labelDescription => '描述';
 
   @override
   String predTextGood(String day, String score) {
-    return 'Tomorrow is $day. Your data and environment suggest a strong day ahead (Ø $score).';
+    return '明天是 $day。数据和环境显示明天将会很棒 (Ø $score)。';
   }
 
   @override
   String predTextBad(String day, String score) {
-    return 'For $day, data predicts slightly lower energy levels (Ø $score).';
+    return '关于 $day，数据显示能量水平可能稍低 (Ø $score)。';
   }
 
   @override
   String predTextNormal(String day, String score) {
-    return 'The forecast for $day is balanced (Ø $score).';
+    return '$day 的预测显示平稳 (Ø $score)。';
   }
 
   @override
-  String get tipSleep => 'Tip: Go to sleep earlier today.';
+  String get tipSleep => '提示：今天早点休息吧。';
 
   @override
-  String get tipFamilyBad => 'Household vibes were tense recently.';
+  String get tipFamilyBad => '最近家庭氛围比较紧张。';
 
   @override
-  String get tipFamilyGood => 'Positive household vibes give you a boost!';
+  String get tipFamilyGood => '家庭氛围很好，给你带来了动力！';
 
   @override
-  String get authLoginTitle => 'Welcome back';
+  String get authLoginTitle => '欢迎回来';
 
   @override
-  String get authRegisterTitle => 'Create new account';
+  String get authRegisterTitle => '创建新账号';
 
   @override
-  String get authEmailLabel => 'E-Mail';
+  String get authEmailLabel => '邮箱';
 
   @override
-  String get authPasswordLabel => 'Password';
+  String get authPasswordLabel => '密码';
 
   @override
-  String get authLoginButton => 'Login';
+  String get authLoginButton => '登录';
 
   @override
-  String get authRegisterButton => 'Register';
+  String get authRegisterButton => '注册';
 
   @override
-  String get authHaveAccount => 'I already have an account';
+  String get authHaveAccount => '我已有账号';
 
   @override
-  String get authNoAccount => 'Register';
+  String get authNoAccount => '注册';
 
   @override
-  String get authLoading => 'Loading...';
+  String get authLoading => '加载中...';
 
   @override
   String authError(String message) {
-    return 'Error: $message';
+    return '错误: $message';
   }
 
   @override
-  String get authSuccessVerify => 'Please verify your email!';
+  String get authSuccessVerify => '请验证你的邮箱！';
+
+  @override
+  String get legal => 'Legal';
+
+  @override
+  String get imprint => 'Imprint';
+
+  @override
+  String get privacy => 'Privacy Policy';
+
+  @override
+  String get tutorialMoodTitle => 'Your Mood';
+
+  @override
+  String get tutorialMoodDesc =>
+      'Move the slider to capture how you feel right now.';
+
+  @override
+  String get tutorialSaveTitle => 'Save Entry';
+
+  @override
+  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+
+  @override
+  String get tutorialStatsTitle => 'Your Insights';
+
+  @override
+  String get tutorialStatsDesc =>
+      'Discover charts and patterns about your mood here.';
+
+  @override
+  String get tutorialProfileTitle => 'Your Profile';
+
+  @override
+  String get tutorialProfileDesc =>
+      'Manage your data, settings, and exports here.';
 }
