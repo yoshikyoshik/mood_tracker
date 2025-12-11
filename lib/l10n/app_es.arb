@@ -1,0 +1,13 @@
+{
+  "appTitle": "LuvioSphere",
+  "today": "Hoy",
+  "moodEntry": "Entrada",
+  "statistics": "Estadísticas",
+  "profile": "Perfil",
+  "newProfile": "Nuevo...",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "streakMessage": "¡Racha de {count} días! ¡Sigue así! 🔥"
+}

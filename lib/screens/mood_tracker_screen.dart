@@ -11,6 +11,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
+import '../l10n/generated/app_localizations.dart';
+
 import '../models/mood_entry.dart';
 import '../models/profile.dart';
 import '../models/subscription.dart';
@@ -99,6 +101,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary; 
         
@@ -109,7 +112,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     final headerTextColor = Colors.black87;
 
     final dateString = DateUtils.isSameDay(_selectedDate, DateTime.now()) 
-        ? "Heute" : DateFormat('dd.MM.yyyy').format(_selectedDate);
+        ? l10n.today : DateFormat('dd.MM.yyyy').format(_selectedDate);
 
     final relevantEntries = (_selectedProfileId == null) 
         ? <MoodEntry>[] 
@@ -207,7 +210,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                                         ],
                                       );
                                     }),
-                                    const Text("Neu..."), 
+                                    Text(l10n.newProfile), 
                                   ];
                                 },
                                 items: [
@@ -230,7 +233,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
                                             color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo
                                           ),
                                           const SizedBox(width: 10),
-                                          Text("Neu...", style: TextStyle(color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo)),
+                                          Text(l10n.newProfile, style: TextStyle(color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo)),
                                         ],
                                       ),
                                     ),
@@ -360,17 +363,17 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
             NavigationDestination(
               icon: const Icon(Icons.add_reaction_outlined),
               selectedIcon: Icon(Icons.add_reaction, color: primaryColor),
-              label: 'Eintrag',
+              label: l10n.moodEntry,
             ),
             NavigationDestination(
               icon: const Icon(Icons.insights_outlined),
               selectedIcon: Icon(Icons.insights, color: primaryColor),
-              label: 'Statistik',
+              label: l10n.statistics,
             ),
             NavigationDestination(
               icon: const Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person, color: primaryColor),
-              label: 'Profil',
+              label: l10n.profile,
             ),
           ],
         ),
@@ -943,6 +946,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
   }
 
   Widget _buildStreakBadge() {
+    final l10n = AppLocalizations.of(context)!;
     final int streak = _calculateStreak();
     Color color;
     IconData icon = Icons.local_fire_department_outlined; 
@@ -955,7 +959,7 @@ class _MoodTrackerScreenState extends State<MoodTrackerScreen> {
     else { color = Colors.deepPurpleAccent; isLegendary = true; icon = Icons.auto_awesome; }
 
     return InkWell(
-      onTap: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$streak Tage in Folge! Weiter so! 🔥"))); },
+      onTap: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.streakMessage(streak)))); },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
         margin: const EdgeInsets.only(right: 8), 

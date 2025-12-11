@@ -1,0 +1,13 @@
+{
+  "appTitle": "LuvioSphere",
+  "today": "今天",
+  "moodEntry": "条目",
+  "statistics": "统计",
+  "profile": "个人资料",
+  "newProfile": "新...",
+  "save": "保存",
+  "cancel": "取消",
+  "delete": "删除",
+  "edit": "编辑",
+  "streakMessage": "连续 {count} 天！继续加油！🔥"
+}

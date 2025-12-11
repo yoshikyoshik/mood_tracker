@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/generated/app_localizations.dart';
+
 // Wir importieren nur noch den "AuthGate" Screen, 
 // alles andere ist hinter den Kulissen versteckt.
 import 'screens/auth_gate.dart';
@@ -39,11 +42,27 @@ class MoodApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Mood Tracker',
-      theme: AppTheme.lightTheme, 
-      
-      home: const AuthGate(),
-    );
+  title: 'LuvioSphere', // Hier noch hardcoded Fallback
+  debugShowCheckedModeBanner: false,
+  theme: AppTheme.lightTheme,
+
+  // --- NEUE LOKALISIERUNG ---
+  localizationsDelegates: [
+    AppLocalizations.delegate, // Unsere eigenen Texte
+    GlobalMaterialLocalizations.delegate, // Flutter Standard-Texte (Datumswähler, etc.)
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ],
+  supportedLocales: const [
+    Locale('de'), // Deutsch
+    Locale('en'), // Englisch
+    Locale('ru'), // Russisch
+    Locale('es'), // Spanisch
+    Locale('zh'), // Chinesisch
+  ],
+  // --------------------------
+
+  home: const AuthGate(),
+);
   }
 }

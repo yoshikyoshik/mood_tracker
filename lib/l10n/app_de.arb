@@ -1,0 +1,20 @@
+{
+  "appTitle": "LuvioSphere",
+  "today": "Heute",
+  "moodEntry": "Eintrag",
+  "statistics": "Statistik",
+  "profile": "Profil",
+  "newProfile": "Neu...",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "edit": "Bearbeiten",
+  "streakMessage": "{count} Tage in Folge! Weiter so! 🔥",
+  "@streakMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}
