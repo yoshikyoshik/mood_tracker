@@ -495,4 +495,54 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get exportPdf => 'Create Report (PDF)';
+
+  @override
+  String get predCycleRest => 'Your cycle might demand some rest.';
+
+  @override
+  String get predCyclePower => 'Your cycle gives you extra power!';
+
+  @override
+  String get predSentimentStress => 'Your notes seemed stressed lately.';
+
+  @override
+  String get predSleepTip => 'Tip: Go to sleep earlier today.';
+
+  @override
+  String get aiCalibration => 'AI Calibration...';
+
+  @override
+  String aiCalibrationText(int missing) {
+    return 'Setting up your Smart Forecast. We need $missing more entries.';
+  }
+
+  @override
+  String aiEntriesCount(int count, int target) {
+    return '$count / $target entries';
+  }
+
+  @override
+  String get lockedPredTitle => 'How will your day be tomorrow?';
+
+  @override
+  String get lockedPredDesc => 'Based on your sleep, trend, and weekday.';
+
+  @override
+  String get lockedAiTitle => 'Deep analysis of your week';
+
+  @override
+  String get errorNoEntries7Days => 'No entries found in the last 7 days.';
+
+  @override
+  String errorAnalysisFailed(Object code) {
+    return 'Analysis failed: $code';
+  }
+
+  @override
+  String get sentimentNegativeWords =>
+      'Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad';
+
+  @override
+  String get sentimentPositiveWords =>
+      'Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party';
 }

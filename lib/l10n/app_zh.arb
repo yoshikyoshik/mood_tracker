@@ -171,5 +171,25 @@
   "tutorialProfileDesc": "Manage your data, settings, and exports here.",
   "tutorialStart": "Start Tutorial",
 
-  "exportPdf": "Create Report (PDF)"
+  "exportPdf": "Create Report (PDF)",
+
+  "predCycleRest": "Your cycle might demand some rest.",
+  "predCyclePower": "Your cycle gives you extra power!",
+  "predSentimentStress": "Your notes seemed stressed lately.",
+  "predSleepTip": "Tip: Go to sleep earlier today.",
+  
+  "aiCalibration": "AI Calibration...",
+  "aiCalibrationText": "Setting up your Smart Forecast. We need {missing} more entries.",
+  "aiEntriesCount": "{count} / {target} entries",
+  
+  "lockedPredTitle": "How will your day be tomorrow?",
+  "lockedPredDesc": "Based on your sleep, trend, and weekday.",
+  
+  "lockedAiTitle": "Deep analysis of your week",
+  
+  "errorNoEntries7Days": "No entries found in the last 7 days.",
+  "errorAnalysisFailed": "Analysis failed: {code}",
+  
+  "sentimentNegativeWords": "Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad",
+  "sentimentPositiveWords": "Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party"
 }

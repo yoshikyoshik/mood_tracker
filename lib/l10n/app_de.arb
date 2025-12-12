@@ -181,5 +181,28 @@
   "tutorialProfileDesc": "Verwalte hier deine Daten, Einstellungen und Export-Funktionen.",
   "tutorialStart": "Tutorial starten",
 
-  "exportPdf": "Report erstellen (PDF)"
+  "exportPdf": "Report erstellen (PDF)",
+
+  "predCycleRest": "Dein Zyklus fordert vielleicht etwas Ruhe.",
+  "predCyclePower": "Dein Zyklus gibt dir extra Power!",
+  "predSentimentStress": "Deine Notizen wirkten zuletzt gestresst.",
+  "predSleepTip": "Tipp: Geh heute früher schlafen.",
+  
+  "aiCalibration": "AI Kalibrierung...",
+  "aiCalibrationText": "Deine Smart Forecast wird eingerichtet. Wir benötigen noch {missing} Einträge.",
+  "@aiCalibrationText": { "placeholders": { "missing": { "type": "int" } } },
+  "aiEntriesCount": "{count} / {target} Einträge",
+  "@aiEntriesCount": { "placeholders": { "count": { "type": "int" }, "target": { "type": "int" } } },
+  
+  "lockedPredTitle": "Wie wird dein Tag morgen?",
+  "lockedPredDesc": "Basierend auf deinem Schlaf, Trend und Wochentag.",
+  
+  "lockedAiTitle": "Tiefenanalyse deiner Woche",
+  
+  "errorNoEntries7Days": "Keine Einträge in den letzten 7 Tagen gefunden.",
+  "errorAnalysisFailed": "Fehler bei der Analyse: {code}",
+  "@errorAnalysisFailed": { "placeholders": { "code": { "type": "Object" } } },
+  
+  "sentimentNegativeWords": "Stress,Streit,Krank,Schmerz,Müde,Angst,Traurig,Schlecht",
+  "sentimentPositiveWords": "Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party"
 }

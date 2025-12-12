@@ -110,9 +110,13 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Tags neu laden, wenn sich die Sprache ändert
+    // Wenn wir Profile haben (also eingeloggt sind), müssen wir bei Sprachwechsel handeln
     if (_profiles.isNotEmpty) {
+      // 1. Standard-Tags in neuer Sprache laden (löscht erst mal Custom Tags)
       _initializeTagsMap();
+      
+      // 2. WICHTIG: Custom Tags sofort wieder aus der DB holen und einsortieren!
+      _loadCustomTags();
     }
   }
 
@@ -621,7 +625,16 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     if (user == null || _selectedProfileId == null) return;
     final newEntry = MoodEntry(timestamp: DateTime.now(), score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId!);
     try {
-      final res = await Supabase.instance.client.from('mood_entries').insert({'user_id': user.id, 'profile_id': _selectedProfileId, 'score': newEntry.score, 'sleep_rating': newEntry.sleepRating, 'tags': newEntry.tags.toList(), 'note': newEntry.note}).select().single();
+      // Wir erstellen eine Map aus dem Objekt, fügen aber die UserID manuell hinzu
+    final entryData = newEntry.toMap();
+    entryData['user_id'] = user.id; // User ID muss zwingend mit rein
+    // profile_id ist schon im toMap, wenn newEntry es hat
+
+    final res = await Supabase.instance.client
+        .from('mood_entries')
+        .insert(entryData) // Nutzt jetzt die toUtc() Logik aus dem Model!
+        .select()
+        .single();
       setState(() { _allEntries.insert(0, MoodEntry.fromMap(res)); _showSuccessAnimation = true; _selectedTags.clear(); _noteController.clear(); });
       Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }

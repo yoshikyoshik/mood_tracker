@@ -36,6 +36,7 @@ class _StatsViewState extends State<StatsView> {
 
   // --- LOGIK: WOCHE ANALYSIEREN ---
   Future<void> _analyzeWeek() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isAnalyzing = true;
       _analysisResult = null;
@@ -48,7 +49,7 @@ class _StatsViewState extends State<StatsView> {
       if (weekEntries.isEmpty) {
         setState(() {
           _isAnalyzing = false;
-          _analysisResult = "Keine Einträge in den letzten 7 Tagen gefunden.";
+          _analysisResult = l10n.errorNoEntries7Days;
         });
         return;
       }
@@ -71,12 +72,13 @@ class _StatsViewState extends State<StatsView> {
         });
       } else {
         setState(() {
-          _analysisResult = "Fehler bei der Analyse: ${response.statusCode}";
+          _analysisResult = l10n.errorAnalysisFailed(response.statusCode);
         });
       }
     } catch (e) {
       setState(() {
-        _analysisResult = "Verbindungsfehler: $e";
+        // FIX: Unnecessary string interpolation entfernt
+        _analysisResult = l10n.snackError(e.toString());
       });
     } finally {
       if (mounted) {
@@ -96,10 +98,11 @@ class _StatsViewState extends State<StatsView> {
   }
 
   // --- HELPER: KEYWORD SENTIMENT ---
-  double _calculateSentimentImpact(List<MoodEntry> recentEntries) {
+  double _calculateSentimentImpact(List<MoodEntry> recentEntries, AppLocalizations l10n) {
     double impact = 0.0;
-    final negativeWords = ['Stress', 'Streit', 'Krank', 'Schmerz', 'Müde', 'Angst', 'Traurig', 'Schlecht'];
-    final positiveWords = ['Urlaub', 'Liebe', 'Erfolg', 'Sport', 'Glücklich', 'Super', 'Entspannt', 'Party'];
+    // Wir holen die Listen aus der Lokalisierung (Kommasepariert)
+    final negativeWords = l10n.sentimentNegativeWords.split(',').map((s) => s.trim()).toList();
+    final positiveWords = l10n.sentimentPositiveWords.split(',').map((s) => s.trim()).toList();
 
     for (var entry in recentEntries) {
       if (entry.note == null) {
@@ -156,7 +159,7 @@ class _StatsViewState extends State<StatsView> {
           if (!widget.isPro)
             _buildLockedPredictionCard(l10n)
           else if (widget.entries.length < 5)
-            _buildEmptyPredictionCard()
+            _buildEmptyPredictionCard(l10n)
           else
             _buildPredictionCard(l10n),
 
@@ -269,7 +272,7 @@ class _StatsViewState extends State<StatsView> {
 
   // --- WIDGETS ---
 
-  Widget _buildEmptyPredictionCard() {
+  Widget _buildEmptyPredictionCard(AppLocalizations l10n) {
     final int count = widget.entries.length;
     final int target = 5; 
     final int missing = target - count;
@@ -288,16 +291,16 @@ class _StatsViewState extends State<StatsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-               Icon(Icons.show_chart, color: Colors.white, size: 24),
-               SizedBox(width: 15),
-               Text("AI Kalibrierung...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+               const Icon(Icons.show_chart, color: Colors.white, size: 24),
+               const SizedBox(width: 15),
+               Text(l10n.aiCalibration, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            "Deine Smart Forecast wird eingerichtet. Wir benötigen noch $missing Einträge.",
+            l10n.aiCalibrationText(missing),
             style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 15),
@@ -309,6 +312,11 @@ class _StatsViewState extends State<StatsView> {
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
             ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(l10n.aiEntriesCount(count, target), style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -340,9 +348,9 @@ class _StatsViewState extends State<StatsView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.statsTrendTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(l10n.lockedPredTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  const Text("Wie wird dein Tag morgen? Basierend auf deinem Schlaf, Trend und Wochentag.", style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                  Text(l10n.lockedPredDesc, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
                 ],
               ),
             ),
@@ -367,7 +375,7 @@ class _StatsViewState extends State<StatsView> {
             children: [
               const Icon(Icons.lock_person_outlined, size: 48, color: Colors.indigo),
               const SizedBox(height: 15),
-              const Text("Tiefenanalyse deiner Woche", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              Text(l10n.lockedAiTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               const SizedBox(height: 8),
               Text(
                 l10n.statsAiIntro,
@@ -407,13 +415,12 @@ class _StatsViewState extends State<StatsView> {
 
     // 2. Trend (Letzte 3 Einträge)
     final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    // FIX: Hier definieren wir last3 für den Sentiment Check
-    final last3 = recentEntries.take(3).toList();
+    final last3 = recentEntries.take(3).toList(); 
     
     double trendImpact = 0.0;
     if (last3.isNotEmpty) {
       double recentAvg = last3.fold(0.0, (sum, e) => sum + e.score) / last3.length;
-      trendImpact = (recentAvg - baseScore) * 0.5; // Trend wiegt 50%
+      trendImpact = (recentAvg - baseScore) * 0.5;
     }
 
     // 3. Schlaf Malus
@@ -436,7 +443,7 @@ class _StatsViewState extends State<StatsView> {
     }).toList();
 
     double householdImpact = 0.0;
-    String familyText = "";
+    String familyText = ""; 
 
     if (otherEntriesRecent.isNotEmpty) {
       final householdAvg = otherEntriesRecent.fold(0.0, (sum, e) => sum + e.score) / otherEntriesRecent.length;
@@ -451,7 +458,7 @@ class _StatsViewState extends State<StatsView> {
 
     // 5. NEU: Zyklus & Sentiment
     double cycleImpact = _calculateCycleImpact(tomorrow);
-    double sentimentImpact = _calculateSentimentImpact(last3);
+    double sentimentImpact = _calculateSentimentImpact(last3, l10n);
 
     // Score Berechnung
     double predictionScore = baseScore + trendImpact + sleepImpact + householdImpact + cycleImpact + sentimentImpact;
@@ -484,16 +491,16 @@ class _StatsViewState extends State<StatsView> {
 
     // Smart Tips anhängen
     if (cycleImpact < -0.5) {
-      text += " Dein Zyklus fordert vielleicht etwas Ruhe.";
+      text += " ${l10n.predCycleRest}";
     }
     if (cycleImpact > 0.5) {
-      text += " Dein Zyklus gibt dir extra Power!";
+      text += " ${l10n.predCyclePower}";
     }
     if (sentimentImpact < -0.5) {
-      text += " Deine Notizen wirkten zuletzt gestresst.";
+      text += " ${l10n.predSentimentStress}";
     }
     if (sleepImpact < 0) {
-      text += " ${l10n.tipSleep}";
+      text += " ${l10n.predSleepTip}";
     }
     if (familyText.isNotEmpty) {
       text += " $familyText";
@@ -607,7 +614,9 @@ class _StatsViewState extends State<StatsView> {
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < chartData.length) {
-                  if (chartData.length > 7 && index % 2 != 0) return const SizedBox.shrink();
+                  if (chartData.length > 7 && index % 2 != 0) {
+                    return const SizedBox.shrink();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(

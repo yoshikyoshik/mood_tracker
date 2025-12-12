@@ -1039,6 +1039,90 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Report erstellen (PDF)'**
   String get exportPdf;
+
+  /// No description provided for @predCycleRest.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Zyklus fordert vielleicht etwas Ruhe.'**
+  String get predCycleRest;
+
+  /// No description provided for @predCyclePower.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Zyklus gibt dir extra Power!'**
+  String get predCyclePower;
+
+  /// No description provided for @predSentimentStress.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Notizen wirkten zuletzt gestresst.'**
+  String get predSentimentStress;
+
+  /// No description provided for @predSleepTip.
+  ///
+  /// In de, this message translates to:
+  /// **'Tipp: Geh heute früher schlafen.'**
+  String get predSleepTip;
+
+  /// No description provided for @aiCalibration.
+  ///
+  /// In de, this message translates to:
+  /// **'AI Kalibrierung...'**
+  String get aiCalibration;
+
+  /// No description provided for @aiCalibrationText.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Smart Forecast wird eingerichtet. Wir benötigen noch {missing} Einträge.'**
+  String aiCalibrationText(int missing);
+
+  /// No description provided for @aiEntriesCount.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} / {target} Einträge'**
+  String aiEntriesCount(int count, int target);
+
+  /// No description provided for @lockedPredTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Wie wird dein Tag morgen?'**
+  String get lockedPredTitle;
+
+  /// No description provided for @lockedPredDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Basierend auf deinem Schlaf, Trend und Wochentag.'**
+  String get lockedPredDesc;
+
+  /// No description provided for @lockedAiTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Tiefenanalyse deiner Woche'**
+  String get lockedAiTitle;
+
+  /// No description provided for @errorNoEntries7Days.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Einträge in den letzten 7 Tagen gefunden.'**
+  String get errorNoEntries7Days;
+
+  /// No description provided for @errorAnalysisFailed.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehler bei der Analyse: {code}'**
+  String errorAnalysisFailed(Object code);
+
+  /// No description provided for @sentimentNegativeWords.
+  ///
+  /// In de, this message translates to:
+  /// **'Stress,Streit,Krank,Schmerz,Müde,Angst,Traurig,Schlecht'**
+  String get sentimentNegativeWords;
+
+  /// No description provided for @sentimentPositiveWords.
+  ///
+  /// In de, this message translates to:
+  /// **'Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party'**
+  String get sentimentPositiveWords;
 }
 
 class _AppLocalizationsDelegate

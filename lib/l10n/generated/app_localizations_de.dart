@@ -498,4 +498,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exportPdf => 'Report erstellen (PDF)';
+
+  @override
+  String get predCycleRest => 'Dein Zyklus fordert vielleicht etwas Ruhe.';
+
+  @override
+  String get predCyclePower => 'Dein Zyklus gibt dir extra Power!';
+
+  @override
+  String get predSentimentStress => 'Deine Notizen wirkten zuletzt gestresst.';
+
+  @override
+  String get predSleepTip => 'Tipp: Geh heute früher schlafen.';
+
+  @override
+  String get aiCalibration => 'AI Kalibrierung...';
+
+  @override
+  String aiCalibrationText(int missing) {
+    return 'Deine Smart Forecast wird eingerichtet. Wir benötigen noch $missing Einträge.';
+  }
+
+  @override
+  String aiEntriesCount(int count, int target) {
+    return '$count / $target Einträge';
+  }
+
+  @override
+  String get lockedPredTitle => 'Wie wird dein Tag morgen?';
+
+  @override
+  String get lockedPredDesc =>
+      'Basierend auf deinem Schlaf, Trend und Wochentag.';
+
+  @override
+  String get lockedAiTitle => 'Tiefenanalyse deiner Woche';
+
+  @override
+  String get errorNoEntries7Days =>
+      'Keine Einträge in den letzten 7 Tagen gefunden.';
+
+  @override
+  String errorAnalysisFailed(Object code) {
+    return 'Fehler bei der Analyse: $code';
+  }
+
+  @override
+  String get sentimentNegativeWords =>
+      'Stress,Streit,Krank,Schmerz,Müde,Angst,Traurig,Schlecht';
+
+  @override
+  String get sentimentPositiveWords =>
+      'Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party';
 }
