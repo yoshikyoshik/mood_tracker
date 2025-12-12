@@ -408,7 +408,10 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                         ? StatsView(
                             entries: relevantEntries,
                             allEntries: _allEntries,
-                            profileName: currentProfileName,
+                            currentProfile: _profiles.firstWhere(
+                                (p) => p.id == _selectedProfileId, 
+                                orElse: () => Profile(id: 'dummy', name: 'Gast')
+                            ),
                             isPro: _isPro,
                             onUnlockPressed: _startCheckout,
                           )

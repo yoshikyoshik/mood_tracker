@@ -5,14 +5,15 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 
+import '../models/profile.dart';
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
-import '../l10n/generated/app_localizations.dart'; // <--- WICHTIG: Import
+import '../l10n/generated/app_localizations.dart';
 
 class StatsView extends StatefulWidget {
   final List<MoodEntry> entries;
   final List<MoodEntry> allEntries;
-  final String profileName;
+  final Profile currentProfile; // Das ganze Profil (für Zyklus-Daten)
   final bool isPro;
   final VoidCallback onUnlockPressed;
 
@@ -20,7 +21,7 @@ class StatsView extends StatefulWidget {
     super.key,
     required this.entries,
     required this.allEntries,
-    required this.profileName,
+    required this.currentProfile,
     required this.isPro,
     required this.onUnlockPressed,
   });
@@ -35,21 +36,26 @@ class _StatsViewState extends State<StatsView> {
 
   // --- LOGIK: WOCHE ANALYSIEREN ---
   Future<void> _analyzeWeek() async {
-    setState(() { _isAnalyzing = true; _analysisResult = null; });
+    setState(() {
+      _isAnalyzing = true;
+      _analysisResult = null;
+    });
     try {
       final now = DateTime.now();
       final sevenDaysAgo = now.subtract(const Duration(days: 7));
       final weekEntries = widget.entries.where((e) => e.timestamp.isAfter(sevenDaysAgo)).toList();
       
       if (weekEntries.isEmpty) {
-        // Hinweis: Für Fehlermeldungen könnten wir später auch Keys anlegen
-        setState(() { _isAnalyzing = false; _analysisResult = "Keine Einträge in den letzten 7 Tagen gefunden."; });
+        setState(() {
+          _isAnalyzing = false;
+          _analysisResult = "Keine Einträge in den letzten 7 Tagen gefunden.";
+        });
         return;
       }
       weekEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       StringBuffer sb = StringBuffer();
-      sb.writeln("Daten für ${widget.profileName}:");
+      sb.writeln("Daten für ${widget.currentProfile.name}:");
       for (var e in weekEntries) {
         final date = DateFormat('dd.MM.').format(e.timestamp);
         sb.writeln("- $date: Stimmung ${e.score.toStringAsFixed(1)}, Schlaf ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. Notiz: ${e.note ?? ''}");
@@ -60,14 +66,22 @@ class _StatsViewState extends State<StatsView> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        setState(() { _analysisResult = data['result']; });
+        setState(() {
+          _analysisResult = data['result'];
+        });
       } else {
-        setState(() { _analysisResult = "Fehler bei der Analyse: ${response.statusCode}"; });
+        setState(() {
+          _analysisResult = "Fehler bei der Analyse: ${response.statusCode}";
+        });
       }
     } catch (e) {
-      setState(() { _analysisResult = "Verbindungsfehler: $e"; });
+      setState(() {
+        _analysisResult = "Verbindungsfehler: $e";
+      });
     } finally {
-      if (mounted) setState(() => _isAnalyzing = false);
+      if (mounted) {
+        setState(() => _isAnalyzing = false);
+      }
     }
   }
 
@@ -81,9 +95,57 @@ class _StatsViewState extends State<StatsView> {
     return data;
   }
 
+  // --- HELPER: KEYWORD SENTIMENT ---
+  double _calculateSentimentImpact(List<MoodEntry> recentEntries) {
+    double impact = 0.0;
+    final negativeWords = ['Stress', 'Streit', 'Krank', 'Schmerz', 'Müde', 'Angst', 'Traurig', 'Schlecht'];
+    final positiveWords = ['Urlaub', 'Liebe', 'Erfolg', 'Sport', 'Glücklich', 'Super', 'Entspannt', 'Party'];
+
+    for (var entry in recentEntries) {
+      if (entry.note == null) {
+        continue;
+      }
+      final noteLower = entry.note!.toLowerCase();
+      
+      for (var word in negativeWords) {
+        if (noteLower.contains(word.toLowerCase())) {
+          impact -= 0.3;
+        }
+      }
+      for (var word in positiveWords) {
+        if (noteLower.contains(word.toLowerCase())) {
+          impact += 0.3;
+        }
+      }
+    }
+    return impact.clamp(-1.5, 1.5);
+  }
+
+  // --- HELPER: ZYKLUS FAKTOR ---
+  double _calculateCycleImpact(DateTime targetDate) {
+    if (!widget.currentProfile.isCycleTracking || widget.currentProfile.lastPeriodDate == null) {
+      return 0.0;
+    }
+
+    final daysSincePeriod = targetDate.difference(widget.currentProfile.lastPeriodDate!).inDays;
+    final cycleDay = (daysSincePeriod % 28) + 1;
+
+    if (cycleDay >= 1 && cycleDay <= 5) {
+      return -0.8; // Periode
+    }
+    if (cycleDay >= 12 && cycleDay <= 16) {
+      return 0.8; // Eisprung
+    }
+    if (cycleDay >= 24 && cycleDay <= 28) {
+      return -0.6; // PMS
+    }
+
+    return 0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // <--- Zugriff auf Texte
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       color: const Color(0xFFF5F7FA), 
@@ -102,7 +164,7 @@ class _StatsViewState extends State<StatsView> {
 
           // 1. HEATMAP CARD
           _buildCard(
-            title: l10n.statsYearly, // LOKALISIERT
+            title: l10n.statsYearly,
             icon: Icons.calendar_month,
             child: widget.entries.isEmpty 
               ? Padding(padding: const EdgeInsets.all(20), child: Center(child: Text(l10n.statsNoData)))
@@ -141,7 +203,7 @@ class _StatsViewState extends State<StatsView> {
 
           // 2. CHART CARD
           _buildCard(
-            title: l10n.statsChartTitle, // LOKALISIERT
+            title: l10n.statsChartTitle,
             icon: Icons.show_chart,
             child: Column(
               children: [
@@ -150,7 +212,7 @@ class _StatsViewState extends State<StatsView> {
                   height: 250,
                   child: widget.entries.isEmpty 
                     ? Center(child: Text(l10n.statsNoData))
-                    : _buildInteractiveChart(l10n), // l10n übergeben
+                    : _buildInteractiveChart(l10n),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -158,11 +220,11 @@ class _StatsViewState extends State<StatsView> {
                   children: [
                     Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.black87, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    Text(l10n.statsMood, style: const TextStyle(fontSize: 12)), // LOKALISIERT
+                    Text(l10n.statsMood, style: const TextStyle(fontSize: 12)),
                     const SizedBox(width: 20),
                     Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.indigoAccent.withValues(alpha: 0.5), shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    Text(l10n.statsSleep, style: const TextStyle(fontSize: 12)), // LOKALISIERT
+                    Text(l10n.statsSleep, style: const TextStyle(fontSize: 12)),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -172,7 +234,7 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
-          // 3. AI COACH CARD (PRO FEATURE)
+          // 3. AI COACH CARD
           if (widget.isPro)
             _buildAICard(l10n)
           else
@@ -182,7 +244,7 @@ class _StatsViewState extends State<StatsView> {
 
           // 4. WOCHENTAGS STATS
           _buildCard(
-            title: l10n.statsPatternDay, // LOKALISIERT
+            title: l10n.statsPatternDay,
             icon: Icons.bar_chart,
             child: SizedBox(
               height: 220,
@@ -205,9 +267,8 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-// --- PRO TEASER CARDS (MARKETING) ---
+  // --- WIDGETS ---
 
-// --- KALIBRIERUNGS-KARTE ---
   Widget _buildEmptyPredictionCard() {
     final int count = widget.entries.length;
     final int target = 5; 
@@ -227,15 +288,11 @@ class _StatsViewState extends State<StatsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.show_chart, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 15),
-              const Text("AI Kalibrierung...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+               Icon(Icons.show_chart, color: Colors.white, size: 24),
+               SizedBox(width: 15),
+               Text("AI Kalibrierung...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 12),
@@ -253,17 +310,11 @@ class _StatsViewState extends State<StatsView> {
               minHeight: 6,
             ),
           ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text("$count / $target Einträge", style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.bold)),
-          ),
         ],
       ),
     );
   }
 
-  // Teaser für Prediction
   Widget _buildLockedPredictionCard(AppLocalizations l10n) {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
@@ -302,12 +353,11 @@ class _StatsViewState extends State<StatsView> {
     );
   }
 
-  // Teaser für AI Coach
   Widget _buildLockedAICard(AppLocalizations l10n) {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
       child: _buildCard(
-        title: "AI Wochen-Coach", // Kann optional auch durch l10n.statsAiIntro ersetzt werden, wenn gewünscht
+        title: "AI Wochen-Coach",
         icon: Icons.auto_awesome, 
         child: Container(
           width: double.infinity,
@@ -346,33 +396,38 @@ class _StatsViewState extends State<StatsView> {
   Widget _buildPredictionCard(AppLocalizations l10n) {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     
-    // Faktor 1: Wochentag
+    // 1. Basis: Wochentag
     final weekdayEntries = widget.entries.where((e) => e.timestamp.weekday == tomorrow.weekday).toList();
-    double weekdayAvg = 0;
+    double baseScore = 5.0;
     if (weekdayEntries.isNotEmpty) {
-      weekdayAvg = weekdayEntries.fold(0.0, (sum, e) => sum + e.score) / weekdayEntries.length;
-    } else {
-      weekdayAvg = widget.entries.fold(0.0, (sum, e) => sum + e.score) / (widget.entries.isEmpty ? 1 : widget.entries.length);
+      baseScore = weekdayEntries.fold(0.0, (sum, e) => sum + e.score) / weekdayEntries.length;
+    } else if (widget.entries.isNotEmpty) {
+      baseScore = widget.entries.fold(0.0, (sum, e) => sum + e.score) / widget.entries.length;
     }
 
-    // Faktor 2: Trend
+    // 2. Trend (Letzte 3 Einträge)
     final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    double trendAvg = weekdayAvg; 
-    if (recentEntries.isNotEmpty) {
-      final takeCount = recentEntries.length > 3 ? 3 : recentEntries.length;
-      final recentSubset = recentEntries.sublist(0, takeCount);
-      trendAvg = recentSubset.fold(0.0, (sum, e) => sum + e.score) / takeCount;
+    // FIX: Hier definieren wir last3 für den Sentiment Check
+    final last3 = recentEntries.take(3).toList();
+    
+    double trendImpact = 0.0;
+    if (last3.isNotEmpty) {
+      double recentAvg = last3.fold(0.0, (sum, e) => sum + e.score) / last3.length;
+      trendImpact = (recentAvg - baseScore) * 0.5; // Trend wiegt 50%
     }
 
-    // Faktor 3: Schlaf
-    double sleepImpact = 0;
+    // 3. Schlaf Malus
+    double sleepImpact = 0.0;
     if (recentEntries.isNotEmpty && recentEntries.first.sleepRating != null) {
       final lastSleep = recentEntries.first.sleepRating!;
-      if (lastSleep < 5.0) { sleepImpact = -0.8; } 
-      else if (lastSleep > 7.0) { sleepImpact = 0.3; }
+      if (lastSleep < 5.0) {
+        sleepImpact = -0.8;
+      } else if (lastSleep > 8.0) {
+        sleepImpact = 0.4;
+      }
     }
 
-    // Faktor 4: Household Vibe
+    // 4. Household Vibe
     final myEntryIds = widget.entries.map((e) => e.id).toSet();
     final otherEntriesRecent = widget.allEntries.where((e) {
       final isNotMine = !myEntryIds.contains(e.id);
@@ -380,36 +435,38 @@ class _StatsViewState extends State<StatsView> {
       return isNotMine && isRecent;
     }).toList();
 
-    double householdImpact = 0;
+    double householdImpact = 0.0;
     String familyText = "";
 
     if (otherEntriesRecent.isNotEmpty) {
       final householdAvg = otherEntriesRecent.fold(0.0, (sum, e) => sum + e.score) / otherEntriesRecent.length;
       if (householdAvg < 4.0) {
         householdImpact = -0.6; 
-        familyText = "Die Stimmung im Haus war zuletzt angespannt.";
+        familyText = l10n.tipFamilyBad;
       } else if (householdAvg > 8.0) {
         householdImpact = 0.4; 
-        familyText = "Positive Vibes im Haushalt geben dir Rückenwind!";
+        familyText = l10n.tipFamilyGood;
       }
     }
 
-    // Score
-    final double predictionScore = (weekdayAvg * 0.45) + (trendAvg * 0.45) + sleepImpact + householdImpact;
-    final double finalScore = predictionScore.clamp(0.0, 10.0);
+    // 5. NEU: Zyklus & Sentiment
+    double cycleImpact = _calculateCycleImpact(tomorrow);
+    double sentimentImpact = _calculateSentimentImpact(last3);
 
-    String title = l10n.statsTrendTitle;
-    String text = "";
+    // Score Berechnung
+    double predictionScore = baseScore + trendImpact + sleepImpact + householdImpact + cycleImpact + sentimentImpact;
+    final double finalScore = predictionScore.clamp(1.0, 10.0);
+
+    String title;
+    String text;
     IconData icon = Icons.lightbulb_outline;
     List<Color> colors = [Colors.deepPurple.shade400, Colors.indigo.shade600];
 
-    // Formatierung des Wochentags passend zur Sprache
     final weekdayName = DateFormat('EEEE', l10n.localeName).format(tomorrow);
     final scoreString = finalScore.toStringAsFixed(1);
 
     if (finalScore >= 7.5) {
       title = l10n.statsTrendGood;
-      // NEU: Nutzung der Parameter {day} und {score}
       text = l10n.predTextGood(weekdayName, scoreString);
       icon = Icons.wb_sunny_rounded;
       colors = [Colors.orange.shade400, Colors.deepOrange.shade600];
@@ -425,8 +482,22 @@ class _StatsViewState extends State<StatsView> {
       colors = [Colors.teal.shade400, Colors.teal.shade700];
     }
 
-    if (sleepImpact < 0) text += " ${l10n.tipSleep}";
-    if (familyText.isNotEmpty) text += " $familyText";
+    // Smart Tips anhängen
+    if (cycleImpact < -0.5) {
+      text += " Dein Zyklus fordert vielleicht etwas Ruhe.";
+    }
+    if (cycleImpact > 0.5) {
+      text += " Dein Zyklus gibt dir extra Power!";
+    }
+    if (sentimentImpact < -0.5) {
+      text += " Deine Notizen wirkten zuletzt gestresst.";
+    }
+    if (sleepImpact < 0) {
+      text += " ${l10n.tipSleep}";
+    }
+    if (familyText.isNotEmpty) {
+      text += " $familyText";
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -458,7 +529,7 @@ class _StatsViewState extends State<StatsView> {
                 const SizedBox(height: 4),
                 Text(text,
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
+                        color: Colors.white.withValues(alpha: 0.9), fontSize: 12, height: 1.4)),
               ],
             ),
           )
@@ -564,7 +635,7 @@ class _StatsViewState extends State<StatsView> {
                 final entry = chartData[spot.x.toInt()];
                 
                 if (isMood) {
-                  final mood = MoodUtils.getMoodData(spot.y, l10n); // <--- L10N ÜBERGEBEN
+                  final mood = MoodUtils.getMoodData(spot.y, l10n); 
                   return LineTooltipItem(
                     "${DateFormat('dd.MM').format(entry.timestamp)}\n",
                     const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
@@ -620,8 +691,12 @@ class _StatsViewState extends State<StatsView> {
 
   Widget _buildBarChart(AppLocalizations l10n) {
     final Map<int, List<double>> dayScores = {};
-    for (var i = 1; i <= 7; i++) { dayScores[i] = []; }
-    for (var e in widget.entries) { dayScores[e.timestamp.weekday]!.add(e.score); }
+    for (var i = 1; i <= 7; i++) {
+      dayScores[i] = [];
+    }
+    for (var e in widget.entries) {
+      dayScores[e.timestamp.weekday]!.add(e.score);
+    }
 
     List<BarChartGroupData> barGroups = [];
     for (var i = 1; i <= 7; i++) {
@@ -654,11 +729,11 @@ class _StatsViewState extends State<StatsView> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                // Hier nutzen wir DateFormat, um Wochentage passend zur Sprache anzuzeigen
-                final dayName = DateFormat('EEE', l10n.localeName).format(DateTime(2023, 10, 2 + value.toInt())); // 2.10.23 war ein Montag
-                
+                final dayName = DateFormat('EEE', l10n.localeName).format(DateTime(2023, 10, 2 + value.toInt())); 
                 final index = value.toInt() - 1;
-                if (index < 0 || index >= 7) return const SizedBox.shrink();
+                if (index < 0 || index >= 7) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(dayName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600)));
               },
             ),
@@ -673,7 +748,7 @@ class _StatsViewState extends State<StatsView> {
 
   Widget _buildAICard(AppLocalizations l10n) {
     return _buildCard(
-      title: "AI Wochen-Coach", // Kannst du durch l10n.statsAiIntro ersetzen, wenn es der Titel sein soll
+      title: "AI Wochen-Coach",
       icon: Icons.auto_awesome,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -719,7 +794,9 @@ class _StatsViewState extends State<StatsView> {
 
     for (var entry in widget.entries) {
       for (var tag in entry.tags) {
-        if (!tagScores.containsKey(tag)) tagScores[tag] = [];
+        if (!tagScores.containsKey(tag)) {
+          tagScores[tag] = [];
+        }
         tagScores[tag]!.add(entry.score);
       }
     }
@@ -742,12 +819,7 @@ class _StatsViewState extends State<StatsView> {
         : Column(
             children: impacts.take(5).map((item) {
               final rawTag = item['tag'] as String;
-              
-              // --- HIER IST DER FIX: ---
-              // Wir nutzen den Helper, um den DB-Namen in den lokalisierten Namen zu wandeln
               final localizedTagName = MoodUtils.getLocalizedTagLabel(rawTag, l10n); 
-              // -------------------------
-
               final impact = item['impact'] as double;
               final isPositive = impact > 0;
               final color = isPositive ? Colors.green : Colors.redAccent;
@@ -767,7 +839,6 @@ class _StatsViewState extends State<StatsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Hier zeigen wir den übersetzten Namen an
                           Text(localizedTagName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           Text("${item['count']}x · Ø ${item['avg'].toStringAsFixed(1)}", style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                         ],
