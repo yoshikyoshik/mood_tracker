@@ -225,5 +225,8 @@
   "pdfHeaderSleep": "Schlaf",
   "pdfHeaderTags": "Tags",
   "pdfHeaderNote": "Notiz",
-  "pdfFooter": "Erstellt mit LuvioSphere"
+  "pdfFooter": "Erstellt mit LuvioSphere",
+
+  "predWeatherGood": "Die Sonne morgen gibt dir Energie!",
+  "predWeatherBad": "Regen angesagt – mach es dir gemütlich."
 }

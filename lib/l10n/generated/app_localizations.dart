@@ -1225,6 +1225,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Erstellt mit LuvioSphere'**
   String get pdfFooter;
+
+  /// No description provided for @predWeatherGood.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sonne morgen gibt dir Energie!'**
+  String get predWeatherGood;
+
+  /// No description provided for @predWeatherBad.
+  ///
+  /// In de, this message translates to:
+  /// **'Regen angesagt – mach es dir gemütlich.'**
+  String get predWeatherBad;
 }
 
 class _AppLocalizationsDelegate

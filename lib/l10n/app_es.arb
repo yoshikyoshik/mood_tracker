@@ -210,5 +210,8 @@
   "pdfHeaderSleep": "Sleep",
   "pdfHeaderTags": "Tags",
   "pdfHeaderNote": "Note",
-  "pdfFooter": "Created with LuvioSphere"
+  "pdfFooter": "Created with LuvioSphere",
+
+  "predWeatherGood": "Tomorrow's sun boosts your energy!",
+  "predWeatherBad": "Rain forecast – make yourself cozy."
 }

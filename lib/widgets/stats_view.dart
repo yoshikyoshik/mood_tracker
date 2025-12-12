@@ -9,11 +9,12 @@ import '../models/profile.dart';
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../services/weather_service.dart'; // <--- NEU: Wetter Service
 
 class StatsView extends StatefulWidget {
   final List<MoodEntry> entries;
   final List<MoodEntry> allEntries;
-  final Profile currentProfile; 
+  final Profile currentProfile;
   final bool isPro;
   final VoidCallback onUnlockPressed;
 
@@ -33,15 +34,27 @@ class StatsView extends StatefulWidget {
 class _StatsViewState extends State<StatsView> {
   bool _isAnalyzing = false;
   String? _analysisResult;
+  double _weatherImpact = 0.0; // <--- NEU: Wetter Einfluss
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeather(); // <--- NEU: Wetter laden beim Start
+  }
+
+  // Wetter asynchron laden
+  Future<void> _loadWeather() async {
+    final impact = await WeatherService.getWeatherImpact();
+    if (mounted) {
+      setState(() {
+        _weatherImpact = impact;
+      });
+    }
+  }
 
   // --- LOGIK: WOCHE ANALYSIEREN ---
   Future<void> _analyzeWeek() async {
     final l10n = AppLocalizations.of(context)!;
-    
-    // Ermitteln der aktuellen Sprache für die AI-Anweisung
-    final String langCode = Localizations.localeOf(context).languageCode;
-    final String langInstruction = langCode == 'de' ? "Antworte bitte auf Deutsch." : "Please answer in English.";
-
     setState(() {
       _isAnalyzing = true;
       _analysisResult = null;
@@ -61,19 +74,10 @@ class _StatsViewState extends State<StatsView> {
       weekEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       StringBuffer sb = StringBuffer();
-      
-      // 1. Sprach-Instruktion an die AI
-      sb.writeln("Instruction: $langInstruction");
-      sb.writeln("");
-
-      // 2. Daten Header (lokalisiert)
-      sb.writeln(l10n.labelDataFor(widget.currentProfile.name));
-      
-      // 3. Einträge auflisten (lokalisiert)
+      sb.writeln("Daten für ${widget.currentProfile.name}:");
       for (var e in weekEntries) {
         final date = DateFormat('dd.MM.').format(e.timestamp);
-        // Wir nutzen hier die Keys aus l10n, damit "Mood" statt "Stimmung" steht, wenn EN
-        sb.writeln("- $date: ${l10n.statsMood} ${e.score.toStringAsFixed(1)}, ${l10n.statsSleep} ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. ${l10n.labelNote}: ${e.note ?? ''}");
+        sb.writeln("- $date: Stimmung ${e.score.toStringAsFixed(1)}, Schlaf ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. Notiz: ${e.note ?? ''}");
       }
 
       final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/analyze');
@@ -377,7 +381,7 @@ class _StatsViewState extends State<StatsView> {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
       child: _buildCard(
-        title: l10n.statsAiCoachTitle, // <--- LOKALISIERT (vorher hardcoded)
+        title: l10n.statsAiCoachTitle,
         icon: Icons.auto_awesome, 
         child: Container(
           width: double.infinity,
@@ -471,9 +475,12 @@ class _StatsViewState extends State<StatsView> {
     // 5. NEU: Zyklus & Sentiment
     double cycleImpact = _calculateCycleImpact(tomorrow);
     double sentimentImpact = _calculateSentimentImpact(last3, l10n);
+    
+    // 6. NEU: Wetter Einfluss (aus State)
+    double weatherImpact = _weatherImpact;
 
-    // Score Berechnung
-    double predictionScore = baseScore + trendImpact + sleepImpact + householdImpact + cycleImpact + sentimentImpact;
+    // Score Berechnung (Wetter wird addiert)
+    double predictionScore = baseScore + trendImpact + sleepImpact + householdImpact + cycleImpact + sentimentImpact + weatherImpact;
     final double finalScore = predictionScore.clamp(1.0, 10.0);
 
     String title;
@@ -516,6 +523,13 @@ class _StatsViewState extends State<StatsView> {
     }
     if (familyText.isNotEmpty) {
       text += " $familyText";
+    }
+    // Wetter Tipp anhängen
+    if (weatherImpact > 0.3) {
+      text += " ${l10n.predWeatherGood}";
+    }
+    if (weatherImpact < -0.3) {
+      text += " ${l10n.predWeatherBad}";
     }
 
     return Container(
@@ -769,7 +783,7 @@ class _StatsViewState extends State<StatsView> {
 
   Widget _buildAICard(AppLocalizations l10n) {
     return _buildCard(
-      title: l10n.statsAiCoachTitle, // <--- LOKALISIERT (vorher hardcoded)
+      title: l10n.statsAiCoachTitle,
       icon: Icons.auto_awesome,
       child: Padding(
         padding: const EdgeInsets.all(20.0),

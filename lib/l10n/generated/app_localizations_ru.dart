@@ -600,4 +600,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pdfFooter => 'Created with LuvioSphere';
+
+  @override
+  String get predWeatherGood => 'Tomorrow\'s sun boosts your energy!';
+
+  @override
+  String get predWeatherBad => 'Rain forecast – make yourself cozy.';
 }

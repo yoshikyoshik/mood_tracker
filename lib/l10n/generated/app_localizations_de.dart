@@ -605,4 +605,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pdfFooter => 'Erstellt mit LuvioSphere';
+
+  @override
+  String get predWeatherGood => 'Die Sonne morgen gibt dir Energie!';
+
+  @override
+  String get predWeatherBad => 'Regen angesagt – mach es dir gemütlich.';
 }
