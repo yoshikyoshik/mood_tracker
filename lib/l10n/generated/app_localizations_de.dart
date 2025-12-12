@@ -495,4 +495,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutorialStart => 'Tutorial starten';
+
+  @override
+  String get exportPdf => 'Report erstellen (PDF)';
 }

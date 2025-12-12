@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/mood_entry.dart';
 import '../l10n/generated/app_localizations.dart'; // Zugriff auf Texte
 import '../main.dart'; // Zugriff auf MyApp für setLocale
+import '../utils/report_generator.dart';
 
 class ProfileView extends StatelessWidget {
   final String profileName;
@@ -336,6 +337,21 @@ class ProfileView extends StatelessWidget {
             title: Text(l10n.tutorialStart), // "Tutorial starten"
             trailing: const Icon(Icons.play_circle_outline, size: 20, color: Colors.indigo),
             onTap: onStartTutorial, // Ruft den Callback auf
+          ),
+          const Divider(height: 1),
+
+          // PDF EXPORT (PRO)
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf, color: Colors.indigo),
+            title: const Text("Report erstellen (PDF)"), // Text kannst du später lokalisieren: l10n.exportPdf
+            trailing: Icon(isPro ? Icons.chevron_right : Icons.lock, size: 20, color: isPro ? Colors.grey : Colors.grey.shade400),
+            onTap: () {
+              if (isPro) {
+                ReportGenerator.generateAndPrint(entries, profileName, "Monatsreport");
+              } else {
+                onManageSubscription(); // Öffnet Checkout wenn nicht Pro
+              }
+            },
           ),
           const Divider(height: 1),
 

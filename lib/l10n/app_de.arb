@@ -179,5 +179,7 @@
   "tutorialStatsDesc": "Hier siehst du Charts und Muster zu deiner Stimmung.",
   "tutorialProfileTitle": "Dein Profil",
   "tutorialProfileDesc": "Verwalte hier deine Daten, Einstellungen und Export-Funktionen.",
-  "tutorialStart": "Tutorial starten"
+  "tutorialStart": "Tutorial starten",
+
+  "exportPdf": "Report erstellen (PDF)"
 }

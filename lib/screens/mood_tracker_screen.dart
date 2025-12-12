@@ -419,7 +419,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                             profileName: currentProfileName,
                             email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail",
                             version: _appVersion,
-                            entries: _allEntries,
+                            entries: relevantEntries,
                             isPro: _isPro,
                             onLogout: _signOut,
                             onManageSubscription: _isPro ? _openCustomerPortal : _startCheckout,

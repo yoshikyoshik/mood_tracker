@@ -492,4 +492,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get tutorialStart => 'Start Tutorial';
+
+  @override
+  String get exportPdf => 'Create Report (PDF)';
 }

@@ -169,5 +169,7 @@
   "tutorialStatsDesc": "Discover charts and patterns about your mood here.",
   "tutorialProfileTitle": "Your Profile",
   "tutorialProfileDesc": "Manage your data, settings, and exports here.",
-  "tutorialStart": "Start Tutorial"
+  "tutorialStart": "Start Tutorial",
+
+  "exportPdf": "Create Report (PDF)"
 }

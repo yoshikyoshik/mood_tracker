@@ -1033,6 +1033,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Tutorial starten'**
   String get tutorialStart;
+
+  /// No description provided for @exportPdf.
+  ///
+  /// In de, this message translates to:
+  /// **'Report erstellen (PDF)'**
+  String get exportPdf;
 }
 
 class _AppLocalizationsDelegate
