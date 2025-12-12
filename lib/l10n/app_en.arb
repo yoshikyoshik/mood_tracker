@@ -191,5 +191,24 @@
   "errorAnalysisFailed": "Analysis failed: {code}",
   
   "sentimentNegativeWords": "Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad",
-  "sentimentPositiveWords": "Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party"
+  "sentimentPositiveWords": "Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party",
+
+  "statsAiCoachTitle": "AI Weekly Coach",
+  "labelDataFor": "Data for {name}:",
+  "labelNote": "Note",
+
+  "exportPdfButton": "Create Report (PDF)",
+  "pdfTitle": "LuvioSphere Report",
+  "pdfProfile": "Profile: {name}",
+  "pdfPeriod": "Period: Last 30 days",
+  "pdfAvgMood": "Ø Mood",
+  "pdfAvgSleep": "Ø Sleep",
+  "pdfEntriesCount": "Entries",
+  "pdfHeaderDate": "Date",
+  "pdfHeaderTime": "Time",
+  "pdfHeaderMood": "Mood",
+  "pdfHeaderSleep": "Sleep",
+  "pdfHeaderTags": "Tags",
+  "pdfHeaderNote": "Note",
+  "pdfFooter": "Created with LuvioSphere"
 }

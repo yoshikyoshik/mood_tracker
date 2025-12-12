@@ -204,5 +204,26 @@
   "@errorAnalysisFailed": { "placeholders": { "code": { "type": "Object" } } },
   
   "sentimentNegativeWords": "Stress,Streit,Krank,Schmerz,Müde,Angst,Traurig,Schlecht",
-  "sentimentPositiveWords": "Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party"
+  "sentimentPositiveWords": "Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party",
+
+  "statsAiCoachTitle": "AI Wochen-Coach",
+  "labelDataFor": "Daten für {name}:",
+  "@labelDataFor": { "placeholders": { "name": { "type": "String" } } },
+  "labelNote": "Notiz",
+
+  "exportPdfButton": "Report erstellen (PDF)",
+  "pdfTitle": "LuvioSphere Report",
+  "pdfProfile": "Profil: {name}",
+  "@pdfProfile": { "placeholders": { "name": { "type": "String" } } },
+  "pdfPeriod": "Zeitraum: Letzte 30 Tage",
+  "pdfAvgMood": "Ø Stimmung",
+  "pdfAvgSleep": "Ø Schlaf",
+  "pdfEntriesCount": "Einträge",
+  "pdfHeaderDate": "Datum",
+  "pdfHeaderTime": "Zeit",
+  "pdfHeaderMood": "Mood",
+  "pdfHeaderSleep": "Schlaf",
+  "pdfHeaderTags": "Tags",
+  "pdfHeaderNote": "Notiz",
+  "pdfFooter": "Erstellt mit LuvioSphere"
 }

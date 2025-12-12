@@ -1123,6 +1123,108 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party'**
   String get sentimentPositiveWords;
+
+  /// No description provided for @statsAiCoachTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'AI Wochen-Coach'**
+  String get statsAiCoachTitle;
+
+  /// No description provided for @labelDataFor.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten für {name}:'**
+  String labelDataFor(String name);
+
+  /// No description provided for @labelNote.
+  ///
+  /// In de, this message translates to:
+  /// **'Notiz'**
+  String get labelNote;
+
+  /// No description provided for @exportPdfButton.
+  ///
+  /// In de, this message translates to:
+  /// **'Report erstellen (PDF)'**
+  String get exportPdfButton;
+
+  /// No description provided for @pdfTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'LuvioSphere Report'**
+  String get pdfTitle;
+
+  /// No description provided for @pdfProfile.
+  ///
+  /// In de, this message translates to:
+  /// **'Profil: {name}'**
+  String pdfProfile(String name);
+
+  /// No description provided for @pdfPeriod.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitraum: Letzte 30 Tage'**
+  String get pdfPeriod;
+
+  /// No description provided for @pdfAvgMood.
+  ///
+  /// In de, this message translates to:
+  /// **'Ø Stimmung'**
+  String get pdfAvgMood;
+
+  /// No description provided for @pdfAvgSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Ø Schlaf'**
+  String get pdfAvgSleep;
+
+  /// No description provided for @pdfEntriesCount.
+  ///
+  /// In de, this message translates to:
+  /// **'Einträge'**
+  String get pdfEntriesCount;
+
+  /// No description provided for @pdfHeaderDate.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum'**
+  String get pdfHeaderDate;
+
+  /// No description provided for @pdfHeaderTime.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeit'**
+  String get pdfHeaderTime;
+
+  /// No description provided for @pdfHeaderMood.
+  ///
+  /// In de, this message translates to:
+  /// **'Mood'**
+  String get pdfHeaderMood;
+
+  /// No description provided for @pdfHeaderSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlaf'**
+  String get pdfHeaderSleep;
+
+  /// No description provided for @pdfHeaderTags.
+  ///
+  /// In de, this message translates to:
+  /// **'Tags'**
+  String get pdfHeaderTags;
+
+  /// No description provided for @pdfHeaderNote.
+  ///
+  /// In de, this message translates to:
+  /// **'Notiz'**
+  String get pdfHeaderNote;
+
+  /// No description provided for @pdfFooter.
+  ///
+  /// In de, this message translates to:
+  /// **'Erstellt mit LuvioSphere'**
+  String get pdfFooter;
 }
 
 class _AppLocalizationsDelegate

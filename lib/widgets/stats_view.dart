@@ -13,7 +13,7 @@ import '../l10n/generated/app_localizations.dart';
 class StatsView extends StatefulWidget {
   final List<MoodEntry> entries;
   final List<MoodEntry> allEntries;
-  final Profile currentProfile; // Das ganze Profil (für Zyklus-Daten)
+  final Profile currentProfile; 
   final bool isPro;
   final VoidCallback onUnlockPressed;
 
@@ -37,6 +37,11 @@ class _StatsViewState extends State<StatsView> {
   // --- LOGIK: WOCHE ANALYSIEREN ---
   Future<void> _analyzeWeek() async {
     final l10n = AppLocalizations.of(context)!;
+    
+    // Ermitteln der aktuellen Sprache für die AI-Anweisung
+    final String langCode = Localizations.localeOf(context).languageCode;
+    final String langInstruction = langCode == 'de' ? "Antworte bitte auf Deutsch." : "Please answer in English.";
+
     setState(() {
       _isAnalyzing = true;
       _analysisResult = null;
@@ -56,10 +61,19 @@ class _StatsViewState extends State<StatsView> {
       weekEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       StringBuffer sb = StringBuffer();
-      sb.writeln("Daten für ${widget.currentProfile.name}:");
+      
+      // 1. Sprach-Instruktion an die AI
+      sb.writeln("Instruction: $langInstruction");
+      sb.writeln("");
+
+      // 2. Daten Header (lokalisiert)
+      sb.writeln(l10n.labelDataFor(widget.currentProfile.name));
+      
+      // 3. Einträge auflisten (lokalisiert)
       for (var e in weekEntries) {
         final date = DateFormat('dd.MM.').format(e.timestamp);
-        sb.writeln("- $date: Stimmung ${e.score.toStringAsFixed(1)}, Schlaf ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. Notiz: ${e.note ?? ''}");
+        // Wir nutzen hier die Keys aus l10n, damit "Mood" statt "Stimmung" steht, wenn EN
+        sb.writeln("- $date: ${l10n.statsMood} ${e.score.toStringAsFixed(1)}, ${l10n.statsSleep} ${e.sleepRating?.toStringAsFixed(1) ?? '-'}, Tags: ${e.tags.join(', ')}. ${l10n.labelNote}: ${e.note ?? ''}");
       }
 
       final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/analyze');
@@ -77,7 +91,6 @@ class _StatsViewState extends State<StatsView> {
       }
     } catch (e) {
       setState(() {
-        // FIX: Unnecessary string interpolation entfernt
         _analysisResult = l10n.snackError(e.toString());
       });
     } finally {
@@ -100,7 +113,6 @@ class _StatsViewState extends State<StatsView> {
   // --- HELPER: KEYWORD SENTIMENT ---
   double _calculateSentimentImpact(List<MoodEntry> recentEntries, AppLocalizations l10n) {
     double impact = 0.0;
-    // Wir holen die Listen aus der Lokalisierung (Kommasepariert)
     final negativeWords = l10n.sentimentNegativeWords.split(',').map((s) => s.trim()).toList();
     final positiveWords = l10n.sentimentPositiveWords.split(',').map((s) => s.trim()).toList();
 
@@ -365,7 +377,7 @@ class _StatsViewState extends State<StatsView> {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
       child: _buildCard(
-        title: "AI Wochen-Coach",
+        title: l10n.statsAiCoachTitle, // <--- LOKALISIERT (vorher hardcoded)
         icon: Icons.auto_awesome, 
         child: Container(
           width: double.infinity,
@@ -415,7 +427,7 @@ class _StatsViewState extends State<StatsView> {
 
     // 2. Trend (Letzte 3 Einträge)
     final recentEntries = List<MoodEntry>.from(widget.entries)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    final last3 = recentEntries.take(3).toList(); 
+    final last3 = recentEntries.take(3).toList();
     
     double trendImpact = 0.0;
     if (last3.isNotEmpty) {
@@ -757,7 +769,7 @@ class _StatsViewState extends State<StatsView> {
 
   Widget _buildAICard(AppLocalizations l10n) {
     return _buildCard(
-      title: "AI Wochen-Coach",
+      title: l10n.statsAiCoachTitle, // <--- LOKALISIERT (vorher hardcoded)
       icon: Icons.auto_awesome,
       child: Padding(
         padding: const EdgeInsets.all(20.0),

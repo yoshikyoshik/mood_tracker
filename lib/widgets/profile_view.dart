@@ -315,95 +315,54 @@ class ProfileView extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!; 
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(
         children: [
           // SPRACHE
-          ListTile(
-            leading: const Icon(Icons.language, color: Colors.indigo),
-            title: Text(l10n.language),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showLanguageDialog(context),
-          ),
+          ListTile(leading: const Icon(Icons.language, color: Colors.indigo), title: Text(l10n.language), trailing: const Icon(Icons.chevron_right), onTap: () => _showLanguageDialog(context)),
           const Divider(height: 1),
 
-          // TUTORIAL STARTEN (NEU)
+          // TUTORIAL STARTEN
           ListTile(
             leading: const Icon(Icons.help_outline, color: Colors.indigo),
-            title: Text(l10n.tutorialStart), // "Tutorial starten"
+            title: Text(l10n.tutorialStart), 
             trailing: const Icon(Icons.play_circle_outline, size: 20, color: Colors.indigo),
-            onTap: onStartTutorial, // Ruft den Callback auf
+            onTap: onStartTutorial, 
           ),
           const Divider(height: 1),
 
-          // PDF EXPORT (PRO)
+          // PDF EXPORT (PRO) - NEU LOKALISIERT & MIT L10N ÜBERGABE
           ListTile(
             leading: const Icon(Icons.picture_as_pdf, color: Colors.indigo),
-            title: const Text("Report erstellen (PDF)"), // Text kannst du später lokalisieren: l10n.exportPdf
+            title: Text(l10n.exportPdfButton), // LOKALISIERT
             trailing: Icon(isPro ? Icons.chevron_right : Icons.lock, size: 20, color: isPro ? Colors.grey : Colors.grey.shade400),
             onTap: () {
               if (isPro) {
-                ReportGenerator.generateAndPrint(entries, profileName, "Monatsreport");
+                // HIER: L10N OBJEKT ÜBERGEBEN
+                ReportGenerator.generateAndPrint(entries, profileName, l10n);
               } else {
-                onManageSubscription(); // Öffnet Checkout wenn nicht Pro
+                onManageSubscription(); 
               }
             },
           ),
           const Divider(height: 1),
 
-          // PRO / ABO
-          if (!isPro)
-            ListTile(
-              leading: const Icon(Icons.diamond, color: Colors.indigo),
-              title: Text(l10n.becomePro),
-              subtitle: const Text("Alle Features"), 
-              trailing: const Icon(Icons.chevron_right),
-              onTap: onManageSubscription,
-            ),
-          if (isPro)
-            ListTile(
-              leading: const Icon(Icons.star, color: Colors.amber),
-              title: Text(l10n.manageSub),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: onManageSubscription,
-            ),
+          // PRO
+          if (!isPro) ListTile(leading: const Icon(Icons.diamond, color: Colors.indigo), title: Text(l10n.becomePro), subtitle: const Text("Alle Features"), trailing: const Icon(Icons.chevron_right), onTap: onManageSubscription),
+          if (isPro) ListTile(leading: const Icon(Icons.star, color: Colors.amber), title: Text(l10n.manageSub), trailing: const Icon(Icons.chevron_right), onTap: onManageSubscription),
           const Divider(height: 1),
 
           // SUPPORT
-          ListTile(
-            leading: const Icon(Icons.mail_outline, color: Colors.black87),
-            title: Text(l10n.contactSupport),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: onContactSupport, 
-          ),
+          ListTile(leading: const Icon(Icons.mail_outline, color: Colors.black87), title: Text(l10n.contactSupport), trailing: const Icon(Icons.chevron_right), onTap: onContactSupport),
           const Divider(height: 1),
 
-          // --- NEU: RECHTLICHES ---
-          ListTile(
-            leading: const Icon(Icons.policy, color: Colors.grey),
-            title: Text(l10n.privacy),
-            trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
-            onTap: () => _launchURL(context, 'https://manabsphere.com/privacy.html'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.grey),
-            title: Text(l10n.imprint),
-            trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
-            onTap: () => _launchURL(context, 'https://manabsphere.com/imprint.html'),
-          ),
+          // RECHTLICHES
+          ListTile(leading: const Icon(Icons.policy, color: Colors.grey), title: Text(l10n.privacy), trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey), onTap: () => _launchURL(context, 'https://manabsphere.com/privacy.html')),
+          ListTile(leading: const Icon(Icons.info_outline, color: Colors.grey), title: Text(l10n.imprint), trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey), onTap: () => _launchURL(context, 'https://manabsphere.com/imprint.html')),
           const Divider(height: 1),
-          // ------------------------
 
           // LOGOUT
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),
-            onTap: onLogout,
-          ),
+          ListTile(leading: const Icon(Icons.logout, color: Colors.redAccent), title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)), onTap: onLogout),
         ],
       ),
     );

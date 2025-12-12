@@ -544,4 +544,59 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get sentimentPositiveWords =>
       'Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party';
+
+  @override
+  String get statsAiCoachTitle => 'AI Weekly Coach';
+
+  @override
+  String labelDataFor(String name) {
+    return 'Data for $name:';
+  }
+
+  @override
+  String get labelNote => 'Note';
+
+  @override
+  String get exportPdfButton => 'Create Report (PDF)';
+
+  @override
+  String get pdfTitle => 'LuvioSphere Report';
+
+  @override
+  String pdfProfile(String name) {
+    return 'Profile: $name';
+  }
+
+  @override
+  String get pdfPeriod => 'Period: Last 30 days';
+
+  @override
+  String get pdfAvgMood => 'Ø Mood';
+
+  @override
+  String get pdfAvgSleep => 'Ø Sleep';
+
+  @override
+  String get pdfEntriesCount => 'Entries';
+
+  @override
+  String get pdfHeaderDate => 'Date';
+
+  @override
+  String get pdfHeaderTime => 'Time';
+
+  @override
+  String get pdfHeaderMood => 'Mood';
+
+  @override
+  String get pdfHeaderSleep => 'Sleep';
+
+  @override
+  String get pdfHeaderTags => 'Tags';
+
+  @override
+  String get pdfHeaderNote => 'Note';
+
+  @override
+  String get pdfFooter => 'Created with LuvioSphere';
 }

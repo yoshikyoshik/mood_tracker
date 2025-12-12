@@ -550,4 +550,59 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get sentimentPositiveWords =>
       'Urlaub,Liebe,Erfolg,Sport,Glücklich,Super,Entspannt,Party';
+
+  @override
+  String get statsAiCoachTitle => 'AI Wochen-Coach';
+
+  @override
+  String labelDataFor(String name) {
+    return 'Daten für $name:';
+  }
+
+  @override
+  String get labelNote => 'Notiz';
+
+  @override
+  String get exportPdfButton => 'Report erstellen (PDF)';
+
+  @override
+  String get pdfTitle => 'LuvioSphere Report';
+
+  @override
+  String pdfProfile(String name) {
+    return 'Profil: $name';
+  }
+
+  @override
+  String get pdfPeriod => 'Zeitraum: Letzte 30 Tage';
+
+  @override
+  String get pdfAvgMood => 'Ø Stimmung';
+
+  @override
+  String get pdfAvgSleep => 'Ø Schlaf';
+
+  @override
+  String get pdfEntriesCount => 'Einträge';
+
+  @override
+  String get pdfHeaderDate => 'Datum';
+
+  @override
+  String get pdfHeaderTime => 'Zeit';
+
+  @override
+  String get pdfHeaderMood => 'Mood';
+
+  @override
+  String get pdfHeaderSleep => 'Schlaf';
+
+  @override
+  String get pdfHeaderTags => 'Tags';
+
+  @override
+  String get pdfHeaderNote => 'Notiz';
+
+  @override
+  String get pdfFooter => 'Erstellt mit LuvioSphere';
 }
