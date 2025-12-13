@@ -1237,6 +1237,90 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Regen angesagt – mach es dir gemütlich.'**
   String get predWeatherBad;
+
+  /// No description provided for @partnerTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Partner Connect ❤️'**
+  String get partnerTitle;
+
+  /// No description provided for @partnerDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbinde dich mit deinem Partner, um zu sehen, wie es ihm geht.'**
+  String get partnerDesc;
+
+  /// No description provided for @partnerEmailLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'E-Mail deines Partners'**
+  String get partnerEmailLabel;
+
+  /// No description provided for @partnerConnectBtn.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbinden'**
+  String get partnerConnectBtn;
+
+  /// No description provided for @partnerConnected.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbunden mit {name}'**
+  String partnerConnected(String name);
+
+  /// No description provided for @partnerStatus.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktuelle Stimmung: {score}'**
+  String partnerStatus(String score);
+
+  /// No description provided for @partnerNeedsLove.
+  ///
+  /// In de, this message translates to:
+  /// **'⚠️ {name} hat einen schweren Tag. Schick etwas Liebe!'**
+  String partnerNeedsLove(String name);
+
+  /// No description provided for @partnerWait.
+  ///
+  /// In de, this message translates to:
+  /// **'Warte auf Rückbestätigung...'**
+  String get partnerWait;
+
+  /// No description provided for @partnerDisconnectTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindung trennen?'**
+  String get partnerDisconnectTitle;
+
+  /// No description provided for @partnerDisconnectMessage.
+  ///
+  /// In de, this message translates to:
+  /// **'Möchtest du die Verbindung zu {partnerEmail} wirklich aufheben?'**
+  String partnerDisconnectMessage(String partnerEmail);
+
+  /// No description provided for @partnerDisconnectConfirm.
+  ///
+  /// In de, this message translates to:
+  /// **'Ja, trennen'**
+  String get partnerDisconnectConfirm;
+
+  /// No description provided for @partnerDisconnectCancel.
+  ///
+  /// In de, this message translates to:
+  /// **'Abbrechen'**
+  String get partnerDisconnectCancel;
+
+  /// No description provided for @partnerDisconnectSuccess.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindung aufgehoben.'**
+  String get partnerDisconnectSuccess;
+
+  /// No description provided for @partnerDisconnectTooltip.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindung trennen'**
+  String get partnerDisconnectTooltip;
 }
 
 class _AppLocalizationsDelegate

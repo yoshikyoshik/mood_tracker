@@ -228,5 +228,31 @@
   "pdfFooter": "Erstellt mit LuvioSphere",
 
   "predWeatherGood": "Die Sonne morgen gibt dir Energie!",
-  "predWeatherBad": "Regen angesagt – mach es dir gemütlich."
+  "predWeatherBad": "Regen angesagt – mach es dir gemütlich.",
+
+  "partnerTitle": "Partner Connect ❤️",
+  "partnerDesc": "Verbinde dich mit deinem Partner, um zu sehen, wie es ihm geht.",
+  "partnerEmailLabel": "E-Mail deines Partners",
+  "partnerConnectBtn": "Verbinden",
+  "partnerConnected": "Verbunden mit {name}",
+  "@partnerConnected": { "placeholders": { "name": { "type": "String" } } },
+  "partnerStatus": "Aktuelle Stimmung: {score}",
+  "@partnerStatus": { "placeholders": { "score": { "type": "String" } } },
+  "partnerNeedsLove": "⚠️ {name} hat einen schweren Tag. Schick etwas Liebe!",
+  "@partnerNeedsLove": { "placeholders": { "name": { "type": "String" } } },
+  "partnerWait": "Warte auf Rückbestätigung...",
+
+  "partnerDisconnectTitle": "Verbindung trennen?",
+  "partnerDisconnectMessage": "Möchtest du die Verbindung zu {partnerEmail} wirklich aufheben?",
+  "@partnerDisconnectMessage": {
+    "placeholders": {
+      "partnerEmail": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerDisconnectConfirm": "Ja, trennen",
+  "partnerDisconnectCancel": "Abbrechen",
+  "partnerDisconnectSuccess": "Verbindung aufgehoben.",
+  "partnerDisconnectTooltip": "Verbindung trennen"
 }

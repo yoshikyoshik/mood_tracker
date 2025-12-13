@@ -611,4 +611,55 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get predWeatherBad => 'Regen angesagt – mach es dir gemütlich.';
+
+  @override
+  String get partnerTitle => 'Partner Connect ❤️';
+
+  @override
+  String get partnerDesc =>
+      'Verbinde dich mit deinem Partner, um zu sehen, wie es ihm geht.';
+
+  @override
+  String get partnerEmailLabel => 'E-Mail deines Partners';
+
+  @override
+  String get partnerConnectBtn => 'Verbinden';
+
+  @override
+  String partnerConnected(String name) {
+    return 'Verbunden mit $name';
+  }
+
+  @override
+  String partnerStatus(String score) {
+    return 'Aktuelle Stimmung: $score';
+  }
+
+  @override
+  String partnerNeedsLove(String name) {
+    return '⚠️ $name hat einen schweren Tag. Schick etwas Liebe!';
+  }
+
+  @override
+  String get partnerWait => 'Warte auf Rückbestätigung...';
+
+  @override
+  String get partnerDisconnectTitle => 'Verbindung trennen?';
+
+  @override
+  String partnerDisconnectMessage(String partnerEmail) {
+    return 'Möchtest du die Verbindung zu $partnerEmail wirklich aufheben?';
+  }
+
+  @override
+  String get partnerDisconnectConfirm => 'Ja, trennen';
+
+  @override
+  String get partnerDisconnectCancel => 'Abbrechen';
+
+  @override
+  String get partnerDisconnectSuccess => 'Verbindung aufgehoben.';
+
+  @override
+  String get partnerDisconnectTooltip => 'Verbindung trennen';
 }

@@ -459,152 +459,206 @@ class AppLocalizationsEs extends AppLocalizations {
   String get legal => 'Legal';
 
   @override
-  String get imprint => 'Imprint';
+  String get imprint => 'Aviso legal';
 
   @override
-  String get privacy => 'Privacy Policy';
+  String get privacy => 'Política de privacidad';
 
   @override
-  String get tutorialMoodTitle => 'Your Mood';
+  String get tutorialMoodTitle => 'Tu estado de ánimo';
 
   @override
   String get tutorialMoodDesc =>
-      'Move the slider to capture how you feel right now.';
+      'Mueve el control deslizante para capturar cómo te sientes ahora.';
 
   @override
-  String get tutorialSaveTitle => 'Save Entry';
+  String get tutorialSaveTitle => 'Guardar entrada';
 
   @override
-  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+  String get tutorialSaveDesc =>
+      'Toca aquí para escribir tu entrada en el diario.';
 
   @override
-  String get tutorialStatsTitle => 'Your Insights';
+  String get tutorialStatsTitle => 'Tus estadísticas';
 
   @override
   String get tutorialStatsDesc =>
-      'Discover charts and patterns about your mood here.';
+      'Descubre gráficos y patrones sobre tu estado de ánimo aquí.';
 
   @override
-  String get tutorialProfileTitle => 'Your Profile';
+  String get tutorialProfileTitle => 'Tu perfil';
 
   @override
   String get tutorialProfileDesc =>
-      'Manage your data, settings, and exports here.';
+      'Gestiona tus datos, ajustes y exportaciones aquí.';
 
   @override
-  String get tutorialStart => 'Start Tutorial';
+  String get tutorialStart => 'Iniciar tutorial';
 
   @override
-  String get exportPdf => 'Create Report (PDF)';
+  String get exportPdf => 'Crear informe (PDF)';
 
   @override
-  String get predCycleRest => 'Your cycle might demand some rest.';
+  String get predCycleRest => 'Tu ciclo podría requerir algo de descanso.';
 
   @override
-  String get predCyclePower => 'Your cycle gives you extra power!';
+  String get predCyclePower => '¡Tu ciclo te da energía extra!';
 
   @override
-  String get predSentimentStress => 'Your notes seemed stressed lately.';
+  String get predSentimentStress => 'Tus notas parecen estresadas últimamente.';
 
   @override
-  String get predSleepTip => 'Tip: Go to sleep earlier today.';
+  String get predSleepTip => 'Consejo: Ve a dormir más temprano hoy.';
 
   @override
-  String get aiCalibration => 'AI Calibration...';
+  String get aiCalibration => 'Calibración de IA...';
 
   @override
   String aiCalibrationText(int missing) {
-    return 'Setting up your Smart Forecast. We need $missing more entries.';
+    return 'Configurando tu Pronóstico Inteligente. Necesitamos $missing entradas más.';
   }
 
   @override
   String aiEntriesCount(int count, int target) {
-    return '$count / $target entries';
+    return '$count / $target entradas';
   }
 
   @override
-  String get lockedPredTitle => 'How will your day be tomorrow?';
+  String get lockedPredTitle => '¿Cómo será tu día mañana?';
 
   @override
-  String get lockedPredDesc => 'Based on your sleep, trend, and weekday.';
+  String get lockedPredDesc =>
+      'Basado en tu sueño, tendencia y día de la semana.';
 
   @override
-  String get lockedAiTitle => 'Deep analysis of your week';
+  String get lockedAiTitle => 'Análisis profundo de tu semana';
 
   @override
-  String get errorNoEntries7Days => 'No entries found in the last 7 days.';
+  String get errorNoEntries7Days =>
+      'No se encontraron entradas en los últimos 7 días.';
 
   @override
   String errorAnalysisFailed(Object code) {
-    return 'Analysis failed: $code';
+    return 'Falló el análisis: $code';
   }
 
   @override
   String get sentimentNegativeWords =>
-      'Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad';
+      'Estrés,Pelea,Enfermo,Dolor,Cansado,Ansiedad,Triste,Mal';
 
   @override
   String get sentimentPositiveWords =>
-      'Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party';
+      'Vacaciones,Amor,Éxito,Deporte,Feliz,Genial,Relajado,Fiesta';
 
   @override
-  String get statsAiCoachTitle => 'AI Weekly Coach';
+  String get statsAiCoachTitle => 'Coach Semanal IA';
 
   @override
   String labelDataFor(String name) {
-    return 'Data for $name:';
+    return 'Datos para $name:';
   }
 
   @override
-  String get labelNote => 'Note';
+  String get labelNote => 'Nota';
 
   @override
-  String get exportPdfButton => 'Create Report (PDF)';
+  String get exportPdfButton => 'Crear informe (PDF)';
 
   @override
-  String get pdfTitle => 'LuvioSphere Report';
+  String get pdfTitle => 'Informe LuvioSphere';
 
   @override
   String pdfProfile(String name) {
-    return 'Profile: $name';
+    return 'Perfil: $name';
   }
 
   @override
-  String get pdfPeriod => 'Period: Last 30 days';
+  String get pdfPeriod => 'Periodo: Últimos 30 días';
 
   @override
-  String get pdfAvgMood => 'Ø Mood';
+  String get pdfAvgMood => 'Ø Ánimo';
 
   @override
-  String get pdfAvgSleep => 'Ø Sleep';
+  String get pdfAvgSleep => 'Ø Sueño';
 
   @override
-  String get pdfEntriesCount => 'Entries';
+  String get pdfEntriesCount => 'Entradas';
 
   @override
-  String get pdfHeaderDate => 'Date';
+  String get pdfHeaderDate => 'Fecha';
 
   @override
-  String get pdfHeaderTime => 'Time';
+  String get pdfHeaderTime => 'Hora';
 
   @override
-  String get pdfHeaderMood => 'Mood';
+  String get pdfHeaderMood => 'Ánimo';
 
   @override
-  String get pdfHeaderSleep => 'Sleep';
+  String get pdfHeaderSleep => 'Sueño';
 
   @override
-  String get pdfHeaderTags => 'Tags';
+  String get pdfHeaderTags => 'Etiquetas';
 
   @override
-  String get pdfHeaderNote => 'Note';
+  String get pdfHeaderNote => 'Nota';
 
   @override
-  String get pdfFooter => 'Created with LuvioSphere';
+  String get pdfFooter => 'Creado con LuvioSphere';
 
   @override
-  String get predWeatherGood => 'Tomorrow\'s sun boosts your energy!';
+  String get predWeatherGood => '¡El sol de mañana aumenta tu energía!';
 
   @override
-  String get predWeatherBad => 'Rain forecast – make yourself cozy.';
+  String get predWeatherBad => 'Pronóstico de lluvia: ponte cómodo.';
+
+  @override
+  String get partnerTitle => 'Conexión en pareja ❤️';
+
+  @override
+  String get partnerDesc =>
+      'Conéctate con tu pareja para ver su estado de ánimo.';
+
+  @override
+  String get partnerEmailLabel => 'Email de tu pareja';
+
+  @override
+  String get partnerConnectBtn => 'Conectar';
+
+  @override
+  String partnerConnected(String name) {
+    return 'Conectado con $name';
+  }
+
+  @override
+  String partnerStatus(String score) {
+    return 'Ánimo actual: $score';
+  }
+
+  @override
+  String partnerNeedsLove(String name) {
+    return '⚠️ $name tiene un día difícil. ¡Envíale amor!';
+  }
+
+  @override
+  String get partnerWait => 'Esperando confirmación...';
+
+  @override
+  String get partnerDisconnectTitle => '¿Desconectar pareja?';
+
+  @override
+  String partnerDisconnectMessage(String partnerEmail) {
+    return '¿Realmente quieres desconectarte de $partnerEmail?';
+  }
+
+  @override
+  String get partnerDisconnectConfirm => 'Sí, desconectar';
+
+  @override
+  String get partnerDisconnectCancel => 'Cancelar';
+
+  @override
+  String get partnerDisconnectSuccess => 'Conexión eliminada.';
+
+  @override
+  String get partnerDisconnectTooltip => 'Desconectar pareja';
 }

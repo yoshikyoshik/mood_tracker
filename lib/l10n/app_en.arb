@@ -213,5 +213,21 @@
   "pdfFooter": "Created with LuvioSphere",
 
   "predWeatherGood": "Tomorrow's sun boosts your energy!",
-  "predWeatherBad": "Rain forecast – make yourself cozy."
+  "predWeatherBad": "Rain forecast – make yourself cozy.",
+
+  "partnerTitle": "Partner Connect ❤️",
+  "partnerDesc": "Connect with your partner to check their mood.",
+  "partnerEmailLabel": "Partner's Email",
+  "partnerConnectBtn": "Connect",
+  "partnerConnected": "Connected with {name}",
+  "partnerStatus": "Current Mood: {score}",
+  "partnerNeedsLove": "⚠️ {name} is having a tough day. Send some love!",
+  "partnerWait": "Waiting for confirmation...",
+
+  "partnerDisconnectTitle": "Disconnect Partner?",
+  "partnerDisconnectMessage": "Do you really want to disconnect from {partnerEmail}?",
+  "partnerDisconnectConfirm": "Yes, disconnect",
+  "partnerDisconnectCancel": "Cancel",
+  "partnerDisconnectSuccess": "Connection removed.",
+  "partnerDisconnectTooltip": "Disconnect partner"
 }

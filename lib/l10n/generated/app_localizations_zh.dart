@@ -454,155 +454,200 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authSuccessVerify => '请验证你的邮箱！';
 
   @override
-  String get legal => 'Legal';
+  String get legal => '法律信息';
 
   @override
-  String get imprint => 'Imprint';
+  String get imprint => '版本说明';
 
   @override
-  String get privacy => 'Privacy Policy';
+  String get privacy => '隐私政策';
 
   @override
-  String get tutorialMoodTitle => 'Your Mood';
+  String get tutorialMoodTitle => '你的心情';
 
   @override
-  String get tutorialMoodDesc =>
-      'Move the slider to capture how you feel right now.';
+  String get tutorialMoodDesc => '拖动滑块来记录你现在的感受。';
 
   @override
-  String get tutorialSaveTitle => 'Save Entry';
+  String get tutorialSaveTitle => '保存记录';
 
   @override
-  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+  String get tutorialSaveDesc => '点击这里将记录写入日记。';
 
   @override
-  String get tutorialStatsTitle => 'Your Insights';
+  String get tutorialStatsTitle => '你的洞察';
 
   @override
-  String get tutorialStatsDesc =>
-      'Discover charts and patterns about your mood here.';
+  String get tutorialStatsDesc => '在这里发现关于你心情的图表和模式。';
 
   @override
-  String get tutorialProfileTitle => 'Your Profile';
+  String get tutorialProfileTitle => '你的档案';
 
   @override
-  String get tutorialProfileDesc =>
-      'Manage your data, settings, and exports here.';
+  String get tutorialProfileDesc => '在这里管理你的数据、设置和导出。';
 
   @override
-  String get tutorialStart => 'Start Tutorial';
+  String get tutorialStart => '开始教程';
 
   @override
-  String get exportPdf => 'Create Report (PDF)';
+  String get exportPdf => '创建报告 (PDF)';
 
   @override
-  String get predCycleRest => 'Your cycle might demand some rest.';
+  String get predCycleRest => '你的生理周期表明你需要休息。';
 
   @override
-  String get predCyclePower => 'Your cycle gives you extra power!';
+  String get predCyclePower => '你的生理周期给了你额外的能量！';
 
   @override
-  String get predSentimentStress => 'Your notes seemed stressed lately.';
+  String get predSentimentStress => '最近你的笔记看起来有些压力。';
 
   @override
-  String get predSleepTip => 'Tip: Go to sleep earlier today.';
+  String get predSleepTip => '提示：今天早点休息吧。';
 
   @override
-  String get aiCalibration => 'AI Calibration...';
+  String get aiCalibration => 'AI 校准中...';
 
   @override
   String aiCalibrationText(int missing) {
-    return 'Setting up your Smart Forecast. We need $missing more entries.';
+    return '正在设置你的智能预测。我们还需要 $missing 条记录。';
   }
 
   @override
   String aiEntriesCount(int count, int target) {
-    return '$count / $target entries';
+    return '$count / $target 条记录';
   }
 
   @override
-  String get lockedPredTitle => 'How will your day be tomorrow?';
+  String get lockedPredTitle => '你明天的状态如何？';
 
   @override
-  String get lockedPredDesc => 'Based on your sleep, trend, and weekday.';
+  String get lockedPredDesc => '基于你的睡眠、趋势和星期几。';
 
   @override
-  String get lockedAiTitle => 'Deep analysis of your week';
+  String get lockedAiTitle => '本周深度分析';
 
   @override
-  String get errorNoEntries7Days => 'No entries found in the last 7 days.';
+  String get errorNoEntries7Days => '过去 7 天内未找到记录。';
 
   @override
   String errorAnalysisFailed(Object code) {
-    return 'Analysis failed: $code';
+    return '分析失败: $code';
   }
 
   @override
-  String get sentimentNegativeWords =>
-      'Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad';
+  String get sentimentNegativeWords => '压力,争吵,生病,疼痛,疲惫,焦虑,悲伤,糟糕';
 
   @override
-  String get sentimentPositiveWords =>
-      'Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party';
+  String get sentimentPositiveWords => '假期,爱,成功,运动,开心,很棒,放松,聚会';
 
   @override
-  String get statsAiCoachTitle => 'AI Weekly Coach';
+  String get statsAiCoachTitle => 'AI 每周教练';
 
   @override
   String labelDataFor(String name) {
-    return 'Data for $name:';
+    return '$name 的数据：';
   }
 
   @override
-  String get labelNote => 'Note';
+  String get labelNote => '笔记';
 
   @override
-  String get exportPdfButton => 'Create Report (PDF)';
+  String get exportPdfButton => '创建报告 (PDF)';
 
   @override
-  String get pdfTitle => 'LuvioSphere Report';
+  String get pdfTitle => 'LuvioSphere 报告';
 
   @override
   String pdfProfile(String name) {
-    return 'Profile: $name';
+    return '档案: $name';
   }
 
   @override
-  String get pdfPeriod => 'Period: Last 30 days';
+  String get pdfPeriod => '时期: 过去 30 天';
 
   @override
-  String get pdfAvgMood => 'Ø Mood';
+  String get pdfAvgMood => 'Ø 心情';
 
   @override
-  String get pdfAvgSleep => 'Ø Sleep';
+  String get pdfAvgSleep => 'Ø 睡眠';
 
   @override
-  String get pdfEntriesCount => 'Entries';
+  String get pdfEntriesCount => '条目数';
 
   @override
-  String get pdfHeaderDate => 'Date';
+  String get pdfHeaderDate => '日期';
 
   @override
-  String get pdfHeaderTime => 'Time';
+  String get pdfHeaderTime => '时间';
 
   @override
-  String get pdfHeaderMood => 'Mood';
+  String get pdfHeaderMood => '心情';
 
   @override
-  String get pdfHeaderSleep => 'Sleep';
+  String get pdfHeaderSleep => '睡眠';
 
   @override
-  String get pdfHeaderTags => 'Tags';
+  String get pdfHeaderTags => '标签';
 
   @override
-  String get pdfHeaderNote => 'Note';
+  String get pdfHeaderNote => '笔记';
 
   @override
-  String get pdfFooter => 'Created with LuvioSphere';
+  String get pdfFooter => '由 LuvioSphere 创建';
 
   @override
-  String get predWeatherGood => 'Tomorrow\'s sun boosts your energy!';
+  String get predWeatherGood => '明天的阳光会提升你的能量！';
 
   @override
-  String get predWeatherBad => 'Rain forecast – make yourself cozy.';
+  String get predWeatherBad => '预报有雨——让自己舒适一点。';
+
+  @override
+  String get partnerTitle => '伴侣连接 ❤️';
+
+  @override
+  String get partnerDesc => '与你的伴侣连接以查看TA的心情。';
+
+  @override
+  String get partnerEmailLabel => '伴侣的邮箱';
+
+  @override
+  String get partnerConnectBtn => '连接';
+
+  @override
+  String partnerConnected(String name) {
+    return '已与 $name 连接';
+  }
+
+  @override
+  String partnerStatus(String score) {
+    return '当前心情: $score';
+  }
+
+  @override
+  String partnerNeedsLove(String name) {
+    return '⚠️ $name 今天过得很艰难。送点关爱吧！';
+  }
+
+  @override
+  String get partnerWait => '等待确认中...';
+
+  @override
+  String get partnerDisconnectTitle => '断开伴侣连接？';
+
+  @override
+  String partnerDisconnectMessage(String partnerEmail) {
+    return '你确定要断开与 $partnerEmail 的连接吗？';
+  }
+
+  @override
+  String get partnerDisconnectConfirm => '是的，断开';
+
+  @override
+  String get partnerDisconnectCancel => '取消';
+
+  @override
+  String get partnerDisconnectSuccess => '连接已移除。';
+
+  @override
+  String get partnerDisconnectTooltip => '断开伴侣';
 }

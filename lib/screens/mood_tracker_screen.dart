@@ -24,7 +24,7 @@ import '../widgets/profile_view.dart';
 import '../utils/mood_utils.dart';
 import 'auth_gate.dart';
 
-// 1. DER WRAPPER (Stellt sicher, dass ShowCaseWidget existiert)
+// 1. DER WRAPPER
 class MoodTrackerScreen extends StatelessWidget {
   const MoodTrackerScreen({super.key});
 
@@ -37,7 +37,7 @@ class MoodTrackerScreen extends StatelessWidget {
   }
 }
 
-// 2. DER EIGENTLICHE CONTENT (Mit Logik)
+// 2. DER EIGENTLICHE CONTENT
 class MoodTrackerContent extends StatefulWidget {
   const MoodTrackerContent({super.key});
 
@@ -84,16 +84,12 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   void initState() {
     super.initState();
     _initializeAll();
-    
-    // Tutorial Prüfung nach dem Bauen des UIs
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndStartShowcase());
   }
 
   // --- TUTORIAL START LOGIK ---
   Future<void> _checkAndStartShowcase() async {
-    // WICHTIG: Prüfen, ob der Screen noch existiert
     if (!mounted) return;
-
     final prefs = await SharedPreferences.getInstance();
     final bool seen = prefs.getBool('tutorial_seen') ?? false;
     
@@ -110,12 +106,10 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Wenn wir Profile haben (also eingeloggt sind), müssen wir bei Sprachwechsel handeln
     if (_profiles.isNotEmpty) {
-      // 1. Standard-Tags in neuer Sprache laden (löscht erst mal Custom Tags)
+      // 1. Standard-Tags neu laden
       _initializeTagsMap();
-      
-      // 2. WICHTIG: Custom Tags sofort wieder aus der DB holen und einsortieren!
+      // 2. FIX: Custom Tags sofort wieder aus der DB holen und einsortieren!
       _loadCustomTags();
     }
   }
@@ -132,7 +126,6 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     };
   }
 
-  // Hilfsmethode: Ordnet alte DB-Strings der aktuellen Sprache zu
   String _mapDbCategoryToCurrent(String dbCategory, AppLocalizations l10n) {
     if (_combinedTagsByCategory.containsKey(dbCategory)) return dbCategory;
 
@@ -219,9 +212,9 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
     final relevantEntries = (_selectedProfileId == null) ? <MoodEntry>[] : _allEntries.where((e) => e.profileId == _selectedProfileId).toList();
     final entriesForDate = relevantEntries.where((entry) => DateUtils.isSameDay(entry.timestamp, _selectedDate)).toList();
-    final currentProfileName = _profiles.isNotEmpty && _selectedProfileId != null
-        ? _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: '')).name
-        : l10n.unknownProfile;
+    
+    // FIX: Unused Variable entfernt!
+    // final currentProfileName = ... (wird nicht mehr gebraucht)
     
     int? currentCycleDay;
      if (_profiles.isNotEmpty && _selectedProfileId != null) {
@@ -420,25 +413,25 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                             onUnlockPressed: _startCheckout,
                           )
                         : ProfileView(
-                            profileName: currentProfileName,
+                            // FIX: Wir übergeben das GANZE Profile Objekt
+                            currentProfile: _profiles.firstWhere(
+                                (p) => p.id == _selectedProfileId, 
+                                orElse: () => Profile(id: 'dummy', name: 'Gast')
+                            ),
+                            
                             email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail",
                             version: _appVersion,
-                            entries: relevantEntries,
+                            
+                            // FIX: Nur relevante Einträge übergeben für PDF Export
+                            entries: relevantEntries, 
+                            
                             isPro: _isPro,
                             onLogout: _signOut,
                             onManageSubscription: _isPro ? _openCustomerPortal : _startCheckout,
-                            // NEU HINZUFÜGEN:
                             onStartTutorial: () async {
-                              // 1. Tab wechseln
                               setState(() => _selectedIndex = 0);
-                              
-                              // 2. Warten (await)
                               await Future.delayed(const Duration(milliseconds: 300));
-                              
-                              // 3. Sicherheitscheck: Ist der Context noch da?
                               if (!context.mounted) return;
-
-                              // 4. Tutorial starten
                               // ignore: deprecated_member_use
                               ShowCaseWidget.of(context).startShowCase([_one, _two, _three, _four]);
                             },
@@ -534,17 +527,35 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
-      final response = await Supabase.instance.client.from('profiles').select().order('created_at');
+      
+      // FIX: Wir laden NUR die Profile, die dem eingeloggten User gehören!
+      // Vorher fehlte .eq('user_id', userId), deshalb wurden ALLE Profile geladen.
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('user_id', userId) // <--- WICHTIGSTER FIX
+          .order('created_at');
+          
       final data = response as List<dynamic>;
-      if (data.isEmpty) { await Supabase.instance.client.from('profiles').insert({'user_id': userId, 'name': 'Ich', 'is_cycle_tracking': false}); if (mounted) _loadProfiles(); return; }
+      
+      if (data.isEmpty) { 
+        await Supabase.instance.client.from('profiles').insert({'user_id': userId, 'name': 'Ich', 'is_cycle_tracking': false}); 
+        if (mounted) _loadProfiles(); 
+        return; 
+      }
       
       final prefs = await SharedPreferences.getInstance();
       final lastProfileId = prefs.getString('last_profile_id');
 
       setState(() {
         _profiles = data.map((json) => Profile.fromJson(json)).toList();
-        if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { _selectedProfileId = lastProfileId; } 
-        else if (_selectedProfileId == null && _profiles.isNotEmpty) { _selectedProfileId = _profiles.first.id; }
+        
+        // Prüfen, ob die ID noch gültig ist (gehört sie mir?)
+        if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { 
+          _selectedProfileId = lastProfileId; 
+        } else if (_profiles.isNotEmpty) { 
+          _selectedProfileId = _profiles.first.id; 
+        }
         _initializeTagsMap();
       });
       if (_selectedProfileId != null) _loadEntries();
@@ -625,16 +636,11 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     if (user == null || _selectedProfileId == null) return;
     final newEntry = MoodEntry(timestamp: DateTime.now(), score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId!);
     try {
-      // Wir erstellen eine Map aus dem Objekt, fügen aber die UserID manuell hinzu
-    final entryData = newEntry.toMap();
-    entryData['user_id'] = user.id; // User ID muss zwingend mit rein
-    // profile_id ist schon im toMap, wenn newEntry es hat
+      // FIX: Zeitzonen-Korrektur beim Speichern
+      final entryData = newEntry.toMap();
+      entryData['user_id'] = user.id;
 
-    final res = await Supabase.instance.client
-        .from('mood_entries')
-        .insert(entryData) // Nutzt jetzt die toUtc() Logik aus dem Model!
-        .select()
-        .single();
+      final res = await Supabase.instance.client.from('mood_entries').insert(entryData).select().single();
       setState(() { _allEntries.insert(0, MoodEntry.fromMap(res)); _showSuccessAnimation = true; _selectedTags.clear(); _noteController.clear(); });
       Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }

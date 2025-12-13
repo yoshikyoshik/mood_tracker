@@ -214,7 +214,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get dialogDeleteTagContent => 'Этот тег будет убран из выбранного.';
+  String get dialogDeleteTagContent => 'Этот тег будет убран из списка.';
 
   @override
   String dialogEditTagTitle(String tag) {
@@ -455,155 +455,208 @@ class AppLocalizationsRu extends AppLocalizations {
   String get authSuccessVerify => 'Пожалуйста, подтверди email!';
 
   @override
-  String get legal => 'Legal';
+  String get legal => 'Правовая информация';
 
   @override
-  String get imprint => 'Imprint';
+  String get imprint => 'Выходные данные';
 
   @override
-  String get privacy => 'Privacy Policy';
+  String get privacy => 'Политика конфиденциальности';
 
   @override
-  String get tutorialMoodTitle => 'Your Mood';
+  String get tutorialMoodTitle => 'Твое настроение';
 
   @override
   String get tutorialMoodDesc =>
-      'Move the slider to capture how you feel right now.';
+      'Двигай ползунок, чтобы отметить, как ты себя чувствуешь сейчас.';
 
   @override
-  String get tutorialSaveTitle => 'Save Entry';
+  String get tutorialSaveTitle => 'Сохранить запись';
 
   @override
-  String get tutorialSaveDesc => 'Tap here to write your entry to the diary.';
+  String get tutorialSaveDesc =>
+      'Нажми здесь, чтобы добавить запись в дневник.';
 
   @override
-  String get tutorialStatsTitle => 'Your Insights';
+  String get tutorialStatsTitle => 'Твоя статистика';
 
   @override
   String get tutorialStatsDesc =>
-      'Discover charts and patterns about your mood here.';
+      'Здесь ты найдешь графики и паттерны своего настроения.';
 
   @override
-  String get tutorialProfileTitle => 'Your Profile';
+  String get tutorialProfileTitle => 'Твой профиль';
 
   @override
   String get tutorialProfileDesc =>
-      'Manage your data, settings, and exports here.';
+      'Управляй данными, настройками и экспортом здесь.';
 
   @override
-  String get tutorialStart => 'Start Tutorial';
+  String get tutorialStart => 'Начать обучение';
 
   @override
-  String get exportPdf => 'Create Report (PDF)';
+  String get exportPdf => 'Создать отчет (PDF)';
 
   @override
-  String get predCycleRest => 'Your cycle might demand some rest.';
+  String get predCycleRest => 'Твой цикл подсказывает, что нужен отдых.';
 
   @override
-  String get predCyclePower => 'Your cycle gives you extra power!';
+  String get predCyclePower => 'Твой цикл дает тебе дополнительную энергию!';
 
   @override
-  String get predSentimentStress => 'Your notes seemed stressed lately.';
+  String get predSentimentStress =>
+      'В твоих заметках в последнее время много стресса.';
 
   @override
-  String get predSleepTip => 'Tip: Go to sleep earlier today.';
+  String get predSleepTip => 'Совет: Ляг спать пораньше сегодня.';
 
   @override
-  String get aiCalibration => 'AI Calibration...';
+  String get aiCalibration => 'Калибровка ИИ...';
 
   @override
   String aiCalibrationText(int missing) {
-    return 'Setting up your Smart Forecast. We need $missing more entries.';
+    return 'Настраиваю Умный Прогноз. Нужно еще $missing записей.';
   }
 
   @override
   String aiEntriesCount(int count, int target) {
-    return '$count / $target entries';
+    return '$count / $target записей';
   }
 
   @override
-  String get lockedPredTitle => 'How will your day be tomorrow?';
+  String get lockedPredTitle => 'Каким будет твой день завтра?';
 
   @override
-  String get lockedPredDesc => 'Based on your sleep, trend, and weekday.';
+  String get lockedPredDesc => 'Основано на сне, трендах и дне недели.';
 
   @override
-  String get lockedAiTitle => 'Deep analysis of your week';
+  String get lockedAiTitle => 'Глубокий анализ твоей недели';
 
   @override
-  String get errorNoEntries7Days => 'No entries found in the last 7 days.';
+  String get errorNoEntries7Days => 'Нет записей за последние 7 дней.';
 
   @override
   String errorAnalysisFailed(Object code) {
-    return 'Analysis failed: $code';
+    return 'Ошибка анализа: $code';
   }
 
   @override
   String get sentimentNegativeWords =>
-      'Stress,Fight,Sick,Pain,Tired,Anxiety,Sad,Bad';
+      'Стресс,Ссора,Болезнь,Боль,Усталость,Тревога,Грусть,Плохо';
 
   @override
   String get sentimentPositiveWords =>
-      'Vacation,Love,Success,Sport,Happy,Great,Relaxed,Party';
+      'Отпуск,Любовь,Успех,Спорт,Счастье,Круто,Релакс,Вечеринка';
 
   @override
-  String get statsAiCoachTitle => 'AI Weekly Coach';
+  String get statsAiCoachTitle => 'Еженедельный ИИ-коуч';
 
   @override
   String labelDataFor(String name) {
-    return 'Data for $name:';
+    return 'Данные для: $name';
   }
 
   @override
-  String get labelNote => 'Note';
+  String get labelNote => 'Заметка';
 
   @override
-  String get exportPdfButton => 'Create Report (PDF)';
+  String get exportPdfButton => 'Создать отчет (PDF)';
 
   @override
-  String get pdfTitle => 'LuvioSphere Report';
+  String get pdfTitle => 'Отчет LuvioSphere';
 
   @override
   String pdfProfile(String name) {
-    return 'Profile: $name';
+    return 'Профиль: $name';
   }
 
   @override
-  String get pdfPeriod => 'Period: Last 30 days';
+  String get pdfPeriod => 'Период: Посл. 30 дней';
 
   @override
-  String get pdfAvgMood => 'Ø Mood';
+  String get pdfAvgMood => 'Ø Настроение';
 
   @override
-  String get pdfAvgSleep => 'Ø Sleep';
+  String get pdfAvgSleep => 'Ø Сон';
 
   @override
-  String get pdfEntriesCount => 'Entries';
+  String get pdfEntriesCount => 'Записи';
 
   @override
-  String get pdfHeaderDate => 'Date';
+  String get pdfHeaderDate => 'Дата';
 
   @override
-  String get pdfHeaderTime => 'Time';
+  String get pdfHeaderTime => 'Время';
 
   @override
-  String get pdfHeaderMood => 'Mood';
+  String get pdfHeaderMood => 'Настр.';
 
   @override
-  String get pdfHeaderSleep => 'Sleep';
+  String get pdfHeaderSleep => 'Сон';
 
   @override
-  String get pdfHeaderTags => 'Tags';
+  String get pdfHeaderTags => 'Теги';
 
   @override
-  String get pdfHeaderNote => 'Note';
+  String get pdfHeaderNote => 'Заметка';
 
   @override
-  String get pdfFooter => 'Created with LuvioSphere';
+  String get pdfFooter => 'Создано с LuvioSphere';
 
   @override
-  String get predWeatherGood => 'Tomorrow\'s sun boosts your energy!';
+  String get predWeatherGood => 'Завтрашнее солнце зарядит тебя энергией!';
 
   @override
-  String get predWeatherBad => 'Rain forecast – make yourself cozy.';
+  String get predWeatherBad => 'Обещают дождь – устрой себе уют.';
+
+  @override
+  String get partnerTitle => 'Связь с партнером ❤️';
+
+  @override
+  String get partnerDesc =>
+      'Подключись к партнеру, чтобы видеть его настроение.';
+
+  @override
+  String get partnerEmailLabel => 'Email партнера';
+
+  @override
+  String get partnerConnectBtn => 'Подключить';
+
+  @override
+  String partnerConnected(String name) {
+    return 'На связи с: $name';
+  }
+
+  @override
+  String partnerStatus(String score) {
+    return 'Текущее настр.: $score';
+  }
+
+  @override
+  String partnerNeedsLove(String name) {
+    return '⚠️ У $name тяжелый день. Поддержи!';
+  }
+
+  @override
+  String get partnerWait => 'Ожидание подтверждения...';
+
+  @override
+  String get partnerDisconnectTitle => 'Отключить партнера?';
+
+  @override
+  String partnerDisconnectMessage(String partnerEmail) {
+    return 'Ты действительно хочешь отменить связь с $partnerEmail?';
+  }
+
+  @override
+  String get partnerDisconnectConfirm => 'Да, отключить';
+
+  @override
+  String get partnerDisconnectCancel => 'Отмена';
+
+  @override
+  String get partnerDisconnectSuccess => 'Связь удалена.';
+
+  @override
+  String get partnerDisconnectTooltip => 'Отключить партнера';
 }
