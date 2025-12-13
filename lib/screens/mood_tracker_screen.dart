@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:home_widget/home_widget.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
@@ -512,8 +513,11 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
         _loadCustomTags(),
         _checkSubscription(),
       ]);
-      
-      if (mounted) _initializeTagsMap();
+
+      if (mounted) {
+         _initializeTagsMap();
+         _updateHomeWidget(); // <--- Aktualisiert das Widget beim App-Start
+      }
 
     } catch (e) {
       debugPrint("🛑 Kritischer Ladefehler: $e");
@@ -642,6 +646,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
       final res = await Supabase.instance.client.from('mood_entries').insert(entryData).select().single();
       setState(() { _allEntries.insert(0, MoodEntry.fromMap(res)); _showSuccessAnimation = true; _selectedTags.clear(); _noteController.clear(); });
+      _updateHomeWidget();
       Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
   }
@@ -661,6 +666,22 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
       await Supabase.instance.client.from('mood_entries').update({'score': s, 'sleep_rating': sl, 'tags': t.toList(), 'note': n}).eq('id', id);
       _loadEntries(); if(mounted) Navigator.pop(context);
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+  }
+
+  Future<void> _updateHomeWidget() async {
+    // 1. Streak berechnen (Code hast du schon, evtl. in separate Methode auslagern)
+    final streak = _calculateStreak();
+    
+    // 2. Daten an Android senden
+    // Die IDs ('tv_streak_value') müssen exakt mit dem XML aus Schritt 2 übereinstimmen!
+    await HomeWidget.saveWidgetData<String>('tv_streak_value', streak.toString());
+    
+    // 3. Widget aktualisieren erzwingen
+    await HomeWidget.updateWidget(
+      name: 'HomeWidgetProvider', // Standard Name, wenn man keine eigene Klasse schreibt
+      androidName: 'HomeWidgetProvider',
+      iOSName: 'MoodWidget', // Kommt später
+    );
   }
 
   void _showEditSheet(MoodEntry entry) {
