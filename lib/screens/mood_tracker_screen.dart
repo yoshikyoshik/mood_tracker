@@ -678,8 +678,8 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     
     // 3. Widget aktualisieren erzwingen
     await HomeWidget.updateWidget(
-      name: 'HomeWidgetProvider', // Standard Name, wenn man keine eigene Klasse schreibt
-      androidName: 'HomeWidgetProvider',
+      name: 'MoodWidgetProvider',
+      androidName: 'MoodWidgetProvider',
       iOSName: 'MoodWidget', // Kommt später
     );
   }

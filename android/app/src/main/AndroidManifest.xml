@@ -45,7 +45,7 @@
                 <data android:scheme="moodtracker" />
             </intent-filter>
         </activity>
-        <receiver android:name="es.antonborri.home_widget.HomeWidgetProvider"
+        <receiver android:name=".MoodWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
