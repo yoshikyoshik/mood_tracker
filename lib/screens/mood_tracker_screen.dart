@@ -669,19 +669,29 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   }
 
   Future<void> _updateHomeWidget() async {
-    // 1. Streak berechnen (Code hast du schon, evtl. in separate Methode auslagern)
-    final streak = _calculateStreak();
-    
-    // 2. Daten an Android senden
-    // Die IDs ('tv_streak_value') müssen exakt mit dem XML aus Schritt 2 übereinstimmen!
-    await HomeWidget.saveWidgetData<String>('tv_streak_value', streak.toString());
-    
-    // 3. Widget aktualisieren erzwingen
-    await HomeWidget.updateWidget(
-      name: 'MoodWidgetProvider',
-      androidName: 'MoodWidgetProvider',
-      iOSName: 'MoodWidget', // Kommt später
-    );
+    // PRÜFUNG: Wenn wir im Web sind, brechen wir sofort ab.
+    // Web-Browser haben keine Homescreen-Widgets -> Fehler vermieden!
+    if (kIsWeb) return;
+
+    try {
+      // 1. Streak berechnen (Code hast du schon, evtl. in separate Methode auslagern)
+      final streak = _calculateStreak();
+      
+      // 2. Daten an Android senden
+      // Die IDs ('tv_streak_value') müssen exakt mit dem XML aus Schritt 2 übereinstimmen!
+      await HomeWidget.saveWidgetData<String>('tv_streak_value', streak.toString());
+      
+      // 3. Widget aktualisieren erzwingen
+      await HomeWidget.updateWidget(
+        name: 'MoodWidgetProvider',
+        androidName: 'MoodWidgetProvider',
+        iOSName: 'MoodWidget', // Kommt später
+      );
+    } catch (e) {
+      // Falls auf dem Handy etwas schiefgeht (z.B. Widget noch nicht installiert),
+      // fangen wir den Fehler ab, damit die App weiterläuft.
+      debugPrint("Fehler beim Aktualisieren des HomeWidgets: $e");
+    }
   }
 
   void _showEditSheet(MoodEntry entry) {

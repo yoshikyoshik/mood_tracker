@@ -111,6 +111,7 @@ flutter:
   # see https://flutter.dev/to/font-from-package
   assets:
     - assets/success.json
+    - assets/icon/
 
 # --- KONFIGURATION FÜR APP ICON ---
 flutter_launcher_icons:
