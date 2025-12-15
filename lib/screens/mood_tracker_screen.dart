@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
@@ -81,11 +82,29 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     return _combinedTagsByCategory.values.expand((x) => x).toList();
   }
 
+  // 1. VARIABLE FÜR DEN LISTENER
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription; // Beachte: neuerdings List<ConnectivityResult> in v6
+
   @override
   void initState() {
     super.initState();
     _initializeAll();
+    // 2. LISTENER STARTEN (Automatischer Sync)
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      // Wenn wir irgendeine Verbindung haben (nicht 'none'), versuchen wir zu syncen
+      if (!results.contains(ConnectivityResult.none)) {
+        _syncOfflineEntries();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndStartShowcase());
+  }
+
+  @override
+  void dispose() {
+    // 3. LISTENER AUFRÄUMEN
+    _connectivitySubscription.cancel();
+    super.dispose();
   }
 
   // --- TUTORIAL START LOGIK ---
@@ -522,6 +541,68 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   // --- DATA LOADING ---
 
+  // --- OFFLINE SYNC LOGIK ---
+
+  // Speichert einen Eintrag lokal, wenn kein Internet da ist
+  Future<void> _saveEntryOffline(MoodEntry entry, String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> offlineQueue = prefs.getStringList('offline_queue') ?? [];
+    
+    // Wir müssen die user_id manuell hinzufügen, da sie im MoodEntry-Objekt oft null ist
+    // (wird normalerweise von Supabase gesetzt, aber offline müssen wir sie behalten)
+    final entryMap = entry.toMap();
+    entryMap['user_id'] = userId; 
+    
+    // Als JSON speichern
+    offlineQueue.add(jsonEncode(entryMap));
+    await prefs.setStringList('offline_queue', offlineQueue);
+  }
+
+  // Versucht, die Warteschlange abzuarbeiten (wird beim Start aufgerufen)
+  Future<void> _syncOfflineEntries() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> offlineQueue = prefs.getStringList('offline_queue') ?? [];
+    
+    if (offlineQueue.isEmpty) return;
+
+    // Check: Haben wir überhaupt Internet?
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) return;
+
+    debugPrint("🔄 Starte Sync von ${offlineQueue.length} Offline-Einträgen...");
+    
+    final List<String> remainingQueue = [];
+    int syncedCount = 0;
+
+    for (String jsonStr in offlineQueue) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(jsonStr);
+        
+        // Versuchen, hochzuladen
+        await Supabase.instance.client.from('mood_entries').insert(data);
+        syncedCount++;
+      } catch (e) {
+        debugPrint("❌ Fehler beim Sync eines Eintrags: $e");
+        // Wenn es fehlschlägt, behalten wir ihn in der Queue für den nächsten Versuch
+        remainingQueue.add(jsonStr);
+      }
+    }
+
+    // Queue aktualisieren (nur die fehlerhaften bleiben drin)
+    await prefs.setStringList('offline_queue', remainingQueue);
+
+    // Erfolg melden und Liste neu laden
+    if (syncedCount > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("$syncedCount Offline-Einträge synchronisiert!"), 
+          backgroundColor: Colors.green
+        )
+      );
+      _loadEntries(); // Liste neu vom Server holen
+    }
+  }
+
   Future<void> _loadAppVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
@@ -547,6 +628,9 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
       }
 
       await _loadProfiles();
+
+      // NEU: Erst Sync versuchen, dann laden!
+      await _syncOfflineEntries();
       
       await Future.wait([
         _loadEntries(),
@@ -678,17 +762,80 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     final l10n = AppLocalizations.of(context)!;
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || _selectedProfileId == null) return;
-    final newEntry = MoodEntry(timestamp: DateTime.now(), score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId!);
-    try {
-      // FIX: Zeitzonen-Korrektur beim Speichern
-      final entryData = newEntry.toMap();
-      entryData['user_id'] = user.id;
 
-      final res = await Supabase.instance.client.from('mood_entries').insert(entryData).select().single();
-      setState(() { _allEntries.insert(0, MoodEntry.fromMap(res)); _showSuccessAnimation = true; _selectedTags.clear(); _noteController.clear(); });
-      _updateHomeWidget();
-      Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
+    // Eintrag erstellen
+    final newEntry = MoodEntry(
+      timestamp: DateTime.now(), 
+      score: _currentMoodValue, 
+      sleepRating: _trackSleep ? _currentSleepValue : null, 
+      tags: Set.from(_selectedTags), 
+      note: _noteController.text.trim(), 
+      profileId: _selectedProfileId!
+    );
+
+    setState(() => _showSuccessAnimation = true); // Animation sofort zeigen für "Snappiness"
+
+    try {
+      // 1. Netz prüfen
+      final connectivityResult = await Connectivity().checkConnectivity();
+      
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        // --- OFFLINE FALL ---
+        await _saveEntryOffline(newEntry, user.id);
+        
+        // Lokal zur Liste hinzufügen, damit der User es sofort sieht (Optimistic UI)
+        // Hinweis: Es hat noch keine echte ID, daher geben wir eine temporäre 'offline_' ID
+        final offlineEntry = MoodEntry(
+          id: 'offline_${DateTime.now().millisecondsSinceEpoch}',
+          timestamp: newEntry.timestamp,
+          score: newEntry.score,
+          sleepRating: newEntry.sleepRating,
+          tags: newEntry.tags,
+          note: newEntry.note,
+          profileId: newEntry.profileId,
+          userId: user.id
+        );
+        
+        setState(() {
+          _allEntries.insert(0, offlineEntry);
+        });
+        
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Kein Internet. Eintrag lokal gespeichert."), backgroundColor: Colors.orange)
+           );
+        }
+      } else {
+        // --- ONLINE FALL (Normal) ---
+        final entryData = newEntry.toMap();
+        entryData['user_id'] = user.id;
+
+        final res = await Supabase.instance.client.from('mood_entries').insert(entryData).select().single();
+        
+        setState(() {
+          _allEntries.insert(0, MoodEntry.fromMap(res));
+        });
+        
+        _updateHomeWidget(); // Widget nur updaten wenn online (oder man baut das auch offline um, ist aber optional)
+      }
+
+      // Cleanup (UI zurücksetzen)
+      setState(() {
+        _selectedTags.clear();
+        _noteController.clear();
+      });
+      
+      Timer(const Duration(seconds: 2), () { 
+        if (mounted) setState(() => _showSuccessAnimation = false); 
+      });
+
+    } catch (e) {
+      // Fallback: Wenn Supabase trotz Netz-Check einen Fehler wirft (z.B. Timeout)
+      if (mounted) {
+        setState(() => _showSuccessAnimation = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
+      }
+    }
   }
 
   Future<void> _deleteEntry(String id) async {

@@ -528,6 +528,14 @@ class _MoodInputViewState extends State<MoodInputView> {
                                     Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) // HIER IST DIE KORREKTUR
                                   ]
                                 ),
+                                // --- NEU: ANZEIGE FÜR OFFLINE STATUS ---
+                                trailing: (entry.id != null && entry.id!.startsWith('offline_'))
+                                    ? Tooltip(
+                                        message: "Nicht synchronisiert",
+                                        triggerMode: TooltipTriggerMode.tap,
+                                        child: Icon(Icons.cloud_off, color: Colors.orange.shade300, size: 20),
+                                      )
+                                    : null,
                               ),
                             ),
                           );
