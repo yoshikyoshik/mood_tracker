@@ -687,6 +687,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tagSex => 'Intimacy';
 
   @override
+  String get tagStress => 'Stress';
+
+  @override
   String get predSeasonTip => 'Soaking up light helps!';
 
   @override

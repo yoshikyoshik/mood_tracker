@@ -1370,6 +1370,12 @@ abstract class AppLocalizations {
   /// **'Intimität'**
   String get tagSex;
 
+  /// No description provided for @tagStress.
+  ///
+  /// In de, this message translates to:
+  /// **'Stress'**
+  String get tagStress;
+
   /// No description provided for @predSeasonTip.
   ///
   /// In de, this message translates to:

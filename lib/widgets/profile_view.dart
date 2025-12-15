@@ -105,7 +105,12 @@ class ProfileView extends StatelessWidget {
           const SizedBox(height: 30),
 
           // PARTNER CONNECT (NEU)
-          PartnerConnectCard(currentProfile: currentProfile, authEmail: email),
+          PartnerConnectCard(
+                currentProfile: currentProfile, 
+                authEmail: email,
+                isPro: isPro, // <--- NEU
+                onUnlockPressed: onManageSubscription, // <--- NEU (Öffnet Checkout oder Portal)
+              ),
           const SizedBox(height: 30),
 
           // ERFOLGE

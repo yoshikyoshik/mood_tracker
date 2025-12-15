@@ -7,11 +7,15 @@ import '../l10n/generated/app_localizations.dart';
 class PartnerConnectCard extends StatefulWidget {
   final Profile currentProfile;
   final String authEmail;
+  final bool isPro; // <--- NEU
+  final VoidCallback onUnlockPressed; // <--- NEU (für den Klick auf "Freischalten")
 
   const PartnerConnectCard({
     super.key, 
     required this.currentProfile, 
-    required this.authEmail
+    required this.authEmail,
+    required this.isPro, // <--- NEU
+    required this.onUnlockPressed, // <--- NEU
   });
 
   @override
@@ -22,7 +26,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   final _partnerService = PartnerService();
   final _myEmailCtrl = TextEditingController();
   final _partnerEmailCtrl = TextEditingController();
-  
+
   bool _isLoading = false;
   Map<String, dynamic>? _partnerStatus;
   Timer? _refreshTimer;
@@ -181,10 +185,15 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // Wir prüfen: Gibt es Status-Daten? ODER steht eine E-Mail im Feld UND wir laden nicht mehr?
-    // Der sicherste Indikator für "Verbunden" ist, wenn _partnerStatus Daten liefert (z.B. den Score).
-    final bool isConnected = _partnerStatus != null;
+    
+    // --- 1. PRO-CHECK ---
+    if (!widget.isPro) {
+      return _buildLockedCard(l10n);
+    }
 
+    // --- 2. NORMALE LOGIK (wie bisher) ---
+    final bool isConnected = _partnerStatus != null;
+    
     return Card(
       elevation: 0,
       color: Colors.white,
@@ -206,11 +215,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
             Text(l10n.partnerDesc, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
             const SizedBox(height: 20),
 
-            // --- HIER IST DER FIX: WEICHE ZWISCHEN "FORMULAR" UND "VERBUNDEN" ---
-            
             if (isConnected) ...[
-              // FALL A: BEREITS VERBUNDEN
-              Container(
+              // ... Dein bestehender Code für "Verbunden" ...
+              // (Kopiere hier deinen bestehenden Block rein: Container grün, _buildPartnerStatus etc.)
+               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
@@ -226,88 +234,38 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text("Verbunden mit:", style: TextStyle(fontSize: 12, color: Colors.black54)),
-                          Text(
-                            _partnerEmailCtrl.text, 
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
-                          ),
+                          Text(_partnerEmailCtrl.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                         ],
                       ),
                     ),
-                    // --- HIER IST DER NEUE BUTTON ---
-                    // ... in der grünen Box ...
                     Tooltip(
-                      message: l10n.partnerDisconnectTooltip, // HIER GEÄNDERT
-                      child: IconButton(
-                        icon: const Icon(Icons.link_off, color: Colors.grey),
-                        onPressed: _disconnect, 
-                      ),
+                      message: l10n.partnerDisconnectTooltip,
+                      child: IconButton(icon: const Icon(Icons.link_off, color: Colors.grey), onPressed: _disconnect),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              // STATUS ANZEIGE (EXISTIERENDER CODE)
               _buildPartnerStatus(l10n),
-            
+
             ] else ...[
-              // FALL B: NICHT VERBUNDEN (FORMULAR ANZEIGEN)
+              // ... Dein bestehender Code für "Formular" ...
               TextField(
                 controller: _myEmailCtrl,
                 readOnly: true, 
-                decoration: const InputDecoration(
-                  labelText: "Deine E-Mail (Automatisch)",
-                  prefixIcon: Icon(Icons.person, color: Colors.grey),
-                  filled: true,
-                  fillColor: Color(0xFFF5F7FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                ),
+                decoration: const InputDecoration(labelText: "Deine E-Mail (Automatisch)", prefixIcon: Icon(Icons.person, color: Colors.grey), filled: true, fillColor: Color(0xFFF5F7FA), border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _partnerEmailCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.partnerEmailLabel,
-                  hintText: "z.B. partner@example.com",
-                  prefixIcon: const Icon(Icons.search),
-                  border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                ),
+                decoration: InputDecoration(labelText: l10n.partnerEmailLabel, hintText: "z.B. partner@example.com", prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 15),
-
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _saveSettings,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pinkAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(l10n.partnerConnectBtn), // Hier steht "Verbinden"
-                  ),
-                ),
-                
-               // WARTEMELDUNG (Falls gespeichert, aber noch keine Antwort vom Partner)
-               if (_partnerEmailCtrl.text.isNotEmpty && !_isLoading && !isConnected) ...[
-                 const SizedBox(height: 15),
-                 Center(
-                   child: Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
-                       const SizedBox(width: 8),
-                       Text(l10n.partnerWait, style: const TextStyle(color: Colors.orange, fontSize: 12, fontStyle: FontStyle.italic)),
-                     ],
-                   )
-                 ),
-               ]
+              if (_isLoading) const Center(child: CircularProgressIndicator())
+              else SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _saveSettings, style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: Text(l10n.partnerConnectBtn))),
+               if (_partnerEmailCtrl.text.isNotEmpty && !_isLoading && !isConnected) ...[ const SizedBox(height: 15), Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)), const SizedBox(width: 8), Text(l10n.partnerWait, style: const TextStyle(color: Colors.orange, fontSize: 12, fontStyle: FontStyle.italic))]))]
             ],
           ],
         ),
@@ -315,10 +273,125 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     );
   }
 
+  // --- NEUES WIDGET: DIE GESPERRTE KARTE ---
+  Widget _buildLockedCard(AppLocalizations l10n) {
+    return GestureDetector(
+      onTap: widget.onUnlockPressed,
+      child: Card(
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Stack(
+          children: [
+            // Der Inhalt (leicht ausgeblendet/unscharf suggeriert)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [const Icon(Icons.favorite, color: Colors.pinkAccent), const SizedBox(width: 10), Text(l10n.partnerTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+                  const SizedBox(height: 10),
+                  Text(l10n.partnerDesc, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  const SizedBox(height: 20),
+                  // Fake UI für den Look
+                  Container(height: 50, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12))),
+                  const SizedBox(height: 10),
+                  Container(height: 50, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12))),
+                ],
+              ),
+            ),
+            
+            // Der "Lock" Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.6), // Milchglas-Effekt
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: Colors.pinkAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
+                      child: const Icon(Icons.lock_person, size: 40, color: Colors.pinkAccent),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Partner Connect", // Oder l10n.partnerTitle
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Text(
+                        "Verbinde dich für mehr Verständnis & Harmonie.", // Könnte auch ins l10n
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: widget.onUnlockPressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(l10n.becomePro),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _getPartnerAdvice(double score, List<dynamic>? tagsRaw, double? sleep, AppLocalizations l10n) {
+    final List<String> tags = tagsRaw?.map((e) => e.toString()).toList() ?? [];
+    
+    // 1. Spezifische Tags (Höchste Priorität)
+    if (tags.any((t) => ['Krank', 'Sick', 'Kopfschmerzen', 'Migräne'].contains(t))) {
+      return "Partner ist krank. Tee, Suppe oder Medikamente wären lieb!";
+    }
+    
+    // Zyklus-Check (PMS/Periode/Cramps)
+    if (tags.any((t) => [l10n.tagPMS, l10n.tagPeriodHeavy, l10n.tagCramps, 'Regelschmerzen'].contains(t))) {
+      return "Vorsicht: Zyklus-Beschwerden. Wärmflasche & Schokolade bereitstellen!";
+    }
+
+    if (tags.contains(l10n.tagStress) || tags.contains('Stress')) {
+      return "Hohes Stresslevel. Nimm dem Partner heute vielleicht eine Pflicht ab.";
+    }
+
+    // 2. Schlaf-Check
+    if (sleep != null && sleep < 5.0) {
+      return "Massiver Schlafmangel. Sorge für einen ruhigen Abend.";
+    }
+
+    // 3. Score-Basierte Tipps
+    if (score < 4.0) {
+      return "Stimmung ist im Keller. Eine Umarmung oder Zuhören hilft oft mehr als Lösungen.";
+    }
+    if (score > 8.5) {
+      return "Super Stimmung! Perfekter Zeitpunkt für gemeinsame Unternehmungen.";
+    }
+
+    return null; // Kein spezieller Tipp nötig
+  }
+
   Widget _buildPartnerStatus(AppLocalizations l10n) {
     final name = _partnerStatus!['name'] as String? ?? 'Partner';
     final score = _partnerStatus!['score'] as double?;
     
+    // Daten holen (sicherstellen, dass wir nicht abstürzen, falls keys fehlen)
+    final tags = _partnerStatus!['tags'] as List<dynamic>?;
+    final sleep = _partnerStatus!['sleep'] as double?;
+
     if (score == null) {
       return Container(
         padding: const EdgeInsets.all(15),
@@ -333,6 +406,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       );
     }
 
+    // Basis-Farben und Icons wie bisher
     Color color = Colors.green;
     String msg = l10n.partnerStatus(score.toStringAsFixed(1));
     IconData icon = Icons.sentiment_satisfied_alt;
@@ -346,22 +420,64 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       icon = Icons.sentiment_neutral;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 30),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Text(msg, style: TextStyle(color: color.withValues(alpha: 1.0), fontWeight: FontWeight.bold)),
+    // --- NEU: TIPP GENERIEREN ---
+    final String? advice = _getPartnerAdvice(score, tags, sleep, l10n);
+
+    return Column(
+      children: [
+        // 1. Die normale Status-Box
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 30),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Text(msg, style: TextStyle(color: color.withValues(alpha: 1.0), fontWeight: FontWeight.bold)),
+              ),
+              // Kleiner Indikator für Schlaf, falls vorhanden
+              if (sleep != null) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.bed, size: 16, color: color.withValues(alpha: 0.7)),
+                const SizedBox(width: 4),
+                Text("${sleep.toStringAsFixed(0)}h", style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.7)))
+              ]
+            ],
+          ),
+        ),
+
+        // 2. Die neue "Smart Advice" Box (nur wenn Advice existiert)
+        if (advice != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity, // Volle Breite
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.blueGrey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blueGrey.shade100),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.lightbulb, color: Colors.amber.shade700, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    advice,
+                    style: TextStyle(color: Colors.blueGrey.shade800, fontSize: 13, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]
+      ],
     );
   }
 }

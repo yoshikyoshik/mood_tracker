@@ -40,10 +40,10 @@ class PartnerService {
 
       // Wenn wir hier sind, haben wir einen Match! ❤️
       
-      // Jetzt Stimmung laden
+      // Jetzt Stimmung laden (MIT TAGS & SCHLAF)
       final entryRes = await _client
           .from('mood_entries')
-          .select()
+          .select() // Lädt alle Felder (inkl. tags, sleep_rating)
           .eq('profile_id', response['id'])
           .order('created_at', ascending: false)
           .limit(1)
@@ -62,6 +62,8 @@ class PartnerService {
         'name': response['name'],
         'score': entry.score,
         'timestamp': entry.timestamp,
+        'tags': entry.tags.toList(), // <--- NEU
+        'sleep': entry.sleepRating,  // <--- NEU
       };
 
     } catch (e) {

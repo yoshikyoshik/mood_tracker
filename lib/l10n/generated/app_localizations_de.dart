@@ -688,6 +688,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tagSex => 'Intimität';
 
   @override
+  String get tagStress => 'Stress';
+
+  @override
   String get predSeasonTip => 'Licht tanken hilft!';
 
   @override
