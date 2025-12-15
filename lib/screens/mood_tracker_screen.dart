@@ -813,15 +813,43 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   int _calculateStreak() {
     if (_allEntries.isEmpty) return 0;
-    final uniqueDates = _allEntries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().toList()..sort((a, b) => b.compareTo(a));
+    
+    // 1. Eigene ID holen
+    final myUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (myUserId == null) return 0;
+
+    // 2. FILTERN: Nur Einträge nehmen, die MIR gehören.
+    // Partner-Einträge (die eine andere user_id haben) werden hier ignoriert.
+    final myEntriesOnly = _allEntries.where((entry) {
+      return entry.userId == myUserId; 
+    }).toList();
+
+    if (myEntriesOnly.isEmpty) return 0;
+
+    // 3. Berechnung NUR mit den eigenen Einträgen fortsetzen
+    final uniqueDates = myEntriesOnly
+        .map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
     if (uniqueDates.isEmpty) return 0;
+
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     final yesterday = today.subtract(const Duration(days: 1));
+
     if (uniqueDates.first.isBefore(yesterday)) { return 0; }
+    
     int streak = 0;
     DateTime checkDate = uniqueDates.first; 
+    
     for (var date in uniqueDates) {
-      if (DateUtils.isSameDay(date, checkDate)) { streak++; checkDate = checkDate.subtract(const Duration(days: 1)); } else { break; }
+      if (DateUtils.isSameDay(date, checkDate)) { 
+        streak++; 
+        checkDate = checkDate.subtract(const Duration(days: 1)); 
+      } else { 
+        break; 
+      }
     }
     return streak;
   }

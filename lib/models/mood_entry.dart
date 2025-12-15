@@ -2,6 +2,7 @@ import 'dart:convert';
 
 class MoodEntry {
   final String? id;
+  final String? userId; // <--- NEU: Damit wir wissen, wem der Eintrag gehört
   final DateTime timestamp;
   final double score;
   final double? sleepRating;
@@ -11,6 +12,7 @@ class MoodEntry {
 
   MoodEntry({
     this.id,
+    this.userId, // <--- Im Konstruktor hinzufügen
     required this.timestamp,
     required this.score,
     this.sleepRating,
@@ -19,16 +21,15 @@ class MoodEntry {
     this.profileId,
   });
 
-  // WICHTIG FÜR DAS SPEICHERN (Fix für Zeit-Bug beim Schreiben)
+  // WICHTIG FÜR DAS SPEICHERN
   Map<String, dynamic> toMap() {
     return {
-      // ID senden wir meist nicht beim Insert, aber beim Update nützlich
       if (id != null) 'id': id,
+      // userId müssen wir beim Speichern meist nicht senden (macht Supabase automatisch),
+      // aber es schadet nicht, es konsistent zu halten.
+      if (userId != null) 'user_id': userId, 
       
-      // FIX BUG #2 (Schreiben): Wir wandeln VOR dem Speichern explizit in UTC um.
-      // So weiß die Datenbank exakt, welcher Zeitpunkt gemeint ist.
       'created_at': timestamp.toUtc().toIso8601String(),
-      
       'score': score,
       'sleep_rating': sleepRating,
       'tags': tags.toList(),
@@ -37,14 +38,13 @@ class MoodEntry {
     };
   }
 
-  // WICHTIG FÜR DAS LADEN (Fix für Zeit-Bug beim Lesen)
+  // WICHTIG FÜR DAS LADEN
   factory MoodEntry.fromMap(Map<String, dynamic> map) {
     return MoodEntry(
       id: map['id']?.toString(),
+      userId: map['user_id']?.toString(), // <--- NEU: Hier holen wir die Info aus der DB
       
-      // FIX BUG #2 (Lesen): Datenbank liefert UTC -> Wir wandeln in Lokale Zeit
       timestamp: DateTime.parse(map['created_at']).toLocal(),
-      
       score: (map['score'] as num).toDouble(),
       sleepRating: map['sleep_rating'] != null ? (map['sleep_rating'] as num).toDouble() : null,
       tags: Set<String>.from(List<String>.from(map['tags'] ?? [])),
@@ -53,8 +53,6 @@ class MoodEntry {
     );
   }
 
-  // Optional, aber gut für Debugging
   String toJson() => json.encode(toMap());
-
   factory MoodEntry.fromJson(String source) => MoodEntry.fromMap(json.decode(source));
 }
