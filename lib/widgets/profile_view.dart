@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../models/mood_entry.dart';
-import '../models/profile.dart'; // <--- WICHTIG: Import für Profile
-import '../l10n/generated/app_localizations.dart'; 
-import '../main.dart'; 
+import '../models/profile.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../main.dart';
 import '../utils/report_generator.dart';
-import 'partner_connect_card.dart'; // <--- WICHTIG: Import für Partner Card
+import 'partner_connect_card.dart';
+import '../screens/auth_gate.dart'; 
 
-class ProfileView extends StatelessWidget {
-  final Profile currentProfile; // <--- NEU: Das ganze Objekt, nicht nur der Name
+class ProfileView extends StatefulWidget {
+  final Profile currentProfile;
   final String email;
   final String version;
   final List<MoodEntry> entries;
@@ -16,11 +18,11 @@ class ProfileView extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback onManageSubscription;
   final VoidCallback onContactSupport;
-  final VoidCallback onStartTutorial; 
+  final VoidCallback onStartTutorial;
 
   const ProfileView({
     super.key,
-    required this.currentProfile, // <--- HIER WAR DER FEHLER (vorher required this.profileName)
+    required this.currentProfile,
     required this.email,
     required this.version,
     required this.entries,
@@ -28,8 +30,15 @@ class ProfileView extends StatelessWidget {
     required this.onLogout,
     required this.onManageSubscription,
     required this.onContactSupport,
-    required this.onStartTutorial, 
+    required this.onStartTutorial,
   });
+
+  @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  bool _isLoading = false; 
 
   void _showLanguageDialog(BuildContext context) {
     showModalBottomSheet(
@@ -65,12 +74,139 @@ class ProfileView extends StatelessWidget {
       } else {
         if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Webseite nicht öffnen")));
       }
-    } catch (e) { debugPrint("Fehler: $e"); }
+    } catch (e) {
+      debugPrint("Fehler: $e");
+    }
+  }
+
+  // --- ACCOUNT LÖSCHEN LOGIK (MODERN) ---
+  Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // 1. Modernes Bottom Sheet statt altbackener Dialog
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Kleiner grauer "Griff" oben
+                Container(
+                  width: 40, 
+                  height: 4, 
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300, 
+                    borderRadius: BorderRadius.circular(2)
+                  ),
+                ),
+                const SizedBox(height: 30),
+                
+                // Warn-Icon
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.warning_amber_rounded, size: 40, color: Colors.red),
+                ),
+                const SizedBox(height: 20),
+                
+                // Titel
+                Text(
+                  l10n.deleteAccountTitle, 
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                
+                // Beschreibung
+                Text(
+                  l10n.deleteAccountContent,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade600, height: 1.5),
+                ),
+                const SizedBox(height: 30),
+                
+                // Löschen Button (Rot & Breit)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true), // Gibt TRUE zurück
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      l10n.delete, 
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Abbrechen Button (Text)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false), // Gibt FALSE zurück
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                  ),
+                  child: Text(l10n.cancel, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Wenn Nutzer abgebrochen hat oder null zurückkommt (durch Klick daneben)
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 2. Die SQL-Funktion aufrufen
+      await Supabase.instance.client.rpc('delete_user');
+
+      // 3. Logout clientseitig
+      await Supabase.instance.client.auth.signOut();
+
+      if (mounted) {
+        // 4. Zurück zum Start
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthGate()), 
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Fehler beim Löschen: $e")),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; 
+    final l10n = AppLocalizations.of(context)!;
+
+    // Falls gerade gelöscht wird, zeigen wir einen Spinner über allem
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Container(
       color: const Color(0xFFF5F7FA),
@@ -84,33 +220,32 @@ class ProfileView extends StatelessWidget {
                 Container(
                   width: 100, height: 100,
                   decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))], border: Border.all(color: Colors.white, width: 4)),
-                  child: Center(child: Text(currentProfile.name.isNotEmpty ? currentProfile.name[0].toUpperCase() : "?", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo))),
+                  child: Center(child: Text(widget.currentProfile.name.isNotEmpty ? widget.currentProfile.name[0].toUpperCase() : "?", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.indigo))),
                 ),
                 const SizedBox(height: 15),
-                // HIER NUTZEN WIR JETZT currentProfile.name
-                Text(currentProfile.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)), 
+                Text(widget.currentProfile.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(color: isPro ? Colors.indigo : Colors.grey, borderRadius: BorderRadius.circular(12)),
-                  child: Text(isPro ? l10n.proMember : l10n.freeUser, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                  decoration: BoxDecoration(color: widget.isPro ? Colors.indigo : Colors.grey, borderRadius: BorderRadius.circular(12)),
+                  child: Text(widget.isPro ? l10n.proMember : l10n.freeUser, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
                 ),
                 const SizedBox(height: 8),
-                Text(email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                Text(widget.email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
                 const SizedBox(height: 4),
-                Text("${l10n.version} $version", style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+                Text("${l10n.version} ${widget.version}", style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
               ],
             ),
           ),
           const SizedBox(height: 30),
 
-          // PARTNER CONNECT (NEU)
+          // PARTNER CONNECT
           PartnerConnectCard(
-                currentProfile: currentProfile, 
-                authEmail: email,
-                isPro: isPro, // <--- NEU
-                onUnlockPressed: onManageSubscription, // <--- NEU (Öffnet Checkout oder Portal)
-              ),
+            currentProfile: widget.currentProfile,
+            authEmail: widget.email,
+            isPro: widget.isPro,
+            onUnlockPressed: widget.onManageSubscription,
+          ),
           const SizedBox(height: 30),
 
           // ERFOLGE
@@ -122,7 +257,24 @@ class ProfileView extends StatelessWidget {
           // EINSTELLUNGEN
           Text(l10n.settings, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 15),
-          _buildSettingsCard(context, currentProfile.name), // Name für PDF übergeben
+          _buildSettingsCard(context, widget.currentProfile.name),
+          
+          const SizedBox(height: 40),
+
+          // ACCOUNT LÖSCHEN (Ganz unten)
+          Center(
+            child: TextButton.icon(
+              onPressed: _deleteAccount,
+              // KORREKTUR: withValues statt withOpacity
+              icon: Icon(Icons.delete_forever, color: Colors.red.withValues(alpha: 0.7), size: 20),
+              label: Text(
+                // KORREKTUR: ?? entfernt
+                l10n.deleteAccountBtn, 
+                // KORREKTUR: withValues statt withOpacity
+                style: TextStyle(color: Colors.red.withValues(alpha: 0.7), fontSize: 13),
+              ),
+            ),
+          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -131,14 +283,14 @@ class ProfileView extends StatelessWidget {
 
   Widget _buildBadgesGrid(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final totalEntries = entries.length;
-    final uniqueDaysCount = entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
-    final nightCount = entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
-    final noteCount = entries.where((e) => e.note != null && e.note!.length > 10).length; 
-    final highMoodCount = entries.where((e) => e.score >= 8.0).length;
-    final detailedCount = entries.where((e) => e.tags.length >= 3).length;
-    final sleepTrackedCount = entries.where((e) => e.sleepRating != null).length;
-    final weekendCount = entries.where((e) => e.timestamp.weekday >= 6).length;
+    final totalEntries = widget.entries.length;
+    final uniqueDaysCount = widget.entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
+    final nightCount = widget.entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
+    final noteCount = widget.entries.where((e) => e.note != null && e.note!.length > 10).length;
+    final highMoodCount = widget.entries.where((e) => e.score >= 8.0).length;
+    final detailedCount = widget.entries.where((e) => e.tags.length >= 3).length;
+    final sleepTrackedCount = widget.entries.where((e) => e.sleepRating != null).length;
+    final weekendCount = widget.entries.where((e) => e.timestamp.weekday >= 6).length;
 
     final badges = [
       { 'title': l10n.badgeStart, 'desc': l10n.badgeStartDesc, 'icon': Icons.flag_rounded, 'color': Colors.blue, 'unlocked': totalEntries >= 1 },
@@ -181,7 +333,7 @@ class ProfileView extends StatelessWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context, String nameForPdf) {
-    final l10n = AppLocalizations.of(context)!; 
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
@@ -192,38 +344,38 @@ class ProfileView extends StatelessWidget {
 
           ListTile(
             leading: const Icon(Icons.help_outline, color: Colors.indigo),
-            title: Text(l10n.tutorialStart), 
+            title: Text(l10n.tutorialStart),
             trailing: const Icon(Icons.play_circle_outline, size: 20, color: Colors.indigo),
-            onTap: onStartTutorial, 
+            onTap: widget.onStartTutorial,
           ),
           const Divider(height: 1),
 
           ListTile(
             leading: const Icon(Icons.picture_as_pdf, color: Colors.indigo),
-            title: Text(l10n.exportPdfButton), 
-            trailing: Icon(isPro ? Icons.chevron_right : Icons.lock, size: 20, color: isPro ? Colors.grey : Colors.grey.shade400),
+            title: Text(l10n.exportPdfButton),
+            trailing: Icon(widget.isPro ? Icons.chevron_right : Icons.lock, size: 20, color: widget.isPro ? Colors.grey : Colors.grey.shade400),
             onTap: () {
-              if (isPro) {
-                ReportGenerator.generateAndPrint(entries, nameForPdf, l10n);
+              if (widget.isPro) {
+                ReportGenerator.generateAndPrint(widget.entries, nameForPdf, l10n);
               } else {
-                onManageSubscription(); 
+                widget.onManageSubscription();
               }
             },
           ),
           const Divider(height: 1),
 
-          if (!isPro) ListTile(leading: const Icon(Icons.diamond, color: Colors.indigo), title: Text(l10n.becomePro), subtitle: const Text("Alle Features"), trailing: const Icon(Icons.chevron_right), onTap: onManageSubscription),
-          if (isPro) ListTile(leading: const Icon(Icons.star, color: Colors.amber), title: Text(l10n.manageSub), trailing: const Icon(Icons.chevron_right), onTap: onManageSubscription),
+          if (!widget.isPro) ListTile(leading: const Icon(Icons.diamond, color: Colors.indigo), title: Text(l10n.becomePro), subtitle: const Text("Alle Features"), trailing: const Icon(Icons.chevron_right), onTap: widget.onManageSubscription),
+          if (widget.isPro) ListTile(leading: const Icon(Icons.star, color: Colors.amber), title: Text(l10n.manageSub), trailing: const Icon(Icons.chevron_right), onTap: widget.onManageSubscription),
           const Divider(height: 1),
 
-          ListTile(leading: const Icon(Icons.mail_outline, color: Colors.black87), title: Text(l10n.contactSupport), trailing: const Icon(Icons.chevron_right), onTap: onContactSupport),
+          ListTile(leading: const Icon(Icons.mail_outline, color: Colors.black87), title: Text(l10n.contactSupport), trailing: const Icon(Icons.chevron_right), onTap: widget.onContactSupport),
           const Divider(height: 1),
 
           ListTile(leading: const Icon(Icons.policy, color: Colors.grey), title: Text(l10n.privacy), trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey), onTap: () => _launchURL(context, 'https://manabsphere.com/privacy.html')),
           ListTile(leading: const Icon(Icons.info_outline, color: Colors.grey), title: Text(l10n.imprint), trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey), onTap: () => _launchURL(context, 'https://manabsphere.com/imprint.html')),
           const Divider(height: 1),
 
-          ListTile(leading: const Icon(Icons.logout, color: Colors.redAccent), title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)), onTap: onLogout),
+          ListTile(leading: const Icon(Icons.logout, color: Colors.redAccent), title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)), onTap: widget.onLogout),
         ],
       ),
     );

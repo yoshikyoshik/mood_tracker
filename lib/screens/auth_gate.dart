@@ -74,7 +74,6 @@ class _AuthGateState extends State<AuthGate> {
         }
       }
     } on AuthException catch (e) {
-      // Zeigt Supabase Fehler direkt rot am Bildschirm an
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,6 +93,43 @@ class _AuthGateState extends State<AuthGate> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- PASSWORT RESET LOGIK (NEU) ---
+  Future<void> _sendPasswordReset() async {
+    final l10n = AppLocalizations.of(context)!;
+    final email = _emailController.text.trim();
+
+    // 1. Validierung: E-Mail muss da sein
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.authEnterEmail),
+          backgroundColor: Colors.orange
+        )
+      );
+      return;
+    }
+
+    try {
+      // 2. Supabase Reset anstoßen
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.authResetSuccess),
+            backgroundColor: Colors.green
+          )
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Fehler: $e"), backgroundColor: Colors.red)
+        );
+      }
     }
   }
 
@@ -125,11 +161,9 @@ class _AuthGateState extends State<AuthGate> {
                     color: Colors.white.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  // Lädt das Bild aus dem Ordner assets/icon/
                   child: Image.asset(
                     'assets/icon/logo.png', 
                     fit: BoxFit.contain,
-                    // Falls Bild nicht gefunden wird, zeige Icon (Verhindert Crash)
                     errorBuilder: (context, error, stackTrace) {
                       return const Icon(Icons.spa_rounded, size: 50, color: Colors.white);
                     },
@@ -228,7 +262,31 @@ class _AuthGateState extends State<AuthGate> {
                           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      
+                      // --- NEU: PASSWORT VERGESSEN BUTTON ---
+                      // Nur anzeigen, wenn wir im Login-Modus sind
+                      if (_isLogin) 
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _sendPasswordReset,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                              minimumSize: Size.zero, // Kompakt
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              l10n.authForgotPassword,
+                              style: TextStyle(
+                                color: primaryColor, 
+                                fontSize: 13, 
+                                fontWeight: FontWeight.w600
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      SizedBox(height: _isLogin ? 24 : 30), // Abstand anpassen
 
                       // BUTTON
                       SizedBox(

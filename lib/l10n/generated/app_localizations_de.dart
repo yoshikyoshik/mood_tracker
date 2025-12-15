@@ -701,4 +701,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get labelAiVersion => 'AI 2.0';
+
+  @override
+  String get deleteAccountTitle => 'Konto löschen?';
+
+  @override
+  String get deleteAccountContent =>
+      'Bist du sicher? Alle deine Daten (Einträge, Tags, Profil) werden unwiderruflich gelöscht.';
+
+  @override
+  String get deleteAccountBtn => 'Konto endgültig löschen';
+
+  @override
+  String get authForgotPassword => 'Passwort vergessen?';
+
+  @override
+  String get authResetSuccess => 'Link gesendet! Prüfe deine E-Mails.';
+
+  @override
+  String get authEnterEmail => 'Bitte gib deine E-Mail-Adresse ein.';
 }

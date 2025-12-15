@@ -269,5 +269,13 @@
   "predSeasonTip": "Licht tanken hilft!",
   "predPersonalized": "Basierend auf deinen Mustern.",
   "labelFactors": "Einflussfaktoren",
-  "labelAiVersion": "AI 2.0"
+  "labelAiVersion": "AI 2.0",
+
+  "deleteAccountTitle": "Konto löschen?",
+  "deleteAccountContent": "Bist du sicher? Alle deine Daten (Einträge, Tags, Profil) werden unwiderruflich gelöscht.",
+  "deleteAccountBtn": "Konto endgültig löschen",
+
+  "authForgotPassword": "Passwort vergessen?",
+  "authResetSuccess": "Link gesendet! Prüfe deine E-Mails.",
+  "authEnterEmail": "Bitte gib deine E-Mail-Adresse ein."
 }

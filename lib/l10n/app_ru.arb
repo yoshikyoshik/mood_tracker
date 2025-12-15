@@ -244,5 +244,13 @@
   "predSeasonTip": "Soaking up light helps!",
   "predPersonalized": "Based on your patterns.",
   "labelFactors": "Factors",
-  "labelAiVersion": "AI 2.0"
+  "labelAiVersion": "AI 2.0",
+
+  "deleteAccountTitle": "Delete Account?",
+  "deleteAccountContent": "Are you sure? All your data (entries, tags, profile) will be permanently deleted.",
+  "deleteAccountBtn": "Delete account permanently",
+
+  "authForgotPassword": "Forgot password?",
+  "authResetSuccess": "Link sent! Check your emails.",
+  "authEnterEmail": "Please enter your email address."
 }

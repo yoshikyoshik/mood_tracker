@@ -689,4 +689,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get labelAiVersion => 'AI 2.0';
+
+  @override
+  String get deleteAccountTitle => 'Delete Account?';
+
+  @override
+  String get deleteAccountContent =>
+      'Are you sure? All your data (entries, tags, profile) will be permanently deleted.';
+
+  @override
+  String get deleteAccountBtn => 'Delete account permanently';
+
+  @override
+  String get authForgotPassword => 'Forgot password?';
+
+  @override
+  String get authResetSuccess => 'Link sent! Check your emails.';
+
+  @override
+  String get authEnterEmail => 'Please enter your email address.';
 }

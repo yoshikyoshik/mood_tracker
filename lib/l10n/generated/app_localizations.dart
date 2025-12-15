@@ -1399,6 +1399,42 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'AI 2.0'**
   String get labelAiVersion;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto löschen?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountContent.
+  ///
+  /// In de, this message translates to:
+  /// **'Bist du sicher? Alle deine Daten (Einträge, Tags, Profil) werden unwiderruflich gelöscht.'**
+  String get deleteAccountContent;
+
+  /// No description provided for @deleteAccountBtn.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto endgültig löschen'**
+  String get deleteAccountBtn;
+
+  /// No description provided for @authForgotPassword.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort vergessen?'**
+  String get authForgotPassword;
+
+  /// No description provided for @authResetSuccess.
+  ///
+  /// In de, this message translates to:
+  /// **'Link gesendet! Prüfe deine E-Mails.'**
+  String get authResetSuccess;
+
+  /// No description provided for @authEnterEmail.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte gib deine E-Mail-Adresse ein.'**
+  String get authEnterEmail;
 }
 
 class _AppLocalizationsDelegate
