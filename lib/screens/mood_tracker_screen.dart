@@ -771,9 +771,33 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   }
 
   Future<void> _signOut() async {
-    await Supabase.instance.client.auth.signOut();
-    if(mounted) Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const AuthGate()), (route) => false);
+  // 1. Widget leeren (nur auf Handy)
+  // Wir überschreiben den alten Streak-Wert mit "--" oder "0", damit der nächste User
+  // nicht die Daten des Vorgängers sieht.
+  if (!kIsWeb) {
+    try {
+      await HomeWidget.saveWidgetData<String>('tv_streak_value', '--'); 
+      await HomeWidget.updateWidget(
+        name: 'MoodWidgetProvider',
+        androidName: 'MoodWidgetProvider',
+        iOSName: 'MoodWidget',
+      );
+    } catch (e) {
+      debugPrint("Fehler beim Widget-Reset: $e");
+    }
   }
+
+  // 2. Supabase Logout
+  await Supabase.instance.client.auth.signOut();
+
+  // 3. Navigation zurück zum Login
+  if (mounted) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthGate()), 
+      (route) => false
+    );
+  }
+}
 
   Future<void> _changeProfile(String id) async {
     setState(() => _selectedProfileId = id);
