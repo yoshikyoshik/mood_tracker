@@ -662,4 +662,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get partnerDisconnectTooltip => 'Verbindung trennen';
+
+  @override
+  String get tagAlcohol => 'Alkohol';
+
+  @override
+  String get tagFastFood => 'Fast Food';
+
+  @override
+  String get tagScreenTime => 'Viel Handy';
+
+  @override
+  String get tagWater => 'Wenig Wasser';
+
+  @override
+  String get tagNature => 'Natur';
+
+  @override
+  String get tagSauna => 'Sauna/Wellness';
+
+  @override
+  String get tagHealthyFood => 'Gesund gegessen';
+
+  @override
+  String get tagSex => 'Intimität';
+
+  @override
+  String get predSeasonTip => 'Licht tanken hilft!';
+
+  @override
+  String get predPersonalized => 'Basierend auf deinen Mustern.';
+
+  @override
+  String get labelFactors => 'Einflussfaktoren';
+
+  @override
+  String get labelAiVersion => 'AI 2.0';
 }

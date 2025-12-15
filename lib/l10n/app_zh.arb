@@ -229,5 +229,19 @@
   "partnerDisconnectConfirm": "是的，断开",
   "partnerDisconnectCancel": "取消",
   "partnerDisconnectSuccess": "连接已移除。",
-  "partnerDisconnectTooltip": "断开伴侣"
+  "partnerDisconnectTooltip": "断开伴侣",
+
+  "tagAlcohol": "Alcohol",
+  "tagFastFood": "Fast Food",
+  "tagScreenTime": "High Screen Time",
+  "tagWater": "Little Water",
+  "tagNature": "Nature",
+  "tagSauna": "Sauna/Wellness",
+  "tagHealthyFood": "Healthy Food",
+  "tagSex": "Intimacy",
+
+  "predSeasonTip": "Soaking up light helps!",
+  "predPersonalized": "Based on your patterns.",
+  "labelFactors": "Factors",
+  "labelAiVersion": "AI 2.0"
 }

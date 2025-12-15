@@ -659,4 +659,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get partnerDisconnectTooltip => 'Отключить партнера';
+
+  @override
+  String get tagAlcohol => 'Alcohol';
+
+  @override
+  String get tagFastFood => 'Fast Food';
+
+  @override
+  String get tagScreenTime => 'High Screen Time';
+
+  @override
+  String get tagWater => 'Little Water';
+
+  @override
+  String get tagNature => 'Nature';
+
+  @override
+  String get tagSauna => 'Sauna/Wellness';
+
+  @override
+  String get tagHealthyFood => 'Healthy Food';
+
+  @override
+  String get tagSex => 'Intimacy';
+
+  @override
+  String get predSeasonTip => 'Soaking up light helps!';
+
+  @override
+  String get predPersonalized => 'Based on your patterns.';
+
+  @override
+  String get labelFactors => 'Factors';
+
+  @override
+  String get labelAiVersion => 'AI 2.0';
 }

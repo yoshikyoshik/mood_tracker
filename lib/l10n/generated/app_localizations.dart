@@ -1321,6 +1321,78 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Verbindung trennen'**
   String get partnerDisconnectTooltip;
+
+  /// No description provided for @tagAlcohol.
+  ///
+  /// In de, this message translates to:
+  /// **'Alkohol'**
+  String get tagAlcohol;
+
+  /// No description provided for @tagFastFood.
+  ///
+  /// In de, this message translates to:
+  /// **'Fast Food'**
+  String get tagFastFood;
+
+  /// No description provided for @tagScreenTime.
+  ///
+  /// In de, this message translates to:
+  /// **'Viel Handy'**
+  String get tagScreenTime;
+
+  /// No description provided for @tagWater.
+  ///
+  /// In de, this message translates to:
+  /// **'Wenig Wasser'**
+  String get tagWater;
+
+  /// No description provided for @tagNature.
+  ///
+  /// In de, this message translates to:
+  /// **'Natur'**
+  String get tagNature;
+
+  /// No description provided for @tagSauna.
+  ///
+  /// In de, this message translates to:
+  /// **'Sauna/Wellness'**
+  String get tagSauna;
+
+  /// No description provided for @tagHealthyFood.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesund gegessen'**
+  String get tagHealthyFood;
+
+  /// No description provided for @tagSex.
+  ///
+  /// In de, this message translates to:
+  /// **'Intimität'**
+  String get tagSex;
+
+  /// No description provided for @predSeasonTip.
+  ///
+  /// In de, this message translates to:
+  /// **'Licht tanken hilft!'**
+  String get predSeasonTip;
+
+  /// No description provided for @predPersonalized.
+  ///
+  /// In de, this message translates to:
+  /// **'Basierend auf deinen Mustern.'**
+  String get predPersonalized;
+
+  /// No description provided for @labelFactors.
+  ///
+  /// In de, this message translates to:
+  /// **'Einflussfaktoren'**
+  String get labelFactors;
+
+  /// No description provided for @labelAiVersion.
+  ///
+  /// In de, this message translates to:
+  /// **'AI 2.0'**
+  String get labelAiVersion;
 }
 
 class _AppLocalizationsDelegate

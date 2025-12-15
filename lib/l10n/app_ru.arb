@@ -229,5 +229,19 @@
   "partnerDisconnectConfirm": "Да, отключить",
   "partnerDisconnectCancel": "Отмена",
   "partnerDisconnectSuccess": "Связь удалена.",
-  "partnerDisconnectTooltip": "Отключить партнера"
+  "partnerDisconnectTooltip": "Отключить партнера",
+
+  "tagAlcohol": "Alcohol",
+  "tagFastFood": "Fast Food",
+  "tagScreenTime": "High Screen Time",
+  "tagWater": "Little Water",
+  "tagNature": "Nature",
+  "tagSauna": "Sauna/Wellness",
+  "tagHealthyFood": "Healthy Food",
+  "tagSex": "Intimacy",
+
+  "predSeasonTip": "Soaking up light helps!",
+  "predPersonalized": "Based on your patterns.",
+  "labelFactors": "Factors",
+  "labelAiVersion": "AI 2.0"
 }

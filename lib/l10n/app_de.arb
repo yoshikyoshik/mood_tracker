@@ -254,5 +254,19 @@
   "partnerDisconnectConfirm": "Ja, trennen",
   "partnerDisconnectCancel": "Abbrechen",
   "partnerDisconnectSuccess": "Verbindung aufgehoben.",
-  "partnerDisconnectTooltip": "Verbindung trennen"
+  "partnerDisconnectTooltip": "Verbindung trennen",
+
+  "tagAlcohol": "Alkohol",
+  "tagFastFood": "Fast Food",
+  "tagScreenTime": "Viel Handy",
+  "tagWater": "Wenig Wasser",
+  "tagNature": "Natur",
+  "tagSauna": "Sauna/Wellness",
+  "tagHealthyFood": "Gesund gegessen",
+  "tagSex": "Intimität",
+
+  "predSeasonTip": "Licht tanken hilft!",
+  "predPersonalized": "Basierend auf deinen Mustern.",
+  "labelFactors": "Einflussfaktoren",
+  "labelAiVersion": "AI 2.0"
 }

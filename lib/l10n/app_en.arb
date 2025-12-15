@@ -229,5 +229,19 @@
   "partnerDisconnectConfirm": "Yes, disconnect",
   "partnerDisconnectCancel": "Cancel",
   "partnerDisconnectSuccess": "Connection removed.",
-  "partnerDisconnectTooltip": "Disconnect partner"
+  "partnerDisconnectTooltip": "Disconnect partner",
+
+  "tagAlcohol": "Alcohol",
+  "tagFastFood": "Fast Food",
+  "tagScreenTime": "High Screen Time",
+  "tagWater": "Little Water",
+  "tagNature": "Nature",
+  "tagSauna": "Sauna/Wellness",
+  "tagHealthyFood": "Healthy Food",
+  "tagSex": "Intimacy",
+
+  "predSeasonTip": "Soaking up light helps!",
+  "predPersonalized": "Based on your patterns.",
+  "labelFactors": "Factors",
+  "labelAiVersion": "AI 2.0"
 }

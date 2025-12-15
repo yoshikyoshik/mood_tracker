@@ -119,10 +119,50 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   Map<String, List<String>> _getLocalizedBaseTags(AppLocalizations l10n) {
     return {
-      l10n.categorySocial: [l10n.tagFamily, l10n.tagRelationship, l10n.tagFriends, l10n.tagParty],
-      l10n.categoryBodyMind: [l10n.tagSport, l10n.tagSleep, l10n.tagFood, l10n.tagHealth, l10n.tagMeditation],
-      l10n.categoryObligations: [l10n.tagWork, l10n.tagSchool, l10n.tagHomework, l10n.tagUni, l10n.tagHousehold],
-      l10n.categoryLeisure: [l10n.tagHobby, l10n.tagTravel, l10n.tagWeather, l10n.tagGaming, l10n.tagReading, l10n.tagMusic],
+      // SOZIALES
+      l10n.categorySocial: [
+        l10n.tagFamily, 
+        l10n.tagRelationship, 
+        l10n.tagFriends, 
+        l10n.tagParty, 
+        l10n.tagSex // NEU: Intimität
+      ],
+      
+      // KÖRPER & GEIST
+      l10n.categoryBodyMind: [
+        l10n.tagSport, 
+        l10n.tagSleep, 
+        l10n.tagFood, 
+        l10n.tagHealthyFood, // NEU: Gesund gegessen
+        l10n.tagFastFood, // NEU: Fast Food
+        l10n.tagWater, // NEU: Wenig Wasser
+        l10n.tagAlcohol, // NEU: Alkohol
+        l10n.tagHealth, 
+        l10n.tagMeditation,
+        l10n.tagNature, // NEU: Natur
+        l10n.tagSauna // NEU: Wellness
+      ],
+      
+      // PFLICHTEN
+      l10n.categoryObligations: [
+        l10n.tagWork, 
+        l10n.tagSchool, 
+        l10n.tagHomework, 
+        l10n.tagUni, 
+        l10n.tagHousehold
+      ],
+      
+      // FREIZEIT
+      l10n.categoryLeisure: [
+        l10n.tagHobby, 
+        l10n.tagScreenTime, // NEU: Viel Handy (passt hier oder bei Other gut)
+        l10n.tagTravel, 
+        l10n.tagWeather, 
+        l10n.tagGaming, 
+        l10n.tagReading, 
+        l10n.tagMusic
+      ],
+      
       l10n.categoryOther: [],
     };
   }
