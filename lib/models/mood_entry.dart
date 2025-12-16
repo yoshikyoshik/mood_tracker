@@ -1,58 +1,75 @@
-import 'dart:convert';
-
 class MoodEntry {
   final String? id;
-  final String? userId; // <--- NEU: Damit wir wissen, wem der Eintrag gehört
   final DateTime timestamp;
   final double score;
   final double? sleepRating;
   final Set<String> tags;
   final String? note;
-  final String? profileId;
+  final String profileId;
+  final String? userId; // <--- WICHTIG für den Service
 
   MoodEntry({
     this.id,
-    this.userId, // <--- Im Konstruktor hinzufügen
     required this.timestamp,
     required this.score,
     this.sleepRating,
     required this.tags,
     this.note,
-    this.profileId,
+    required this.profileId,
+    this.userId,
   });
 
-  // WICHTIG FÜR DAS SPEICHERN
+  // Factory für DB -> App
+  factory MoodEntry.fromMap(Map<String, dynamic> map) {
+    return MoodEntry(
+      id: map['id']?.toString(),
+      // HIER ÄNDERN: von 'timestamp' zu 'created_at'
+      timestamp: DateTime.parse(map['created_at']), 
+      score: (map['score'] as num).toDouble(),
+      sleepRating: map['sleep_rating'] != null ? (map['sleep_rating'] as num).toDouble() : null,
+      tags: map['tags'] != null ? Set<String>.from(List<String>.from(map['tags'])) : {},
+      note: map['note'],
+      profileId: map['profile_id'] ?? '',
+      userId: map['user_id'],
+    );
+  }
+
+  // Für App -> DB
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id,
-      // userId müssen wir beim Speichern meist nicht senden (macht Supabase automatisch),
-      // aber es schadet nicht, es konsistent zu halten.
-      if (userId != null) 'user_id': userId, 
-      
-      'created_at': timestamp.toUtc().toIso8601String(),
+      if (id != null) 'id': id, 
+      // HIER ÄNDERN: von 'timestamp' zu 'created_at'
+      'created_at': timestamp.toIso8601String(),
       'score': score,
       'sleep_rating': sleepRating,
       'tags': tags.toList(),
       'note': note,
       'profile_id': profileId,
+      'user_id': userId,
     };
   }
 
-  // WICHTIG FÜR DAS LADEN
-  factory MoodEntry.fromMap(Map<String, dynamic> map) {
+  // --- HIER IST DIE FEHLENDE METHODE ---
+  // Erlaubt uns, eine Kopie des Objekts zu erstellen und dabei nur bestimmte Felder zu ändern
+  MoodEntry copyWith({
+    String? id,
+    DateTime? timestamp,
+    double? score,
+    double? sleepRating,
+    Set<String>? tags,
+    String? note,
+    String? profileId,
+    String? userId,
+  }) {
     return MoodEntry(
-      id: map['id']?.toString(),
-      userId: map['user_id']?.toString(), // <--- NEU: Hier holen wir die Info aus der DB
-      
-      timestamp: DateTime.parse(map['created_at']).toLocal(),
-      score: (map['score'] as num).toDouble(),
-      sleepRating: map['sleep_rating'] != null ? (map['sleep_rating'] as num).toDouble() : null,
-      tags: Set<String>.from(List<String>.from(map['tags'] ?? [])),
-      note: map['note'],
-      profileId: map['profile_id']?.toString(),
+      id: id ?? this.id,
+      timestamp: timestamp ?? this.timestamp,
+      score: score ?? this.score,
+      sleepRating: sleepRating ?? this.sleepRating,
+      tags: tags ?? this.tags,
+      note: note ?? this.note,
+      profileId: profileId ?? this.profileId,
+      userId: userId ?? this.userId,
     );
   }
-
-  String toJson() => json.encode(toMap());
-  factory MoodEntry.fromJson(String source) => MoodEntry.fromMap(json.decode(source));
 }
