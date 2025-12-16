@@ -83,6 +83,9 @@ class _MoodInputViewState extends State<MoodInputView> {
   static const int _maxDuration = 60;
   bool _isHistoryOpen = false;
 
+  // NEU: Controller für das automatische Scrollen
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -93,7 +96,25 @@ class _MoodInputViewState extends State<MoodInputView> {
   void dispose() {
     _timer?.cancel();
     _audioRecorder.dispose();
+    _scrollController.dispose(); // NEU: Aufräumen
     super.dispose();
+  }
+
+  // NEU: Scrollt ans Ende der Liste (damit das Textfeld sichtbar wird)
+  void _scrollToBottom() {
+    // Kurze Verzögerung, damit die Tastatur Zeit hat aufzugehen
+    Future.delayed(const Duration(milliseconds: 300), () {
+      // WICHTIG: Prüfen, ob das Widget noch "lebt" und der Controller existiert
+      if (!mounted) return; 
+
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _startRecording() async {
@@ -148,6 +169,8 @@ class _MoodInputViewState extends State<MoodInputView> {
         if (mounted) {
           final currentText = widget.noteController.text;
           widget.noteController.text = currentText.isEmpty ? text : "$currentText $text";
+          // Nach dem Transkribieren auch zum Textfeld scrollen
+          _scrollToBottom();
         }
       } else {
         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Audio nicht verstehen.")));
@@ -177,6 +200,9 @@ class _MoodInputViewState extends State<MoodInputView> {
         : DateFormat('dd.MM.yyyy').format(widget.selectedDate);
     
     final String historyTitle = "$datePart • ${widget.entriesForDate.length} ${l10n.moodEntry.toUpperCase()}${widget.entriesForDate.length != 1 ? 'E' : ''}";
+
+    // Prüfen, ob Tastatur offen ist (für Padding unten)
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Column(
       children: [
@@ -334,6 +360,7 @@ class _MoodInputViewState extends State<MoodInputView> {
           child: Container(
             color: Colors.white,
             child: SingleChildScrollView(
+              controller: _scrollController, // NEU: Controller verbunden
               padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,6 +402,7 @@ class _MoodInputViewState extends State<MoodInputView> {
                   // Notiz Textfeld
                   TextField(
                     controller: widget.noteController,
+                    onTap: _scrollToBottom, // NEU: Scrollen beim Antippen!
                     decoration: InputDecoration(
                       hintText: l10n.inputNoteHint, 
                       filled: true, 
@@ -408,7 +436,10 @@ class _MoodInputViewState extends State<MoodInputView> {
                     ),
                     maxLines: 3, minLines: 1,
                   ),
-                  const SizedBox(height: 10),
+                  
+                  // NEU: Platzhalter für das Scrollen
+                  // Wenn Tastatur offen ist, brauchen wir mehr Platz unten, um das Feld hochzuschieben
+                  SizedBox(height: bottomInset > 0 ? 200 : 20),
                 ],
               ),
             ),
@@ -525,10 +556,10 @@ class _MoodInputViewState extends State<MoodInputView> {
                                   children: [
                                     if (entry.note != null && entry.note!.isNotEmpty) 
                                       Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)), 
-                                    Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) // HIER IST DIE KORREKTUR
+                                    Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) 
                                   ]
                                 ),
-                                // --- NEU: ANZEIGE FÜR OFFLINE STATUS ---
+                                // ANZEIGE FÜR OFFLINE STATUS
                                 trailing: (entry.id != null && entry.id!.startsWith('offline_'))
                                     ? Tooltip(
                                         message: "Nicht synchronisiert",

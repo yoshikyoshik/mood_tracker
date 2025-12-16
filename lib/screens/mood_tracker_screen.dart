@@ -823,21 +823,136 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   void _showEditSheet(MoodEntry entry) {
     final l10n = AppLocalizations.of(context)!;
-    double editScore = entry.score; double editSleep = entry.sleepRating ?? 5.0; Set<String> editTags = Set.from(entry.tags); final TextEditingController editNoteCtrl = TextEditingController(text: entry.note);
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (context) {
+    double editScore = entry.score;
+    double editSleep = entry.sleepRating ?? 5.0;
+    Set<String> editTags = Set.from(entry.tags);
+    final TextEditingController editNoteCtrl = TextEditingController(text: entry.note);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Wichtig: Erlaubt Vollbild bei Bedarf
+      useSafeArea: true,        // Wichtig: Beachtet Notches und Statusbars
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+      ),
+      builder: (context) {
         return StatefulBuilder(builder: (context, setSheetState) {
-            final moodData = MoodUtils.getMoodData(editScore, l10n);
-            return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(l10n.edit, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(height: 20),
-                  Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
-                  Slider(value: editScore, min: 0.0, max: 10.0, onChanged: (val) => setSheetState(() => editScore = val)), const SizedBox(height: 20),
-                  Slider(value: editSleep, min: 0.0, max: 10.0, activeColor: Colors.indigo, onChanged: (val) => setSheetState(() => editSleep = val)), const SizedBox(height: 20),
-                  Wrap(spacing: 6, children: _allAvailableTags.map((tag) { final isSelected = editTags.contains(tag); return ChoiceChip(label: Text(tag), selected: isSelected, onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))); }).toList()), const SizedBox(height: 20),
-                  TextField(controller: editNoteCtrl, decoration: InputDecoration(hintText: l10n.inputNoteHint)), const SizedBox(height: 20),
-                  ElevatedButton(onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()), child: Text(l10n.save))
-                ]));
+          final moodData = MoodUtils.getMoodData(editScore, l10n);
+          // Wir holen die Höhe der Tastatur
+          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+          return Container(
+            // WICHTIG: Padding unten = Tastatur-Höhe
+            padding: EdgeInsets.only(
+              bottom: bottomInset, 
+              left: 20, 
+              right: 20, 
+              top: 20
+            ),
+            // Maximale Höhe beschränken, damit es nicht komisch aussieht
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Schrumpft so klein wie möglich
+              children: [
+                // --- 1. NEUER HEADER (Buttons oben) ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l10n.cancel, style: TextStyle(color: Colors.grey.shade600)),
+                    ),
+                    Text(
+                      l10n.edit,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    TextButton(
+                      onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()),
+                      child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                
+                // --- 2. SCROLLBARER INHALT ---
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        // Mood
+                        Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
+                        Slider(
+                          value: editScore, 
+                          min: 0.0, 
+                          max: 10.0, 
+                          onChanged: (val) => setSheetState(() => editScore = val)
+                        ),
+                        
+                        const SizedBox(height: 10),
+                        
+                        // Schlaf (optional schöner machen)
+                        Row(
+                          children: [
+                            const Icon(Icons.bed, size: 20, color: Colors.indigo),
+                            const SizedBox(width: 8),
+                            Text("${l10n.inputSleep}: ${editSleep.toStringAsFixed(1)}h", style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        Slider(
+                          value: editSleep, 
+                          min: 0.0, 
+                          max: 10.0, 
+                          activeColor: Colors.indigo, 
+                          onChanged: (val) => setSheetState(() => editSleep = val)
+                        ),
+                        
+                        const SizedBox(height: 15),
+                        
+                        // Tags
+                        Wrap(
+                          spacing: 6, 
+                          runSpacing: 6, // Wichtig für mehrzeilige Tags
+                          children: _allAvailableTags.map((tag) { 
+                            final isSelected = editTags.contains(tag); 
+                            return ChoiceChip(
+                              label: Text(tag), 
+                              selected: isSelected, 
+                              onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))
+                            ); 
+                          }).toList()
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Notizfeld
+                        TextField(
+                          controller: editNoteCtrl,
+                          decoration: InputDecoration(
+                            hintText: l10n.inputNoteHint,
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            prefixIcon: const Icon(Icons.edit_note),
+                          ),
+                          maxLines: 3,
+                          minLines: 1,
+                          // WICHTIG: Sorgt dafür, dass bei "Enter" die Tastatur zugeht, falls gewünscht
+                          textInputAction: TextInputAction.newline, 
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         });
-      });
+      },
+    );
   }
 
   void _createNewProfile() {
