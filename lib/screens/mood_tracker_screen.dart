@@ -80,10 +80,6 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   final GlobalKey _three = GlobalKey(); // Stats Tab
   final GlobalKey _four = GlobalKey();  // Profile Tab
 
-  List<String> get _allAvailableTags {
-    return _combinedTagsByCategory.values.expand((x) => x).toList();
-  }
-
   // 1. VARIABLE FÜR DEN LISTENER
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription; // Beachte: neuerdings List<ConnectivityResult> in v6
 
@@ -781,19 +777,40 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   }
 
   Future<void> _updateEntry(String id, double s, double sl, Set<String> t, String? n) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      // Wir bauen ein temporäres Objekt für das Update
-      final tempEntry = MoodEntry(id: id, score: s, sleepRating: sl, tags: t, note: n, timestamp: DateTime.now(), profileId: '');
-      
-      await _entryService.updateEntry(tempEntry);
-      
-      _loadEntries(); 
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    // User ID aus dem originalen Eintrag holen oder Auth nutzen
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    
+    final tempEntry = MoodEntry(
+        id: id, 
+        score: s, 
+        sleepRating: sl, 
+        tags: t, 
+        note: n, 
+        timestamp: DateTime.now(), // Timestamp nicht ändern? Oder doch? Meist behalten.
+        profileId: _selectedProfileId!,
+        userId: userId
+    );
+    
+    // Service aufrufen (jetzt mit Rückgabewert oder zumindest Offline-Logik)
+    await _entryService.updateEntry(tempEntry);
+    
+    // UI Update
+    await _loadEntries(); // Lädt neu (auch Offline-Queue Einträge sollten hier drin sein, wenn EntryService.getEntries sie merged)
+    
+    if (mounted) {
+       Navigator.pop(context);
+       // Prüfen ob offline passiert
+       final connectivityResult = await Connectivity().checkConnectivity();
+       if (connectivityResult.contains(ConnectivityResult.none)) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Offline gespeichert. Wird später synchronisiert."), backgroundColor: Colors.orange));
+       }
     }
+  } catch (e) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
   }
+}
 
   Future<void> _updateHomeWidget() async {
     // PRÜFUNG: Wenn wir im Web sind, brechen wir sofort ab.
@@ -830,60 +847,75 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Wichtig: Erlaubt Vollbild bei Bedarf
-      useSafeArea: true,        // Wichtig: Beachtet Notches und Statusbars
+      isScrollControlled: true, 
+      useSafeArea: true,
+      backgroundColor: const Color(0xFFF5F7FA), // <--- HIER IST DIE NEUE FARBE (Cool Grey)
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))
       ),
       builder: (context) {
         return StatefulBuilder(builder: (context, setSheetState) {
           final moodData = MoodUtils.getMoodData(editScore, l10n);
-          // Wir holen die Höhe der Tastatur
+          // Tastatur-Höhe holen
           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
           return Container(
-            // WICHTIG: Padding unten = Tastatur-Höhe
-            padding: EdgeInsets.only(
-              bottom: bottomInset, 
-              left: 20, 
-              right: 20, 
-              top: 20
-            ),
-            // Maximale Höhe beschränken, damit es nicht komisch aussieht
+            // Padding unten = Tastaturhöhe (damit nichts verdeckt wird)
+            padding: EdgeInsets.only(bottom: bottomInset),
+            // Maximale Höhe begrenzen, damit es oben nicht überlappt
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.9
+              maxHeight: MediaQuery.of(context).size.height * 0.95
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // Schrumpft so klein wie möglich
+              mainAxisSize: MainAxisSize.min, 
               children: [
-                // --- 1. NEUER HEADER (Buttons oben) ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(l10n.cancel, style: TextStyle(color: Colors.grey.shade600)),
-                    ),
-                    Text(
-                      l10n.edit,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    TextButton(
-                      onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()),
-                      child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                    ),
-                  ],
+                // --- 1. HEADER (Mit mehr Abstand oben) ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), // Mehr Platz oben
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+                        child: Text(l10n.cancel),
+                      ),
+                      Text(
+                        l10n.edit,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      TextButton(
+                        onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()),
+                        style: TextButton.styleFrom(
+  foregroundColor: Colors.indigo, 
+  textStyle: const TextStyle(fontWeight: FontWeight.bold) // Hier muss es rein
+),
+                        child: Text(l10n.save),
+                      ),
+                    ],
+                  ),
                 ),
-                const Divider(),
+                const Divider(height: 1),
                 
                 // --- 2. SCROLLBARER INHALT ---
                 Flexible(
                   child: SingleChildScrollView(
+                    // WICHTIG: Padding für den Inhalt selbst (Abstand zu den Rändern & unten Platz zum Scrollen)
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 10),
                         // Mood
-                        Text(moodData['emoji']!, style: const TextStyle(fontSize: 40)),
+                        Center(
+                          child: Column(
+                            children: [
+                              Text(moodData['emoji']!, style: const TextStyle(fontSize: 48)),
+                              const SizedBox(height: 5),
+                              Text(moodData['label']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         Slider(
                           value: editScore, 
                           min: 0.0, 
@@ -891,9 +923,9 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                           onChanged: (val) => setSheetState(() => editScore = val)
                         ),
                         
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 25), // Mehr Abstand
                         
-                        // Schlaf (optional schöner machen)
+                        // Schlaf
                         Row(
                           children: [
                             const Icon(Icons.bed, size: 20, color: Colors.indigo),
@@ -909,23 +941,58 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                           onChanged: (val) => setSheetState(() => editSleep = val)
                         ),
                         
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 25),
                         
-                        // Tags
-                        Wrap(
-                          spacing: 6, 
-                          runSpacing: 6, // Wichtig für mehrzeilige Tags
-                          children: _allAvailableTags.map((tag) { 
-                            final isSelected = editTags.contains(tag); 
-                            return ChoiceChip(
-                              label: Text(tag), 
-                              selected: isSelected, 
-                              onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))
-                            ); 
-                          }).toList()
-                        ),
+                        // --- 3. KATEGORISIERTE TAGS (Wie im Main Screen) ---
+                        ..._combinedTagsByCategory.entries.map((entry) { 
+                          if (entry.value.isEmpty) return const SizedBox.shrink(); 
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, 
+                            children: [
+                              // Kategorie-Titel
+                              Text(
+                                entry.key.toUpperCase(), 
+                                style: TextStyle(
+                                  fontSize: 11, 
+                                  fontWeight: FontWeight.w800, 
+                                  color: Colors.grey.shade500, 
+                                  letterSpacing: 1.1
+                                )
+                              ), 
+                              const SizedBox(height: 10), 
+                              
+                              // Tags
+                              Wrap(
+                                spacing: 8.0, 
+                                runSpacing: 8.0, 
+                                children: entry.value.map((tag) {
+                                  final isSelected = editTags.contains(tag);
+                                  return ChoiceChip(
+                                    label: Text(tag), 
+                                    selected: isSelected,
+                                    selectedColor: Colors.black87,
+                                    labelStyle: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black87,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+                                    ),
+                                    backgroundColor: Colors.white,
+                                    elevation: isSelected ? 2 : 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: isSelected ? Colors.transparent : Colors.grey.shade300
+                                      )
+                                    ),
+                                    onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))
+                                  );
+                                }).toList()
+                              ),
+                              const SizedBox(height: 20), // Abstand zur nächsten Kategorie
+                            ]
+                          ); 
+                        }),
                         
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                         
                         // Notizfeld
                         TextField(
@@ -933,15 +1000,16 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                           decoration: InputDecoration(
                             hintText: l10n.inputNoteHint,
                             filled: true,
-                            fillColor: Colors.grey.shade100,
+                            fillColor: Colors.grey.shade50,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                            prefixIcon: const Icon(Icons.edit_note),
+                            prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           ),
                           maxLines: 3,
                           minLines: 1,
-                          // WICHTIG: Sorgt dafür, dass bei "Enter" die Tastatur zugeht, falls gewünscht
                           textInputAction: TextInputAction.newline, 
                         ),
+                        // Extra Platz unten, damit man bequem scrollen kann
                         const SizedBox(height: 20),
                       ],
                     ),

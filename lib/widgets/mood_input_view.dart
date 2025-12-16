@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:record/record.dart'; 
-import 'package:path_provider/path_provider.dart'; 
-import 'package:flutter/foundation.dart'; 
-import 'package:http/http.dart' as http; 
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:showcaseview/showcaseview.dart'; // Wichtig für Tutorial
 
@@ -20,13 +20,16 @@ class MoodInputView extends StatefulWidget {
   final Set<String> selectedTags;
   final Map<String, List<String>> categorizedTags;
   final Set<String> customTagNames;
-  final int? cycleDay; 
+  final int? cycleDay;
   final TextEditingController noteController;
   final List<MoodEntry> entriesForDate;
   final bool showSuccessAnimation;
   final bool isLoading;
   final bool isPro;
-  final DateTime selectedDate; 
+  final DateTime selectedDate;
+  
+  // Steuert, ob wir im Bearbeiten-Modus (Dialog) oder Erstellen-Modus (Tab) sind
+  final bool isEditing;
 
   final ValueChanged<double> onMoodChanged;
   final ValueChanged<double> onSleepChanged;
@@ -37,7 +40,7 @@ class MoodInputView extends StatefulWidget {
   final Function(String) onDeleteEntry;
   final Function(MoodEntry) onEditEntry;
   final Function(String) onManageCustomTag;
-  
+
   // Tutorial Keys
   final GlobalKey showcaseKeySlider;
   final GlobalKey showcaseKeySave;
@@ -57,6 +60,7 @@ class MoodInputView extends StatefulWidget {
     required this.isLoading,
     required this.isPro,
     required this.selectedDate,
+    this.isEditing = false, 
     required this.onMoodChanged,
     required this.onSleepChanged,
     required this.onTrackSleepChanged,
@@ -83,7 +87,6 @@ class _MoodInputViewState extends State<MoodInputView> {
   static const int _maxDuration = 60;
   bool _isHistoryOpen = false;
 
-  // NEU: Controller für das automatische Scrollen
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -96,17 +99,13 @@ class _MoodInputViewState extends State<MoodInputView> {
   void dispose() {
     _timer?.cancel();
     _audioRecorder.dispose();
-    _scrollController.dispose(); // NEU: Aufräumen
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // NEU: Scrollt ans Ende der Liste (damit das Textfeld sichtbar wird)
   void _scrollToBottom() {
-    // Kurze Verzögerung, damit die Tastatur Zeit hat aufzugehen
     Future.delayed(const Duration(milliseconds: 300), () {
-      // WICHTIG: Prüfen, ob das Widget noch "lebt" und der Controller existiert
-      if (!mounted) return; 
-
+      if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -121,37 +120,52 @@ class _MoodInputViewState extends State<MoodInputView> {
     try {
       if (await _audioRecorder.hasPermission()) {
         const config = RecordConfig(encoder: AudioEncoder.aacLc);
-        String path = ''; 
+        String path = '';
         if (!kIsWeb) {
           final directory = await getApplicationDocumentsDirectory();
           path = '${directory.path}/audio_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
         }
         await _audioRecorder.start(config, path: path);
-        setState(() { _isRecording = true; _recordDuration = 0; });
+        setState(() {
+          _isRecording = true;
+          _recordDuration = 0;
+        });
         _startTimer();
       }
-    } catch (e) { debugPrint("Fehler beim Starten: $e"); }
+    } catch (e) {
+      debugPrint("Fehler beim Starten: $e");
+    }
   }
 
   Future<void> _stopRecording() async {
     _timer?.cancel();
     final path = await _audioRecorder.stop();
-    setState(() { _isRecording = false; _isProcessing = true; });
-    if (path != null) { await _uploadAndTranscribe(path); } 
-    else { setState(() => _isProcessing = false); }
+    setState(() {
+      _isRecording = false;
+      _isProcessing = true;
+    });
+    if (path != null) {
+      await _uploadAndTranscribe(path);
+    } else {
+      setState(() => _isProcessing = false);
+    }
   }
 
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() { _recordDuration++; });
-      if (_recordDuration >= _maxDuration) { _stopRecording(); }
+      setState(() {
+        _recordDuration++;
+      });
+      if (_recordDuration >= _maxDuration) {
+        _stopRecording();
+      }
     });
   }
 
   Future<void> _uploadAndTranscribe(String filePath) async {
     try {
-      final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/transcribe'); 
+      final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/transcribe');
       var request = http.MultipartRequest('POST', url);
       if (kIsWeb) {
         final blobResponse = await http.get(Uri.parse(filePath));
@@ -169,14 +183,17 @@ class _MoodInputViewState extends State<MoodInputView> {
         if (mounted) {
           final currentText = widget.noteController.text;
           widget.noteController.text = currentText.isEmpty ? text : "$currentText $text";
-          // Nach dem Transkribieren auch zum Textfeld scrollen
           _scrollToBottom();
         }
       } else {
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Audio nicht verstehen.")));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konnte Audio nicht verstehen.")));
+        }
       }
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Verbindungsfehler: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Verbindungsfehler: $e")));
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -184,7 +201,11 @@ class _MoodInputViewState extends State<MoodInputView> {
 
   void _toggleRecording() {
     if (_isProcessing) return;
-    if (_isRecording) { _stopRecording(); } else { _startRecording(); }
+    if (_isRecording) {
+      _stopRecording();
+    } else {
+      _startRecording();
+    }
   }
 
   @override
@@ -195,18 +216,13 @@ class _MoodInputViewState extends State<MoodInputView> {
     final double historyHeight = _isHistoryOpen ? screenHeight * 0.4 : 60.0;
 
     final bool isToday = DateUtils.isSameDay(widget.selectedDate, DateTime.now());
-    final String datePart = isToday 
-        ? l10n.today.toUpperCase() 
-        : DateFormat('dd.MM.yyyy').format(widget.selectedDate);
-    
+    final String headerDateString = DateFormat('d. MMMM yyyy').format(widget.selectedDate);
+    final String datePart = isToday ? l10n.today.toUpperCase() : DateFormat('dd.MM.yyyy').format(widget.selectedDate);
     final String historyTitle = "$datePart • ${widget.entriesForDate.length} ${l10n.moodEntry.toUpperCase()}${widget.entriesForDate.length != 1 ? 'E' : ''}";
-
-    // Prüfen, ob Tastatur offen ist (für Padding unten)
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Column(
       children: [
-        
         // ============================================================
         // 1. FIXIERTER HEADER BEREICH (Sliders & Metriken)
         // ============================================================
@@ -215,24 +231,61 @@ class _MoodInputViewState extends State<MoodInputView> {
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
           child: Column(
             children: [
+              // --- HEADER ZEILE ---
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // LINKS: Entweder Abbrechen (Edit) oder Datum (Normal)
+                    if (widget.isEditing)
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                      )
+                    else
+                       Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isToday ? l10n.today : 'Datum',
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            headerDateString,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+
+                    // MITTE: "Bearbeiten" nur im Edit-Modus
+                    if (widget.isEditing)
+                      Text(l10n.edit, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+
+                    // RECHTS: Speichern Button mit Showcase Wrapper (Fix 1)
+                    Showcase(
+                      key: widget.showcaseKeySave,
+                      title: l10n.tutorialSaveTitle,
+                      description: l10n.tutorialSaveDesc,
+                      child: TextButton(
+                        onPressed: widget.showSuccessAnimation ? null : widget.onSave,
+                        child: Text(
+                          l10n.save,
+                          style: const TextStyle(color: Colors.blue, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               // Zyklus Chip
               if (widget.cycleDay != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.pinkAccent.withValues(alpha: 0.1), 
-                    borderRadius: BorderRadius.circular(12), 
-                    border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3))
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min, 
-                    children: [
-                      const Icon(Icons.water_drop, size: 12, color: Colors.pinkAccent), 
-                      const SizedBox(width: 4), 
-                      Text("Tag ${widget.cycleDay}", style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 11))
-                    ]
-                  ),
+                  decoration: BoxDecoration(color: Colors.pinkAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3))),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.water_drop, size: 12, color: Colors.pinkAccent), const SizedBox(width: 4), Text("Tag ${widget.cycleDay}", style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 11))]),
                 ),
 
               // Stimmung
@@ -242,26 +295,12 @@ class _MoodInputViewState extends State<MoodInputView> {
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
                     transitionBuilder: (Widget child, Animation<double> animation) => ScaleTransition(scale: animation, child: child),
-                    child: Text(
-                      moodData['emoji']!, 
-                      key: ValueKey(moodData['emoji']), 
-                      style: const TextStyle(fontSize: 42)
-                    ),
+                    child: Text(moodData['emoji']!, key: ValueKey(moodData['emoji']), style: const TextStyle(fontSize: 42)),
                   ),
                   const SizedBox(width: 10),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      moodData['label']!, 
-                      key: ValueKey(moodData['label']), 
-                      style: TextStyle(
-                        fontSize: 18, 
-                        fontWeight: FontWeight.w600, 
-                        color: MoodUtils.getBackgroundColor(widget.currentMoodValue).withValues(alpha: 1.0).computeLuminance() > 0.5 
-                            ? Colors.black87 
-                            : MoodUtils.getBackgroundColor(widget.currentMoodValue)
-                      )
-                    ),
+                    child: Text(moodData['label']!, key: ValueKey(moodData['label']), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: MoodUtils.getBackgroundColor(widget.currentMoodValue).withValues(alpha: 1.0).computeLuminance() > 0.5 ? Colors.black87 : MoodUtils.getBackgroundColor(widget.currentMoodValue))),
                   ),
                 ],
               ),
@@ -279,47 +318,35 @@ class _MoodInputViewState extends State<MoodInputView> {
                     thumbColor: Colors.white,
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
                   ),
-                  child: Showcase( // TUTORIAL WRAPPER
+                  child: Showcase(
                     key: widget.showcaseKeySlider,
                     title: l10n.tutorialMoodTitle,
                     description: l10n.tutorialMoodDesc,
                     child: Slider(
-                      value: widget.currentMoodValue, 
-                      min: 0.0, 
-                      max: 10.0, 
-                      onChanged: widget.showSuccessAnimation ? null : (val) { 
-                        if (val.floor() != widget.currentMoodValue.floor()) { 
-                          HapticFeedback.selectionClick(); 
-                        } 
-                        widget.onMoodChanged(val); 
-                      }
-                    ),
+                        value: widget.currentMoodValue,
+                        min: 0.0,
+                        max: 10.0,
+                        onChanged: widget.showSuccessAnimation ? null : (val) {
+                          if (val.floor() != widget.currentMoodValue.floor()) HapticFeedback.selectionClick();
+                          widget.onMoodChanged(val);
+                        }),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Schlaf Header
               Row(
                 children: [
-                  Transform.scale(
-                    scale: 0.7,
-                    child: Switch(
-                      value: widget.trackSleep, 
-                      onChanged: widget.onTrackSleepChanged, 
-                      activeTrackColor: Colors.indigo, 
-                      thumbColor: const WidgetStatePropertyAll(Colors.white)
-                    ),
-                  ),
+                  Transform.scale(scale: 0.7, child: Switch(value: widget.trackSleep, onChanged: widget.onTrackSleepChanged, activeTrackColor: Colors.indigo, thumbColor: const WidgetStatePropertyAll(Colors.white))),
                   const SizedBox(width: 4),
                   Text(l10n.inputSleep, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
                   const Spacer(),
-                  if (widget.trackSleep) 
-                    Text("${widget.currentSleepValue.toStringAsFixed(1)} h", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  if (widget.trackSleep) Text("${widget.currentSleepValue.toStringAsFixed(1)} h", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
                 ],
               ),
-              
+
               // Schlaf Slider
               if (widget.trackSleep)
                 SizedBox(
@@ -335,16 +362,13 @@ class _MoodInputViewState extends State<MoodInputView> {
                       overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
                     ),
                     child: Slider(
-                      value: widget.currentSleepValue, 
-                      min: 0.0, 
-                      max: 10.0, 
-                      onChanged: widget.showSuccessAnimation ? null : (val) { 
-                        if (val.floor() != widget.currentSleepValue.floor()) { 
-                          HapticFeedback.selectionClick(); 
-                        } 
-                        widget.onSleepChanged(val); 
-                      }
-                    ),
+                        value: widget.currentSleepValue,
+                        min: 0.0,
+                        max: 10.0,
+                        onChanged: widget.showSuccessAnimation ? null : (val) {
+                          if (val.floor() != widget.currentSleepValue.floor()) HapticFeedback.selectionClick();
+                          widget.onSleepChanged(val);
+                        }),
                   ),
                 ),
             ],
@@ -360,218 +384,107 @@ class _MoodInputViewState extends State<MoodInputView> {
           child: Container(
             color: Colors.white,
             child: SingleChildScrollView(
-              controller: _scrollController, // NEU: Controller verbunden
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tags (Kategorisiert)
-                  ...widget.categorizedTags.entries.map((entry) { 
-                    if (entry.value.isEmpty) return const SizedBox.shrink(); 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, 
-                      children: [
-                        Text(entry.key.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 1.1)), 
-                        const SizedBox(height: 8), 
-                        Wrap(
-                          spacing: 8.0, 
-                          runSpacing: 8.0, 
-                          children: entry.value.map((tag) => _buildTagChip(tag)).toList()
-                        ),
-                        const SizedBox(height: 15), 
-                      ]
-                    ); 
+                  ...widget.categorizedTags.entries.map((entry) {
+                    if (entry.value.isEmpty) return const SizedBox.shrink();
+                    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(entry.key.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 1.1)),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8.0, runSpacing: 8.0, children: entry.value.map((tag) => _buildTagChip(tag)).toList()),
+                      const SizedBox(height: 15),
+                    ]);
                   }),
-                  
                   const SizedBox(height: 5),
-                  
-                  // Tag hinzufügen Button
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: widget.isPro ? widget.onAddTag : _showProDialog, 
-                      icon: Icon(widget.isPro ? Icons.add : Icons.lock, size: 16), 
-                      label: Text(l10n.inputAddTag), 
-                      style: TextButton.styleFrom(
-                        foregroundColor: widget.isPro ? Colors.indigo : Colors.grey, 
-                        visualDensity: VisualDensity.compact
-                      )
-                    )
-                  ),
+                  Center(child: TextButton.icon(onPressed: widget.isPro ? widget.onAddTag : _showProDialog, icon: Icon(widget.isPro ? Icons.add : Icons.lock, size: 16), label: Text(l10n.inputAddTag), style: TextButton.styleFrom(foregroundColor: widget.isPro ? Colors.indigo : Colors.grey, visualDensity: VisualDensity.compact))),
                   const SizedBox(height: 15),
-
-                  // Notiz Textfeld
                   TextField(
                     controller: widget.noteController,
-                    onTap: _scrollToBottom, // NEU: Scrollen beim Antippen!
+                    onTap: _scrollToBottom,
                     decoration: InputDecoration(
-                      hintText: l10n.inputNoteHint, 
-                      filled: true, 
-                      fillColor: Colors.grey.shade50, 
+                      hintText: l10n.inputNoteHint,
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                       prefixIcon: const Icon(Icons.edit_note),
                       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.all(4.0), 
-                        child: GestureDetector(
-                          onTap: widget.isPro ? _toggleRecording : _showProDialog, 
-                          child: Stack(
-                            alignment: Alignment.center, 
-                            children: [
-                              if (_isRecording) 
-                                SizedBox(width: 36, height: 36, child: CircularProgressIndicator(value: _recordDuration / _maxDuration, strokeWidth: 3, backgroundColor: Colors.red.withValues(alpha: 0.2), valueColor: const AlwaysStoppedAnimation<Color>(Colors.red))), 
-                              if (_isProcessing) 
-                                const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)), 
-                              if (!_isProcessing) 
-                                Container(
-                                  width: 30, height: 30, 
-                                  decoration: BoxDecoration(color: _isRecording ? Colors.red : Colors.transparent, shape: BoxShape.circle), 
-                                  child: !widget.isPro 
-                                    ? const Icon(Icons.lock, color: Colors.grey, size: 16) 
-                                    : Icon(_isRecording ? Icons.stop : Icons.mic, color: _isRecording ? Colors.white : Colors.grey, size: 18)
-                                )
-                            ]
-                          )
-                        )
-                      ),
+                      suffixIcon: Padding(padding: const EdgeInsets.all(4.0), child: GestureDetector(onTap: widget.isPro ? _toggleRecording : _showProDialog, child: Stack(alignment: Alignment.center, children: [if (_isRecording) SizedBox(width: 36, height: 36, child: CircularProgressIndicator(value: _recordDuration / _maxDuration, strokeWidth: 3, backgroundColor: Colors.red.withValues(alpha: 0.2), valueColor: const AlwaysStoppedAnimation<Color>(Colors.red))), if (_isProcessing) const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)), if (!_isProcessing) Container(width: 30, height: 30, decoration: BoxDecoration(color: _isRecording ? Colors.red : Colors.transparent, shape: BoxShape.circle), child: !widget.isPro ? const Icon(Icons.lock, color: Colors.grey, size: 16) : Icon(_isRecording ? Icons.stop : Icons.mic, color: _isRecording ? Colors.white : Colors.grey, size: 18))]))),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                     maxLines: 3, minLines: 1,
                   ),
-                  
-                  // NEU: Platzhalter für das Scrollen
-                  // Wenn Tastatur offen ist, brauchen wir mehr Platz unten, um das Feld hochzuschieben
                   SizedBox(height: bottomInset > 0 ? 200 : 20),
                 ],
               ),
             ),
           ),
         ),
-        
-        // ============================================================
-        // 3. DOCK (Speichern Button)
-        // ============================================================
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          decoration: BoxDecoration(
-            color: Colors.white, 
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, -4))], 
-            border: const Border(top: BorderSide(color: Color(0xFFF5F5F5), width: 1))
-          ),
-          child: Showcase( // TUTORIAL WRAPPER
-            key: widget.showcaseKeySave,
-            title: l10n.tutorialSaveTitle,
-            description: l10n.tutorialSaveDesc,
-            targetShapeBorder: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
-            child: ElevatedButton(
-              onPressed: widget.showSuccessAnimation ? null : widget.onSave, 
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87, 
-                foregroundColor: Colors.white, 
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), 
-                padding: const EdgeInsets.symmetric(vertical: 16), 
-                elevation: 4, 
-                shadowColor: Colors.black.withValues(alpha: 0.2)
-              ), 
-              child: Text(l10n.save.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5))
-            ),
-          ),
-        ),
 
         // ============================================================
-        // 4. VERLAUF (Klappbar)
+        // 4. VERLAUF (History)
         // ============================================================
+        if (!widget.isEditing)
         AnimatedContainer(
-          duration: const Duration(milliseconds: 350), 
-          curve: Curves.easeInOutQuint, 
-          height: historyHeight, 
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOutQuint,
+          height: historyHeight,
           color: const Color(0xFFEDF2F7),
           child: Column(
             children: [
               InkWell(
                 onTap: () { setState(() { _isHistoryOpen = !_isHistoryOpen; }); },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), 
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDF2F7), 
-                    border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.05)))
-                  ), 
-                  child: Row(
-                    children: [
-                      Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.history, size: 14, color: Colors.indigo)), 
-                      const SizedBox(width: 10), 
-                      Text(historyTitle, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.indigo.shade900.withValues(alpha: 0.7), letterSpacing: 0.5)), 
-                      const SizedBox(width: 8), 
-                      AnimatedRotation(turns: _isHistoryOpen ? 0.5 : 0.0, duration: const Duration(milliseconds: 300), child: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.indigo.shade900.withValues(alpha: 0.5))), 
-                      const Spacer(), 
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(color: const Color(0xFFEDF2F7), border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.05)))),
+                    child: Row(children: [
+                      Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.history, size: 14, color: Colors.indigo)),
+                      const SizedBox(width: 10),
+                      Text(historyTitle, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.indigo.shade900.withValues(alpha: 0.7), letterSpacing: 0.5)),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(turns: _isHistoryOpen ? 0.5 : 0.0, duration: const Duration(milliseconds: 300), child: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.indigo.shade900.withValues(alpha: 0.5))),
+                      const Spacer(),
                       Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text("${widget.entriesForDate.length}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo.shade900)))
-                    ]
-                  )
-                ),
+                    ])),
               ),
-
               Expanded(
-                child: widget.isLoading 
-                  ? const Center(child: CircularProgressIndicator()) 
-                  : widget.entriesForDate.isEmpty 
-                    ? Center(
-                        child: _isHistoryOpen 
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center, 
-                            children: [
-                              Icon(Icons.notes, size: 30, color: Colors.grey.shade400), 
-                              const SizedBox(height: 8), 
-                              Text(l10n.statsNoData, style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.bold))
-                            ]
-                          ) 
-                        : const SizedBox.shrink()
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), 
-                        itemCount: widget.entriesForDate.length, 
-                        itemBuilder: (context, index) {
-                          final entry = widget.entriesForDate[index];
-                          final color = MoodUtils.getBackgroundColor(entry.score);
+                child: widget.isLoading ? const Center(child: CircularProgressIndicator()) : widget.entriesForDate.isEmpty ? Center(child: _isHistoryOpen ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.notes, size: 30, color: Colors.grey.shade400), const SizedBox(height: 8), Text(l10n.statsNoData, style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.bold))]) : const SizedBox.shrink()) : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  itemCount: widget.entriesForDate.length,
+                  itemBuilder: (context, index) {
+                    final entry = widget.entriesForDate[index];
+                    final color = MoodUtils.getBackgroundColor(entry.score);
+
+                    // LOGIK FÜR OFFLINE ICON (Fix 2)
+                    // Wir zeigen es an, wenn die ID mit offline_ beginnt ODER wenn es lokal modifiziert wurde
+                    final bool isOffline = (entry.id != null && entry.id!.startsWith('offline_')) || entry.isLocallyModified;
+
+                    return Dismissible(
+                      key: Key(entry.id ?? index.toString()),
+                      direction: DismissDirection.endToStart,
+                      background: Container(margin: const EdgeInsets.only(bottom: 10), alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), decoration: BoxDecoration(color: Colors.redAccent.shade100, borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.delete_outline, color: Colors.white, size: 24)),
+                      onDismissed: (direction) { if (entry.id != null) widget.onDeleteEntry(entry.id!); },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.indigo.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 3))]),
+                        child: ListTile(
+                          onTap: () => widget.onEditEntry(entry),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(width: 44, height: 44, decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)), child: Center(child: Text(entry.score.toStringAsFixed(1), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 14)))),
+                          title: Text("${DateFormat('HH:mm').format(entry.timestamp)} Uhr", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            if (entry.note != null && entry.note!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList())
+                          ]),
                           
-                          return Dismissible(
-                            key: Key(entry.id ?? index.toString()), 
-                            direction: DismissDirection.endToStart, 
-                            background: Container(
-                              margin: const EdgeInsets.only(bottom: 10), 
-                              alignment: Alignment.centerRight, 
-                              padding: const EdgeInsets.only(right: 20), 
-                              decoration: BoxDecoration(color: Colors.redAccent.shade100, borderRadius: BorderRadius.circular(16)), 
-                              child: const Icon(Icons.delete_outline, color: Colors.white, size: 24)
-                            ),
-                            onDismissed: (direction) { if (entry.id != null) widget.onDeleteEntry(entry.id!); },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10), 
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.indigo.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 3))]),
-                              child: ListTile(
-                                onTap: () => widget.onEditEntry(entry), 
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
-                                leading: Container(width: 44, height: 44, decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)), child: Center(child: Text(entry.score.toStringAsFixed(1), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 14)))), 
-                                title: Text("${DateFormat('HH:mm').format(entry.timestamp)} Uhr", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), 
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start, 
-                                  children: [
-                                    if (entry.note != null && entry.note!.isNotEmpty) 
-                                      Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)), 
-                                    Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList()) 
-                                  ]
-                                ),
-                                // ANZEIGE FÜR OFFLINE STATUS
-                                trailing: (entry.id != null && entry.id!.startsWith('offline_'))
-                                    ? Tooltip(
-                                        message: "Nicht synchronisiert",
-                                        triggerMode: TooltipTriggerMode.tap,
-                                        child: Icon(Icons.cloud_off, color: Colors.orange.shade300, size: 20),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
+                          // HIER IST DAS KORRIGIERTE ICON
+                          trailing: isOffline ? Tooltip(message: "Nicht synchronisiert", triggerMode: TooltipTriggerMode.tap, child: Icon(Icons.cloud_off, color: Colors.orange.shade300, size: 20)) : null,
+                        ),
                       ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -583,22 +496,18 @@ class _MoodInputViewState extends State<MoodInputView> {
   Widget _buildTagChip(String tag) {
     final isSelected = widget.selectedTags.contains(tag);
     final isCustom = widget.customTagNames.contains(tag);
-
     return GestureDetector(
       onTap: () { HapticFeedback.lightImpact(); widget.onTagToggle(tag); },
       onLongPress: isCustom ? () { HapticFeedback.mediumImpact(); widget.onManageCustomTag(tag); } : null,
       child: AnimatedScale(
-        scale: isSelected ? 1.05 : 1.0, duration: const Duration(milliseconds: 150), curve: Curves.easeOutBack,
+        scale: isSelected ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutBack,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), 
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black87 : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isSelected ? Colors.black87 : (isCustom ? Colors.indigoAccent.withValues(alpha: 0.5) : Colors.grey.shade200), width: isCustom && !isSelected ? 1.5 : 1.0),
-            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 3))] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 2, offset: const Offset(0, 1))],
-          ),
-          child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)), 
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(color: isSelected ? Colors.black87 : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: isSelected ? Colors.black87 : (isCustom ? Colors.indigoAccent.withValues(alpha: 0.5) : Colors.grey.shade200), width: isCustom && !isSelected ? 1.5 : 1.0), boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 3))] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 2, offset: const Offset(0, 1))]),
+          child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
         ),
       ),
     );
@@ -606,7 +515,6 @@ class _MoodInputViewState extends State<MoodInputView> {
 
   void _showProDialog() {
     final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, spreadRadius: 5)]), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20), const Icon(Icons.diamond, size: 40, color: Colors.indigo), const SizedBox(height: 15), const Text("Pro-Feature", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center), const SizedBox(height: 10), const Text("Dieses Feature ist exklusiv für Pro-Nutzer verfügbar. Möchtest du upgraden?", style: TextStyle(fontSize: 15, color: Colors.black87, height: 1.5), textAlign: TextAlign.center), const SizedBox(height: 30), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bitte oben rechts auf den Diamanten klicken!"))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 5, shadowColor: Colors.indigo.withValues(alpha: 0.4)), child: const Text("ZUM SHOP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)))), const SizedBox(height: 10), TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.maybeLater, style: const TextStyle(color: Colors.grey)))])));
+    showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, spreadRadius: 5)]), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20), const Icon(Icons.diamond, size: 40, color: Colors.indigo), const SizedBox(height: 15), const Text("Pro-Feature", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center), const SizedBox(height: 10), const Text("Dieses Feature ist exklusiv für Pro-Nutzer verfügbar. Möchtest du upgraden?", style: TextStyle(fontSize: 15, color: Colors.black87, height: 1.5), textAlign: TextAlign.center), const SizedBox(height: 30), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bitte oben rechts auf den Diamanten klicken!"))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 5, shadowColor: Colors.indigo.withValues(alpha: 0.4)), child: const Text("ZUM SHOP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)))), const SizedBox(height: 10), TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.maybeLater, style: const TextStyle(color: Colors.grey)))])));
   }
 }

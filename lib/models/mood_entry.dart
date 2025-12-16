@@ -7,6 +7,8 @@ class MoodEntry {
   final String? note;
   final String profileId;
   final String? userId; // <--- WICHTIG für den Service
+  // NEU: Nur für die UI, wird nicht in DB gespeichert
+  final bool isLocallyModified;
 
   MoodEntry({
     this.id,
@@ -17,13 +19,13 @@ class MoodEntry {
     this.note,
     required this.profileId,
     this.userId,
+    this.isLocallyModified = false, // Default false
   });
 
   // Factory für DB -> App
   factory MoodEntry.fromMap(Map<String, dynamic> map) {
     return MoodEntry(
       id: map['id']?.toString(),
-      // HIER ÄNDERN: von 'timestamp' zu 'created_at'
       timestamp: DateTime.parse(map['created_at']), 
       score: (map['score'] as num).toDouble(),
       sleepRating: map['sleep_rating'] != null ? (map['sleep_rating'] as num).toDouble() : null,
@@ -31,14 +33,13 @@ class MoodEntry {
       note: map['note'],
       profileId: map['profile_id'] ?? '',
       userId: map['user_id'],
+      isLocallyModified: map['is_locally_modified'] ?? false, // Falls wir es aus JSON (Queue) laden
     );
   }
 
-  // Für App -> DB
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id, 
-      // HIER ÄNDERN: von 'timestamp' zu 'created_at'
       'created_at': timestamp.toIso8601String(),
       'score': score,
       'sleep_rating': sleepRating,
@@ -46,11 +47,18 @@ class MoodEntry {
       'note': note,
       'profile_id': profileId,
       'user_id': userId,
+      // isLocallyModified speichern wir NICHT in die echte DB, 
+      // aber wir brauchen es für die lokale Queue (SharedPrefs)
     };
   }
+  
+  // Wichtig für das Speichern in die lokale Queue
+  Map<String, dynamic> toLocalJson() {
+    final m = toMap();
+    m['is_locally_modified'] = true; // Wenn wir es lokal speichern, ist es immer modified
+    return m;
+  }
 
-  // --- HIER IST DIE FEHLENDE METHODE ---
-  // Erlaubt uns, eine Kopie des Objekts zu erstellen und dabei nur bestimmte Felder zu ändern
   MoodEntry copyWith({
     String? id,
     DateTime? timestamp,
@@ -60,6 +68,7 @@ class MoodEntry {
     String? note,
     String? profileId,
     String? userId,
+    bool? isLocallyModified,
   }) {
     return MoodEntry(
       id: id ?? this.id,
@@ -70,6 +79,7 @@ class MoodEntry {
       note: note ?? this.note,
       profileId: profileId ?? this.profileId,
       userId: userId ?? this.userId,
+      isLocallyModified: isLocallyModified ?? this.isLocallyModified,
     );
   }
 }
