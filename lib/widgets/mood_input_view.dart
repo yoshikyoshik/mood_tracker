@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:showcaseview/showcaseview.dart'; // Wichtig für Tutorial
+import 'package:showcaseview/showcaseview.dart';
 
 import '../models/mood_entry.dart';
 import '../utils/mood_utils.dart';
@@ -28,7 +28,6 @@ class MoodInputView extends StatefulWidget {
   final bool isPro;
   final DateTime selectedDate;
   
-  // Steuert, ob wir im Bearbeiten-Modus (Dialog) oder Erstellen-Modus (Tab) sind
   final bool isEditing;
 
   final ValueChanged<double> onMoodChanged;
@@ -40,8 +39,11 @@ class MoodInputView extends StatefulWidget {
   final Function(String) onDeleteEntry;
   final Function(MoodEntry) onEditEntry;
   final Function(String) onManageCustomTag;
+  
+  // --- NEUE CALLBACKS FÜR NAVIGATION ---
+  final VoidCallback onPreviousDay;
+  final VoidCallback onNextDay;
 
-  // Tutorial Keys
   final GlobalKey showcaseKeySlider;
   final GlobalKey showcaseKeySave;
 
@@ -70,6 +72,10 @@ class MoodInputView extends StatefulWidget {
     required this.onDeleteEntry,
     required this.onEditEntry,
     required this.onManageCustomTag,
+    // --- NEU ---
+    required this.onPreviousDay,
+    required this.onNextDay,
+    
     required this.showcaseKeySlider,
     required this.showcaseKeySave,
   });
@@ -216,16 +222,12 @@ class _MoodInputViewState extends State<MoodInputView> {
     final double historyHeight = _isHistoryOpen ? screenHeight * 0.4 : 60.0;
 
     final bool isToday = DateUtils.isSameDay(widget.selectedDate, DateTime.now());
-    final String headerDateString = DateFormat('d. MMMM yyyy').format(widget.selectedDate);
-    final String datePart = isToday ? l10n.today.toUpperCase() : DateFormat('dd.MM.yyyy').format(widget.selectedDate);
-    final String historyTitle = "$datePart • ${widget.entriesForDate.length} ${l10n.moodEntry.toUpperCase()}${widget.entriesForDate.length != 1 ? 'E' : ''}";
+    final String headerDateString = DateFormat('dd.MM.yyyy').format(widget.selectedDate);
+    final bool hasEntries = widget.entriesForDate.isNotEmpty;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Column(
       children: [
-        // ============================================================
-        // 1. FIXIERTER HEADER BEREICH (Sliders & Metriken)
-        // ============================================================
         Container(
           color: Colors.white,
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
@@ -237,41 +239,90 @@ class _MoodInputViewState extends State<MoodInputView> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // LINKS: Entweder Abbrechen (Edit) oder Datum (Normal)
+                    // LINKS: Navigation & Datum
+                    // FIX: Expanded sorgt dafür, dass dieser Bereich den Platz nimmt, der übrig bleibt
+                    // und nicht über den Rand hinauswächst.
                     if (widget.isEditing)
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey, fontSize: 16)),
                       )
                     else
-                       Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isToday ? l10n.today : 'Datum',
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-                          ),
-                          Text(
-                            headerDateString,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                        ],
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Pfeil Links
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left, color: Colors.indigo),
+                              onPressed: widget.onPreviousDay,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(), // Macht den Button kompakter
+                              splashRadius: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            
+                            // Datum Text (in Flexible verpackt, damit er notfalls umbricht oder ... zeigt)
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isToday ? l10n.today : 'Datum',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    headerDateString,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                                    maxLines: 1, // Wichtig: Nicht mehr als 1 Zeile
+                                    overflow: TextOverflow.ellipsis, // Wichtig: "..." falls zu lang
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(width: 4),
+                            // Pfeil Rechts
+                            IconButton(
+                              icon: Icon(Icons.chevron_right, color: isToday ? Colors.grey.shade300 : Colors.indigo),
+                              onPressed: isToday ? null : widget.onNextDay,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              splashRadius: 20,
+                            ),
+                          ],
+                        ),
                       ),
 
                     // MITTE: "Bearbeiten" nur im Edit-Modus
                     if (widget.isEditing)
                       Text(l10n.edit, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
 
-                    // RECHTS: Speichern Button mit Showcase Wrapper (Fix 1)
+                    // RECHTS: Speichern Button
+                    // Ein kleiner Abstand nach links, damit Datum und Button nicht kleben
+                    SizedBox(width: widget.isEditing ? 0 : 8),
+                    
                     Showcase(
                       key: widget.showcaseKeySave,
                       title: l10n.tutorialSaveTitle,
                       description: l10n.tutorialSaveDesc,
                       child: TextButton(
                         onPressed: widget.showSuccessAnimation ? null : widget.onSave,
+                        // Damit der Button nicht unnötig riesig ist:
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(50, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: Text(
-                          l10n.save,
-                          style: const TextStyle(color: Colors.blue, fontSize: 16, fontWeight: FontWeight.bold),
+                          hasEntries ? "Weiteren Eintrag (+)" : l10n.save,
+                          style: TextStyle(
+                            color: hasEntries ? Colors.grey.shade600 : Colors.blue, 
+                            fontSize: hasEntries ? 13 : 16, // Schrift etwas kleiner bei langem Text
+                            fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
                     ),
@@ -336,7 +387,7 @@ class _MoodInputViewState extends State<MoodInputView> {
 
               const SizedBox(height: 12),
 
-              // Schlaf Header
+              // Schlaf
               Row(
                 children: [
                   Transform.scale(scale: 0.7, child: Switch(value: widget.trackSleep, onChanged: widget.onTrackSleepChanged, activeTrackColor: Colors.indigo, thumbColor: const WidgetStatePropertyAll(Colors.white))),
@@ -347,7 +398,6 @@ class _MoodInputViewState extends State<MoodInputView> {
                 ],
               ),
 
-              // Schlaf Slider
               if (widget.trackSleep)
                 SizedBox(
                   height: 30,
@@ -377,9 +427,7 @@ class _MoodInputViewState extends State<MoodInputView> {
 
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
 
-        // ============================================================
-        // 2. SCROLLBARER BEREICH (Tags & Notizen)
-        // ============================================================
+        // Scrollbarer Inhalt
         Expanded(
           child: Container(
             color: Colors.white,
@@ -422,9 +470,7 @@ class _MoodInputViewState extends State<MoodInputView> {
           ),
         ),
 
-        // ============================================================
-        // 4. VERLAUF (History)
-        // ============================================================
+        // Verlauf
         if (!widget.isEditing)
         AnimatedContainer(
           duration: const Duration(milliseconds: 350),
@@ -441,11 +487,9 @@ class _MoodInputViewState extends State<MoodInputView> {
                     child: Row(children: [
                       Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.history, size: 14, color: Colors.indigo)),
                       const SizedBox(width: 10),
-                      Text(historyTitle, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.indigo.shade900.withValues(alpha: 0.7), letterSpacing: 0.5)),
-                      const SizedBox(width: 8),
-                      AnimatedRotation(turns: _isHistoryOpen ? 0.5 : 0.0, duration: const Duration(milliseconds: 300), child: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.indigo.shade900.withValues(alpha: 0.5))),
+                      Text("$headerDateString • ${widget.entriesForDate.length} ${l10n.moodEntry.toUpperCase()}${widget.entriesForDate.length != 1 ? 'E' : ''}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.indigo.shade900.withValues(alpha: 0.7), letterSpacing: 0.5)),
                       const Spacer(),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text("${widget.entriesForDate.length}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo.shade900)))
+                      AnimatedRotation(turns: _isHistoryOpen ? 0.5 : 0.0, duration: const Duration(milliseconds: 300), child: Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.indigo.shade900.withValues(alpha: 0.5))),
                     ])),
               ),
               Expanded(
@@ -455,11 +499,7 @@ class _MoodInputViewState extends State<MoodInputView> {
                   itemBuilder: (context, index) {
                     final entry = widget.entriesForDate[index];
                     final color = MoodUtils.getBackgroundColor(entry.score);
-
-                    // LOGIK FÜR OFFLINE ICON (Fix 2)
-                    // Wir zeigen es an, wenn die ID mit offline_ beginnt ODER wenn es lokal modifiziert wurde
                     final bool isOffline = (entry.id != null && entry.id!.startsWith('offline_')) || entry.isLocallyModified;
-
                     return Dismissible(
                       key: Key(entry.id ?? index.toString()),
                       direction: DismissDirection.endToStart,
@@ -477,8 +517,6 @@ class _MoodInputViewState extends State<MoodInputView> {
                             if (entry.note != null && entry.note!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4, bottom: 4), child: Text(entry.note!, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
                             Wrap(spacing: 4, children: entry.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black.withValues(alpha: 0.05))), child: Text(MoodUtils.getLocalizedTagLabel(t, l10n), style: TextStyle(fontSize: 9, color: Colors.black.withValues(alpha: 0.6), fontWeight: FontWeight.w600)))).toList())
                           ]),
-                          
-                          // HIER IST DAS KORRIGIERTE ICON
                           trailing: isOffline ? Tooltip(message: "Nicht synchronisiert", triggerMode: TooltipTriggerMode.tap, child: Icon(Icons.cloud_off, color: Colors.orange.shade300, size: 20)) : null,
                         ),
                       ),

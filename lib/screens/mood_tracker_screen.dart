@@ -13,6 +13,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
@@ -464,6 +465,22 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                           // Tutorial Keys übergeben
                           showcaseKeySlider: _one,
                           showcaseKeySave: _two,
+                          onPreviousDay: () {
+                  setState(() {
+                    _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+                    // Optional: Reset der Slider, wenn man den Tag wechselt? 
+                    // Meistens besser, die Werte stehen zu lassen oder auf 5.0 zu setzen.
+                    // Ich lasse sie stehen, das fühlt sich flüssiger an.
+                  });
+                },
+                onNextDay: () {
+                  setState(() {
+                    final nextDay = _selectedDate.add(const Duration(days: 1));
+                    if (!nextDay.isAfter(DateTime.now())) {
+                       _selectedDate = nextDay;
+                    }
+                  });
+                },
                         )
                       : _selectedIndex == 1 
                         ? StatsView(
@@ -679,20 +696,157 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   Future<DateTime?> _showModernDatePicker(DateTime initialDate) async {
     final l10n = AppLocalizations.of(context)!;
+    
+    // Temporärer State für die Auswahl im Dialog
+    DateTime tempDate = initialDate;
+
     return showModalBottomSheet<DateTime>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      isScrollControlled: true, 
-      builder: (ctx) => StatefulBuilder(builder: (context, setSheetState) {
-          return Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20),
-            Text(l10n.dialogSelectDate, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 10),
-            Theme(data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: Colors.indigo, onPrimary: Colors.white, onSurface: Colors.black87)), child: CalendarDatePicker(initialDate: initialDate, firstDate: DateTime(2023), lastDate: DateTime.now(), onDateChanged: (newDate) { setSheetState(() => initialDate = newDate); })),
-            const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(ctx, initialDate), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: Text(l10n.btnSelect, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))), const SizedBox(height: 10), 
-          ]));
-      })
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Griff oben
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  
+                  // Header Zeile mit "Heute" Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.dialogSelectDate,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      
+                      TextButton.icon(
+                        onPressed: () {
+                          setSheetState(() {
+                            tempDate = DateTime.now();
+                          });
+                        },
+                        icon: const Icon(Icons.today, size: 18),
+                        label: Text(l10n.today.toUpperCase()),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.indigo,
+                          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 10),
+
+                  TableCalendar(
+                    firstDay: DateTime(2023),
+                    lastDay: DateTime.now(),
+                    focusedDay: tempDate,
+                    currentDay: DateTime.now(),
+                    
+                    locale: Localizations.localeOf(context).languageCode,
+                    
+                    // 1. ÄNDERUNG: Woche beginnt am Montag
+                    startingDayOfWeek: StartingDayOfWeek.monday,
+                    
+                    // 2. ÄNDERUNG: Wochentage (Kopfzeile) stylen
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      // Wochenende (Sa, So) rot färben
+                      weekendStyle: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                      // Werktage (Mo-Fr) normal schwarz
+                      weekdayStyle: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                    ),
+
+                    eventLoader: (day) {
+                      return _allEntries.where((entry) {
+                        final matchProfile = entry.profileId == _selectedProfileId;
+                        final matchDate = isSameDay(entry.timestamp, day);
+                        return matchProfile && matchDate;
+                      }).toList();
+                    },
+
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      titleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      leftChevronIcon: Icon(Icons.chevron_left, color: Colors.indigo),
+                      rightChevronIcon: Icon(Icons.chevron_right, color: Colors.indigo),
+                    ),
+                    
+                    calendarStyle: CalendarStyle(
+                      selectedDecoration: const BoxDecoration(
+                        color: Colors.indigo,
+                        shape: BoxShape.circle,
+                      ),
+                      todayDecoration: BoxDecoration(
+                        color: Colors.indigo.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      markerDecoration: BoxDecoration(
+                        color: Colors.indigo.shade300,
+                        shape: BoxShape.circle,
+                      ),
+                      markersMaxCount: 1,
+                      
+                      todayTextStyle: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
+                      selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      defaultTextStyle: const TextStyle(color: Colors.black87),
+                      
+                      // Auch die Zahlen im Kalender (Tage) am Wochenende rot färben
+                      weekendTextStyle: const TextStyle(color: Colors.redAccent),
+                    ),
+
+                    selectedDayPredicate: (day) => isSameDay(tempDate, day),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      if (selectedDay.isAfter(DateTime.now())) return;
+                      setSheetState(() {
+                        tempDate = selectedDay;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, tempDate),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        l10n.btnSelect,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -717,9 +871,22 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || _selectedProfileId == null) return;
 
-    // Nur das Objekt bauen
+    // --- LOGIK ÄNDERUNG START ---
+    // Wir nehmen Jahr/Monat/Tag vom ausgewählten Datum (kalender)
+    // Aber Stunde/Minute von JETZT, damit die Sortierung stimmt
+    final now = DateTime.now();
+    final entryTimestamp = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+    // --- LOGIK ÄNDERUNG ENDE ---
+
     final newEntry = MoodEntry(
-      timestamp: DateTime.now(),
+      timestamp: entryTimestamp, // Hier die neue Variable nutzen
       score: _currentMoodValue,
       sleepRating: _trackSleep ? _currentSleepValue : null,
       tags: Set.from(_selectedTags),
@@ -730,26 +897,24 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     setState(() => _showSuccessAnimation = true);
 
     try {
-      // HIER RUFEN WIR JETZT DEN SERVICE
-      // Der Service entscheidet selbst ob offline oder online und gibt das Ergebnis zurück
       final savedEntry = await _entryService.saveEntry(newEntry, user.id);
 
       setState(() {
-        // Wir fügen den zurückgegebenen Eintrag (egal ob offline oder echt) vorne an
-        _allEntries.insert(0, savedEntry);
+        // Wir sortieren neu, da der Eintrag jetzt evtl. nicht ganz oben steht (wenn Datum in Vergangenheit)
+        _allEntries.add(savedEntry);
+        _allEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
         
         // UI Reset
         _selectedTags.clear();
         _noteController.clear();
+        // Mood lassen wir vielleicht stehen oder resetten auf 5.0, Geschmackssache
       });
 
-      // Feedback bei Offline-Speicherung (Check an der ID)
       if (savedEntry.id != null && savedEntry.id!.startsWith('offline_') && mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
            const SnackBar(content: Text("Kein Internet. Eintrag lokal gespeichert."), backgroundColor: Colors.orange)
          );
       } else {
-        // Nur online Widget updaten
         _updateHomeWidget();
       }
 
@@ -776,41 +941,69 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
     }
   }
 
-  Future<void> _updateEntry(String id, double s, double sl, Set<String> t, String? n) async {
-  final l10n = AppLocalizations.of(context)!;
-  try {
-    // User ID aus dem originalen Eintrag holen oder Auth nutzen
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    
-    final tempEntry = MoodEntry(
-        id: id, 
-        score: s, 
-        sleepRating: sl, 
-        tags: t, 
-        note: n, 
-        timestamp: DateTime.now(), // Timestamp nicht ändern? Oder doch? Meist behalten.
-        profileId: _selectedProfileId!,
-        userId: userId
-    );
-    
-    // Service aufrufen (jetzt mit Rückgabewert oder zumindest Offline-Logik)
-    await _entryService.updateEntry(tempEntry);
-    
-    // UI Update
-    await _loadEntries(); // Lädt neu (auch Offline-Queue Einträge sollten hier drin sein, wenn EntryService.getEntries sie merged)
-    
-    if (mounted) {
-       Navigator.pop(context);
-       // Prüfen ob offline passiert
-       final connectivityResult = await Connectivity().checkConnectivity();
-       if (connectivityResult.contains(ConnectivityResult.none)) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Offline gespeichert. Wird später synchronisiert."), backgroundColor: Colors.orange));
-       }
+  // Signatur angepasst: Nimmt jetzt 'originalTimestamp' entgegen
+  Future<void> _updateEntry(String id, double s, double sl, Set<String> t, String? n, DateTime originalTimestamp) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+
+      final tempEntry = MoodEntry(
+          id: id,
+          score: s,
+          sleepRating: sl,
+          tags: t,
+          note: n,
+          timestamp: originalTimestamp, // Datum beibehalten
+          profileId: _selectedProfileId!,
+          userId: userId
+      );
+
+      // 1. Update an Service
+      final updatedEntry = await _entryService.updateEntry(tempEntry);
+
+      // 2. UI Update & Animation
+      if (mounted) {
+        // Erst den Dialog schließen, damit man die Animation auf dem Hauptscreen sieht
+        Navigator.pop(context);
+
+        setState(() {
+          // Lokales Listen-Update
+          final index = _allEntries.indexWhere((e) => e.id == id);
+          if (index != -1) {
+            _allEntries[index] = updatedEntry;
+          } else {
+            _allEntries.add(updatedEntry);
+            _allEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          }
+
+          // --- NEU: Animation starten ---
+          _showSuccessAnimation = true; 
+        });
+
+        // Offline Check (wie gehabt)
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (!mounted) return;
+
+        if (connectivityResult.contains(ConnectivityResult.none)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Offline gespeichert. Wird später synchronisiert."),
+              backgroundColor: Colors.orange
+            )
+          );
+        }
+
+        // --- NEU: Timer zum Ausblenden der Animation (nach 2 Sek) ---
+        Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _showSuccessAnimation = false);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
+      }
     }
-  } catch (e) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
   }
-}
 
   Future<void> _updateHomeWidget() async {
     // PRÜFUNG: Wenn wir im Web sind, brechen wir sofort ab.
@@ -885,11 +1078,18 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       TextButton(
-                        onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim()),
+                        onPressed: () => _updateEntry(
+                          entry.id!, 
+                          editScore, 
+                          editSleep, 
+                          editTags, 
+                          editNoteCtrl.text.trim(),
+                          entry.timestamp // <--- HIER übergeben wir das Original-Datum
+                        ),
                         style: TextButton.styleFrom(
-  foregroundColor: Colors.indigo, 
-  textStyle: const TextStyle(fontWeight: FontWeight.bold) // Hier muss es rein
-),
+                          foregroundColor: Colors.indigo, 
+                          textStyle: const TextStyle(fontWeight: FontWeight.bold)
+                        ),
                         child: Text(l10n.save),
                       ),
                     ],

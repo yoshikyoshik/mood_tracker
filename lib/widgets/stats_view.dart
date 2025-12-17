@@ -679,68 +679,214 @@ class _StatsViewState extends State<StatsView> {
   }
 
   Widget _buildInteractiveChart(AppLocalizations l10n) {
+    // 1. Alle Daten sortieren (NICHT mehr auf 14 begrenzen!)
     final sorted = List<MoodEntry>.from(widget.entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    final chartData = sorted.length > 14 ? sorted.sublist(sorted.length - 14) : sorted;
+    
+    if (sorted.isEmpty) return Center(child: Text(l10n.statsNoData));
 
+    // 2. Datenpunkte vorbereiten
     List<FlSpot> moodSpots = [];
     List<FlSpot> sleepSpots = [];
 
-    for (int i = 0; i < chartData.length; i++) {
-      moodSpots.add(FlSpot(i.toDouble(), chartData[i].score));
-      if (chartData[i].sleepRating != null) {
-        sleepSpots.add(FlSpot(i.toDouble(), chartData[i].sleepRating!));
+    for (int i = 0; i < sorted.length; i++) {
+      moodSpots.add(FlSpot(i.toDouble(), sorted[i].score));
+      if (sorted[i].sleepRating != null) {
+        sleepSpots.add(FlSpot(i.toDouble(), sorted[i].sleepRating!));
       }
     }
 
-    return LineChart(
-      LineChartData(
-        minY: 0, maxY: 10,
-        gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: 2, getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) { final index = value.toInt(); if (index >= 0 && index < chartData.length) { if (chartData.length > 7 && index % 2 != 0) return const SizedBox.shrink(); return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(DateFormat('dd.').format(chartData[index].timestamp), style: TextStyle(fontSize: 10, color: Colors.grey.shade500))); } return const SizedBox.shrink(); })),
-        ),
-        borderData: FlBorderData(show: false),
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (spot) => Colors.black87,
-            tooltipRoundedRadius: 12, tooltipPadding: const EdgeInsets.all(12), fitInsideHorizontally: true, fitInsideVertically: true,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final isMood = spot.barIndex == 1; 
-                final entry = chartData[spot.x.toInt()];
-                if (isMood) {
-                  final mood = MoodUtils.getMoodData(spot.y, l10n); 
-                  return LineTooltipItem("${DateFormat('dd.MM').format(entry.timestamp)}\n", const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold), children: [TextSpan(text: "${mood['emoji']} ${mood['label']}: ${spot.y.toStringAsFixed(1)}\n", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), if (entry.note != null && entry.note!.isNotEmpty) TextSpan(text: "\"${entry.note!.length > 20 ? '${entry.note!.substring(0, 20)}...' : entry.note}\"", style: const TextStyle(color: Colors.white70, fontSize: 10, fontStyle: FontStyle.italic))]);
-                } else {
-                  return LineTooltipItem("${l10n.statsSleep}: ${spot.y.toStringAsFixed(1)} h", const TextStyle(color: Colors.indigoAccent, fontSize: 12, fontWeight: FontWeight.bold));
-                }
-              }).toList();
-            },
+    // 3. Dynamische Breite berechnen
+    // Wir gönnen jedem Datenpunkt ca. 40 Pixel Platz.
+    // Falls das weniger ist als der Bildschirm, nehmen wir die Bildschirmbreite.
+    double widthPerEntry = 40.0;
+    double screenWidth = MediaQuery.of(context).size.width - 64; // Abzug für Padding
+    double calculatedWidth = sorted.length * widthPerEntry;
+    double finalWidth = calculatedWidth < screenWidth ? screenWidth : calculatedWidth;
+
+    // 4. Scroll-Wrapper (Startet rechts bei den neuesten Daten)
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: true, // <--- WICHTIG: Startet am "Ende" (Rechts / Neueste Daten)
+      child: Container(
+        width: finalWidth,
+        height: 250,
+        padding: const EdgeInsets.only(right: 20, top: 10, left: 10),
+        child: LineChart(
+          LineChartData(
+            minY: 0, 
+            maxY: 10,
+            gridData: FlGridData(
+              show: true, 
+              drawVerticalLine: true,
+              horizontalInterval: 2, 
+              // Vertikale Linien für jeden Datenpunkt, damit man Tage gut trennen kann
+              getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+              getDrawingVerticalLine: (value) => FlLine(color: Colors.grey.shade50, strokeWidth: 1),
+            ),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
+              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true, 
+                  interval: 1, // Jeden Index beschriften
+                  getTitlesWidget: (value, meta) { 
+                    final index = value.toInt(); 
+                    if (index >= 0 && index < sorted.length) { 
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0), 
+                        child: Text(
+                          DateFormat('dd.MM.').format(sorted[index].timestamp), 
+                          style: TextStyle(fontSize: 10, color: Colors.grey.shade500)
+                        )
+                      ); 
+                    } 
+                    return const SizedBox.shrink(); 
+                  }
+                )
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            // Tooltip Logik muss auf 'sorted' zugreifen (nicht mehr 'chartData')
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (spot) => Colors.black87,
+                tooltipRoundedRadius: 12, 
+                tooltipPadding: const EdgeInsets.all(12), 
+                fitInsideHorizontally: true, 
+                fitInsideVertically: true,
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((spot) {
+                    final isMood = spot.barIndex == 1; 
+                    final entry = sorted[spot.x.toInt()]; // Hier 'sorted' nutzen
+                    if (isMood) {
+                      final mood = MoodUtils.getMoodData(spot.y, l10n); 
+                      return LineTooltipItem(
+                        "${DateFormat('dd.MM').format(entry.timestamp)}\n", 
+                        const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold), 
+                        children: [
+                          TextSpan(
+                            text: "${mood['emoji']} ${mood['label']}: ${spot.y.toStringAsFixed(1)}\n", 
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)
+                          ), 
+                          if (entry.note != null && entry.note!.isNotEmpty) 
+                            TextSpan(
+                              text: "\"${entry.note!.length > 20 ? '${entry.note!.substring(0, 20)}...' : entry.note}\"", 
+                              style: const TextStyle(color: Colors.white70, fontSize: 10, fontStyle: FontStyle.italic)
+                            )
+                        ]
+                      );
+                    } else {
+                      return LineTooltipItem(
+                        "${l10n.statsSleep}: ${spot.y.toStringAsFixed(1)} h", 
+                        const TextStyle(color: Colors.indigoAccent, fontSize: 12, fontWeight: FontWeight.bold)
+                      );
+                    }
+                  }).toList();
+                },
+              ),
+              handleBuiltInTouches: true,
+            ),
+            lineBarsData: [
+              // Schlaf Linie
+              LineChartBarData(
+                spots: sleepSpots, 
+                isCurved: true, 
+                color: Colors.indigoAccent.withValues(alpha: 0.3), 
+                barWidth: 3, 
+                isStrokeCapRound: true, 
+                dotData: const FlDotData(show: false)
+              ),
+              // Stimmungs Linie
+              LineChartBarData(
+                spots: moodSpots, 
+                isCurved: true, 
+                color: Colors.black87, 
+                barWidth: 3, 
+                isStrokeCapRound: true, 
+                dotData: const FlDotData(show: true), 
+                belowBarData: BarAreaData(
+                  show: true, 
+                  gradient: LinearGradient(
+                    colors: [
+                      MoodUtils.getBackgroundColor(8.0).withValues(alpha: 0.3), 
+                      MoodUtils.getBackgroundColor(2.0).withValues(alpha: 0.1)
+                    ], 
+                    begin: Alignment.topCenter, 
+                    end: Alignment.bottomCenter
+                  )
+                )
+              ),
+            ],
           ),
-          handleBuiltInTouches: true,
         ),
-        lineBarsData: [
-          LineChartBarData(spots: sleepSpots, isCurved: true, color: Colors.indigoAccent.withValues(alpha: 0.3), barWidth: 3, isStrokeCapRound: true, dotData: const FlDotData(show: false)),
-          LineChartBarData(spots: moodSpots, isCurved: true, color: Colors.black87, barWidth: 3, isStrokeCapRound: true, dotData: const FlDotData(show: true), belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [MoodUtils.getBackgroundColor(8.0).withValues(alpha: 0.3), MoodUtils.getBackgroundColor(2.0).withValues(alpha: 0.1)], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
-        ],
       ),
     );
   }
 
   Widget _buildBarChart(AppLocalizations l10n) {
     final Map<int, List<double>> dayScores = {};
+    // Initialisieren für Montag (1) bis Sonntag (7)
     for (var i = 1; i <= 7; i++) { dayScores[i] = []; }
+    
+    // Daten einsortieren
     for (var e in widget.entries) { dayScores[e.timestamp.weekday]!.add(e.score); }
 
     List<BarChartGroupData> barGroups = [];
     for (var i = 1; i <= 7; i++) {
       final scores = dayScores[i]!;
       final avg = scores.isNotEmpty ? scores.reduce((a, b) => a + b) / scores.length : 0.0;
-      barGroups.add(BarChartGroupData(x: i, barRods: [BarChartRodData(toY: avg, color: MoodUtils.getBackgroundColor(avg), width: 12, borderRadius: BorderRadius.circular(4), backDrawRodData: BackgroundBarChartRodData(show: true, toY: 10, color: Colors.grey.withValues(alpha: 0.05)))]));
+      
+      barGroups.add(BarChartGroupData(
+        x: i, 
+        barRods: [
+          BarChartRodData(
+            toY: avg, 
+            color: MoodUtils.getBackgroundColor(avg), 
+            width: 12, 
+            borderRadius: BorderRadius.circular(4), 
+            backDrawRodData: BackgroundBarChartRodData(show: true, toY: 10, color: Colors.grey.withValues(alpha: 0.05))
+          )
+        ]
+      ));
     }
 
-    return BarChart(BarChartData(maxY: 10, titlesData: FlTitlesData(topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) { final dayName = DateFormat('EEE', l10n.localeName).format(DateTime(2023, 10, 2 + value.toInt())); final index = value.toInt() - 1; if (index < 0 || index >= 7) return const SizedBox.shrink(); return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(dayName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600))); }))), gridData: const FlGridData(show: false), borderData: FlBorderData(show: false), barGroups: barGroups));
+    return BarChart(
+      BarChartData(
+        maxY: 10, 
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), 
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true, 
+              getTitlesWidget: (value, meta) { 
+                // --- HIER WAR DER FEHLER ---
+                // value ist 1 (Mo) bis 7 (So).
+                // Wir nutzen einen Referenz-Montag (02.10.2023).
+                // Rechenweg: Referenz + (Wochentag - 1)
+                
+                final index = value.toInt(); 
+                if (index < 1 || index > 7) return const SizedBox.shrink(); 
+                
+                final dayDate = DateTime(2023, 10, 2 + (index - 1)); // <--- FIX: (index - 1)
+                final dayName = DateFormat('EEE', l10n.localeName).format(dayDate); 
+                
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0), 
+                  child: Text(dayName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600))
+                ); 
+              }
+            )
+          )
+        ), 
+        gridData: const FlGridData(show: false), 
+        borderData: FlBorderData(show: false), 
+        barGroups: barGroups
+      )
+    );
   }
 
   Widget _buildInsightsCard(AppLocalizations l10n) {
