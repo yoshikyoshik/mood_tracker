@@ -306,5 +306,13 @@
   "btnUnlock": "Jetzt Pro werden",
   
   "insightTrackMore": "Tracke mehr Tags, um Muster zu erkennen.",
-  "insightBasdOnPattern": "Basierend auf deinen Mustern."
+  "insightBasdOnPattern": "Basierend auf deinen Mustern.",
+
+  "patternTitle": "Muster erkannt 💡",
+  "patternDrop": "Immer wenn du '{tag}' trackst, sinkt deine Stimmung am nächsten Tag um durchschnittlich {delta} Punkte.",
+  "@patternDrop": { "placeholders": { "tag": { "type": "String" }, "delta": { "type": "String" } } },
+  "patternCycle": "Oft folgt auf '{tag1}' am nächsten Tag '{tag2}'.",
+  "@patternCycle": { "placeholders": { "tag1": { "type": "String" }, "tag2": { "type": "String" } } },
+  "patternCount": "(Basiert auf {count} Ereignissen)",
+  "@patternCount": { "placeholders": { "count": { "type": "int" } } }
 }

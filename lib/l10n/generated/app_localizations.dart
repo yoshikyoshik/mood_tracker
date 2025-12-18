@@ -1567,6 +1567,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Basierend auf deinen Mustern.'**
   String get insightBasdOnPattern;
+
+  /// No description provided for @patternTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Muster erkannt 💡'**
+  String get patternTitle;
+
+  /// No description provided for @patternDrop.
+  ///
+  /// In de, this message translates to:
+  /// **'Immer wenn du \'{tag}\' trackst, sinkt deine Stimmung am nächsten Tag um durchschnittlich {delta} Punkte.'**
+  String patternDrop(String tag, String delta);
+
+  /// No description provided for @patternCycle.
+  ///
+  /// In de, this message translates to:
+  /// **'Oft folgt auf \'{tag1}\' am nächsten Tag \'{tag2}\'.'**
+  String patternCycle(String tag1, String tag2);
+
+  /// No description provided for @patternCount.
+  ///
+  /// In de, this message translates to:
+  /// **'(Basiert auf {count} Ereignissen)'**
+  String patternCount(int count);
 }
 
 class _AppLocalizationsDelegate

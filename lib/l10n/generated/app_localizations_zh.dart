@@ -776,4 +776,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get insightBasdOnPattern => '基于你的模式。';
+
+  @override
+  String get patternTitle => '发现的模式 💡';
+
+  @override
+  String patternDrop(String tag, String delta) {
+    return '每当你记录 “$tag”，第二天的心情平均下降 $delta 点。';
+  }
+
+  @override
+  String patternCycle(String tag1, String tag2) {
+    return '通常，“$tag1” 之后的第二天会出现 “$tag2”。';
+  }
+
+  @override
+  String patternCount(int count) {
+    return '(基于 $count 次事件)';
+  }
 }

@@ -794,4 +794,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get insightBasdOnPattern => 'Основано на твоих паттернах.';
+
+  @override
+  String get patternTitle => 'Найденные закономерности 💡';
+
+  @override
+  String patternDrop(String tag, String delta) {
+    return 'Когда ты отмечаешь \'$tag\', на следующий день твое настроение падает в среднем на $delta п.';
+  }
+
+  @override
+  String patternCycle(String tag1, String tag2) {
+    return 'Часто после \'$tag1\' на следующий день идет \'$tag2\'.';
+  }
+
+  @override
+  String patternCount(int count) {
+    return '(На основе $count событий)';
+  }
 }

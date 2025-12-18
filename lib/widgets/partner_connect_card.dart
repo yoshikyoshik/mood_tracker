@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import '../services/partner_service.dart';
 import '../models/profile.dart';
@@ -29,7 +30,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
 
   bool _isLoading = false;
   Map<String, dynamic>? _partnerStatus;
-  Timer? _refreshTimer;
+  RealtimeChannel? _partnerSubscription;
 
   @override
   void initState() {
@@ -41,7 +42,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   void dispose() {
     _myEmailCtrl.dispose();
     _partnerEmailCtrl.dispose();
-    _refreshTimer?.cancel();
+    _partnerSubscription?.unsubscribe();
     super.dispose();
   }
 
@@ -55,8 +56,34 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     
     if (_partnerEmailCtrl.text.isNotEmpty) {
       _loadPartnerStatus();
-      _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadPartnerStatus());
     }
+  }
+
+  // Realtime Subscription starten
+  void _subscribeToPartner(String partnerProfileId) {
+    // Falls wir schon lauschen, abbrechen (Sicherheit)
+    if (_partnerSubscription != null) return;
+
+    debugPrint("Starte Realtime für Partner: $partnerProfileId");
+
+    _partnerSubscription = Supabase.instance.client
+        .channel('partner_mood_$partnerProfileId') // Einzigartiger Kanalname
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all, // Bei INSERT, UPDATE oder DELETE
+          schema: 'public',
+          table: 'mood_entries',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq, 
+            column: 'profile_id', 
+            value: partnerProfileId
+          ),
+          callback: (payload) {
+            debugPrint("Realtime Event empfangen! Lade neu...");
+            // Wenn was passiert, laden wir die Ansicht neu
+            _loadPartnerStatus();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _saveSettings() async {
@@ -81,14 +108,29 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   }
 
   Future<void> _loadPartnerStatus() async {
-    if (_myEmailCtrl.text.isEmpty || _partnerEmailCtrl.text.isEmpty) return;
+    if (!widget.isPro) return; // Free User brauchen keinen Sync
 
-    final status = await _partnerService.getPartnerStatus(
-      _myEmailCtrl.text.trim(), 
-      _partnerEmailCtrl.text.trim()
+    // Nur Ladeanzeige zeigen, wenn wir noch GAR KEINE Daten haben (sonst flackert es bei Realtime)
+    if (_partnerStatus == null) {
+      setState(() => _isLoading = true);
+    }
+
+    final data = await _partnerService.getPartnerStatus(
+      widget.authEmail, 
+      widget.currentProfile.partnerEmail ?? ''
     );
-    
-    if (mounted) setState(() => _partnerStatus = status);
+
+    if (mounted) {
+      setState(() {
+        _partnerStatus = data;
+        _isLoading = false;
+      });
+
+      // NEU: Wenn wir erfolgreich Daten haben, starten wir die Subscription
+      if (data != null && data['partner_profile_id'] != null) {
+        _subscribeToPartner(data['partner_profile_id'].toString());
+      }
+    }
   }
 
   // --- FÜGE DIESE FUNKTION HINZU (OPTIONAL), UM SICH ZU TRENNEN ---

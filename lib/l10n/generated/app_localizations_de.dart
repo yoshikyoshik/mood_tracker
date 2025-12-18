@@ -797,4 +797,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get insightBasdOnPattern => 'Basierend auf deinen Mustern.';
+
+  @override
+  String get patternTitle => 'Muster erkannt 💡';
+
+  @override
+  String patternDrop(String tag, String delta) {
+    return 'Immer wenn du \'$tag\' trackst, sinkt deine Stimmung am nächsten Tag um durchschnittlich $delta Punkte.';
+  }
+
+  @override
+  String patternCycle(String tag1, String tag2) {
+    return 'Oft folgt auf \'$tag1\' am nächsten Tag \'$tag2\'.';
+  }
+
+  @override
+  String patternCount(int count) {
+    return '(Basiert auf $count Ereignissen)';
+  }
 }

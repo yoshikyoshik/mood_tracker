@@ -51,6 +51,7 @@ class PartnerService {
 
       if (entryRes == null) {
         return {
+          'partner_profile_id': response['id'],
           'name': response['name'],
           'score': null, 
         };

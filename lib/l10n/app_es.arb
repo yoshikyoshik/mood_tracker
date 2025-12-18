@@ -280,5 +280,10 @@
   "btnUnlock": "Hazte Pro ahora",
   
   "insightTrackMore": "Registra más etiquetas para detectar patrones.",
-  "insightBasdOnPattern": "Basado en tus patrones."
+  "insightBasdOnPattern": "Basado en tus patrones.",
+
+  "patternTitle": "Patrones detectados 💡",
+  "patternDrop": "Siempre que registras '{tag}', tu ánimo baja una media de {delta} puntos al día siguiente.",
+  "patternCycle": "A menudo, a '{tag1}' le sigue '{tag2}' al día siguiente.",
+  "patternCount": "(Basado en {count} eventos)"
 }

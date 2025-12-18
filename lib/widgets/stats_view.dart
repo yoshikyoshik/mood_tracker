@@ -211,6 +211,12 @@ class _StatsViewState extends State<StatsView> {
 
           const SizedBox(height: 16),
 
+          // INTELLIGENTE KORRELATIONEN
+          // (Zeigt sich nur, wenn Muster gefunden wurden)
+          _buildCorrelationsCard(l10n),
+
+          const SizedBox(height: 16),
+
           // HEATMAP
           _buildCard(
             title: l10n.statsYearly,
@@ -970,4 +976,277 @@ class _StatsViewState extends State<StatsView> {
           ),
     );
   }
+
+  // --- INTELLIGENTE KORRELATIONEN (V4: Rebound-Fix) ---
+  Widget _buildCorrelationsCard(AppLocalizations l10n) {
+    // Nur Daten des AKTUELLEN Profils nutzen (wie besprochen)
+    if (widget.entries.length < 10) return const SizedBox.shrink();
+
+    // 1. Daten vorbereiten
+    final Map<String, List<MoodEntry>> byDay = {};
+    for (var e in widget.entries) {
+      final key = DateFormat('yyyy-MM-dd').format(e.timestamp);
+      byDay.putIfAbsent(key, () => []).add(e);
+    }
+
+    final sortedDates = byDay.keys.toList()..sort();
+    
+    // Globale Häufigkeiten zählen
+    final Map<String, int> globalTagCount = {};
+    int totalDays = sortedDates.length;
+
+    for (var entries in byDay.values) {
+      final tagsOnDay = entries.expand((e) => e.tags).toSet();
+      for (var t in tagsOnDay) {
+        globalTagCount[t] = (globalTagCount[t] ?? 0) + 1;
+      }
+    }
+
+    // Temp-Speicher
+    final Map<String, List<double>> tagToNextDayDelta = {};
+    // NEU: Wir speichern auch den absoluten Score des Folgetages
+    final Map<String, List<double>> tagToNextDayScore = {}; 
+    
+    final Map<String, Map<String, int>> tagToNextTagCount = {};
+
+    // 2. Analyse
+    for (int i = 0; i < sortedDates.length - 1; i++) {
+      final todayKey = sortedDates[i];
+      final tomorrowKey = sortedDates[i+1];
+      
+      if (DateTime.parse(tomorrowKey).difference(DateTime.parse(todayKey)).inDays != 1) continue;
+
+      final todayEntries = byDay[todayKey]!;
+      final tomorrowEntries = byDay[tomorrowKey]!;
+
+      final todayScore = todayEntries.fold(0.0, (s, e) => s + e.score) / todayEntries.length;
+      final tomorrowScore = tomorrowEntries.fold(0.0, (s, e) => s + e.score) / tomorrowEntries.length;
+      final delta = tomorrowScore - todayScore;
+
+      final todayTags = todayEntries.expand((e) => e.tags).toSet();
+      final tomorrowTags = tomorrowEntries.expand((e) => e.tags).toSet();
+
+      for (var tag in todayTags) {
+        if ((globalTagCount[tag] ?? 0) > (totalDays * 0.6)) continue;
+
+        // A) Score Analyse
+        tagToNextDayDelta.putIfAbsent(tag, () => []).add(delta);
+        tagToNextDayScore.putIfAbsent(tag, () => []).add(tomorrowScore); // NEU
+
+        // B) Ketten Analyse
+        for (var nextTag in tomorrowTags) {
+           if (tag == nextTag) continue; 
+           
+           // ALT:
+           // if ((globalTagCount[nextTag] ?? 0) > (totalDays * 0.5)) continue;
+
+           // NEU: Erweiterter Filter!
+           // 1. Rausch-Filter (zu häufig)
+           if ((globalTagCount[nextTag] ?? 0) > (totalDays * 0.5)) continue;
+           
+           // 2. Logik-Filter (Wetter/PMS kann kein Ergebnis sein)
+           if (!_isValidTarget(nextTag, l10n)) continue; // <--- DAS IST NEU
+
+           tagToNextTagCount.putIfAbsent(tag, () => {});
+           tagToNextTagCount[tag]![nextTag] = (tagToNextTagCount[tag]![nextTag] ?? 0) + 1;
+        }
+      }
+    }
+
+    // 3. Widgets bauen
+    final List<Widget> insightCards = [];
+
+    // FIX: Dynamische Schwelle.
+    // Wenn wir wenig Daten haben (< 30 Einträge), reicht 1 Treffer für ein "Muster".
+    // Sobald wir viele Daten haben, verlangen wir mindestens 3 Treffer, um Zufälle auszuschließen.
+    final int minOccurrences = widget.entries.length < 30 ? 2 : 3;
+
+    // A) Stimmungskiller & Booster
+    tagToNextDayDelta.forEach((tag, deltas) {
+      // HIER NUTZEN WIR JETZT DIE VARIABLE 'minOccurrences' STATT 3
+      if (deltas.length >= minOccurrences) { 
+        
+        final avgDelta = deltas.reduce((a, b) => a + b) / deltas.length;
+        final tagName = MoodUtils.getLocalizedTagLabel(tag, l10n);
+        
+        final nextDayScores = tagToNextDayScore[tag]!;
+        final avgNextDayScore = nextDayScores.reduce((a, b) => a + b) / nextDayScores.length;
+
+        // Stimmungskiller (Rote Karte)
+        if (avgDelta <= -1.2) { 
+          insightCards.add(_buildInsightCardTile(
+            icon: Icons.battery_alert,
+            color: Colors.redAccent,
+            title: "Energieräuber: $tagName",
+            desc: "Nach '$tagName' fühlst du dich am nächsten Tag oft schlechter (${avgDelta.toStringAsFixed(1)}).",
+            count: deltas.length,
+            l10n: l10n,
+          ));
+        } 
+        // Kraftquelle (Gelbe Karte) - MIT NEUER LOGIK
+        // Bedingung: Es muss bergauf gehen (+1.2) UND der Zielzustand muss "Gut" sein (> 6.0).
+        // Das verhindert, dass "PMS" (von 2 auf 4) als Kraftquelle gilt.
+        else if (avgDelta >= 1.2 && avgNextDayScore > 6.0) {
+          insightCards.add(_buildInsightCardTile(
+            icon: Icons.bolt,
+            color: Colors.amber.shade700,
+            title: "Kraftquelle: $tagName",
+            desc: "'$tagName' tut gut! Deine Stimmung steigt danach oft spürbar an (+${avgDelta.toStringAsFixed(1)}).",
+            count: deltas.length,
+            l10n: l10n,
+          ));
+        }
+      }
+    });
+
+    // B) Kettenreaktionen
+    tagToNextTagCount.forEach((startTag, nextTags) {
+      nextTags.forEach((followTag, count) {
+        // AUCH HIER: VARIABLE NUTZEN
+        if (count >= minOccurrences) {
+          double globalProb = (globalTagCount[followTag] ?? 0) / totalDays;
+          double occurrencesOfStart = (globalTagCount[startTag] ?? 1).toDouble();
+          double conditionalProb = count / occurrencesOfStart;
+
+          if (conditionalProb > 0.3 && (conditionalProb > globalProb * 1.5)) {
+            final t1 = MoodUtils.getLocalizedTagLabel(startTag, l10n);
+            final t2 = MoodUtils.getLocalizedTagLabel(followTag, l10n);
+            
+            insightCards.add(_buildInsightCardTile(
+              icon: Icons.schema,
+              color: Colors.indigoAccent,
+              title: "$t1 ➔ $t2",
+              desc: "Auffällig: Auf '$t1' folgt überdurchschnittlich oft '$t2'.",
+              count: count,
+              l10n: l10n,
+            ));
+          }
+        }
+      });
+    });
+
+    if (insightCards.isEmpty) return const SizedBox.shrink();
+
+    insightCards.sort((a, b) => 0); 
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome, size: 18, color: Colors.indigo),
+              const SizedBox(width: 8),
+              Text(l10n.patternTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 160,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: insightCards,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Kleines Karten-Design für das Karussell (Optimiertes Layout)
+  Widget _buildInsightCardTile({
+    required IconData icon, 
+    required Color color, 
+    required String title, 
+    required String desc, 
+    required int count,
+    required AppLocalizations l10n
+  }) {
+    return Container(
+      width: 260, // BREITER (war 220), damit Text passt
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 4))],
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Wichtig für Layout
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+                child: Text("$count x", style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Titel darf jetzt 2 Zeilen haben
+          SizedBox(
+            height: 40, // Feste Höhe für Titel-Bereich, damit Cards gleich hoch bleiben
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title, 
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.2), // Schrift etwas kleiner (13)
+                maxLines: 2, 
+                overflow: TextOverflow.ellipsis
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Beschreibung
+          Expanded(
+            child: Text(
+              desc, 
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600, height: 1.3), 
+              maxLines: 3, 
+              overflow: TextOverflow.ellipsis
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- NEUE HILFSFUNKTION: Logik-Filter ---
+  // Bestimmt, ob ein Tag ein sinnvolles "Ergebnis" sein kann.
+  // Dinge, die passieren (Wetter, Zyklus), können keine Folge von Handlungen sein.
+  bool _isValidTarget(String tag, AppLocalizations l10n) {
+    // 1. Wetter ist Zufall
+    if ([l10n.tagWeather, 'Wetter', 'Rain', 'Regen', 'Sun', 'Sonne', 'Schnee'].contains(tag)) {
+      return false;
+    }
+    
+    // 2. Zyklus ist biologisch festgelegt
+    if ([
+      l10n.tagPMS, 
+      l10n.tagPeriodLight, l10n.tagPeriodMedium, l10n.tagPeriodHeavy, 
+      l10n.tagOvulation, l10n.tagSpotting,
+      'PMS', 'Periode', 'Menstruation'
+    ].contains(tag)) {
+      return false;
+    }
+
+    // 3. Triviale Routinen
+    if ([l10n.tagSleep, 'Schlaf', 'Sleep'].contains(tag)) {
+      return false;
+    }
+
+    return true;
+  }
+
 }

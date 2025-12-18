@@ -280,5 +280,10 @@
   "btnUnlock": "Go Pro Now",
   
   "insightTrackMore": "Track more tags to detect patterns.",
-  "insightBasdOnPattern": "Based on your patterns."
+  "insightBasdOnPattern": "Based on your patterns.",
+
+  "patternTitle": "Patterns Detected 💡",
+  "patternDrop": "Whenever you track '{tag}', your mood drops by an average of {delta} points the next day.",
+  "patternCycle": "Often, '{tag1}' is followed by '{tag2}' the next day.",
+  "patternCount": "(Based on {count} events)"
 }
