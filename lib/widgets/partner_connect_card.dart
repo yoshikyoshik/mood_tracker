@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:supabase_flutter/supabase_flutter.dart'; // <--- DIESE ZEILE HAT GEFEHLT!
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/partner_service.dart';
 import '../models/profile.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -38,25 +38,23 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     _initData();
   }
 
+  // WICHTIG: Reagiert auf Profil-Wechsel (z.B. von Rico -> Kind 1)
   @override
   void didUpdateWidget(PartnerConnectCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Check: Hat sich das Profil geändert?
     if (oldWidget.currentProfile.id != widget.currentProfile.id) {
-      debugPrint("Profil-Wechsel erkannt! Lade Partner neu...");
-      
-      // 1. Alte Subscription sofort beenden
+      // Alte Verbindung kappen
       _partnerSubscription?.unsubscribe();
       _partnerSubscription = null;
       
-      // 2. Status zurücksetzen (damit UI kurz lädt)
+      // UI Reset
       setState(() {
         _partnerStatus = null;
         _isLoading = false;
       });
 
-      // 3. Neu initialisieren (lädt neue Email & Status)
+      // Neu laden
       _initData();
     }
   }
@@ -70,10 +68,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   }
 
   void _initData() {
-    // FIX: Wir nehmen IMMER die echte Auth-Email aus dem Login.
+    // Wir nehmen IMMER die echte Auth-Email aus dem Login
     _myEmailCtrl.text = widget.authEmail; 
     
-    // Partner Email laden wir aus der DB
+    // Partner Email laden wir aus der DB (Profiles Tabelle)
     _partnerEmailCtrl.text = widget.currentProfile.partnerEmail ?? '';
     
     if (_partnerEmailCtrl.text.isNotEmpty) {
@@ -85,12 +83,9 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   void _subscribeToPartner(String partnerProfileId) {
     // Falls noch eine alte Verbindung besteht: Weg damit!
     if (_partnerSubscription != null) {
-      debugPrint("Beende alte Subscription...");
       _partnerSubscription!.unsubscribe();
       _partnerSubscription = null;
     }
-
-    debugPrint("Starte Realtime für Partner: $partnerProfileId"); // Jetzt muss diese Meldung kommen!
 
     _partnerSubscription = Supabase.instance.client
         .channel('partner_mood_$partnerProfileId')
@@ -104,7 +99,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
             value: partnerProfileId
           ),
           callback: (payload) {
-            debugPrint("Realtime Event empfangen! Lade neu...");
+            // Live-Update empfangen -> Neu laden
             _loadPartnerStatus();
           },
         )
@@ -133,10 +128,9 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   }
 
   Future<void> _loadPartnerStatus() async {
-    // CHECK 1: Sind wir Pro?
-    debugPrint("DEBUG: Starte _loadPartnerStatus. Pro? ${widget.isPro}");
     if (!widget.isPro) return; 
 
+    // Ladeanzeige nur beim allerersten Mal
     if (_partnerStatus == null) {
       setState(() => _isLoading = true);
     }
@@ -146,26 +140,19 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       widget.currentProfile.partnerEmail ?? ''
     );
 
-    // CHECK 2: Was kam zurück?
-    debugPrint("DEBUG: Daten vom Service erhalten: $data");
-
     if (mounted) {
       setState(() {
         _partnerStatus = data;
         _isLoading = false;
       });
 
-      // CHECK 3: Klappt die Bedingung?
+      // Abo starten, wenn Partner-ID vorhanden
       if (data != null && data['partner_profile_id'] != null) {
-        debugPrint("DEBUG: Bedingung erfüllt! Rufe _subscribeToPartner auf...");
         _subscribeToPartner(data['partner_profile_id'].toString());
-      } else {
-        debugPrint("DEBUG: Bedingung NICHT erfüllt. Data null? ${data == null}. ID da? ${data?['partner_profile_id']}");
       }
     }
   }
 
-  // --- TRENNEN ---
   Future<void> _disconnect() async {
     final l10n = AppLocalizations.of(context)!;
 
@@ -233,16 +220,15 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
 
     setState(() => _isLoading = true);
     try {
-      // 1. In der DB löschen
       await _partnerService.updatePartnerSettings(
         widget.currentProfile.id,
         _myEmailCtrl.text,
         "", 
       );
       
-      // 2. WICHTIG: Realtime Abo beenden & Variable leeren!
-      _partnerSubscription?.unsubscribe();  // <--- NEU
-      _partnerSubscription = null;          // <--- NEU
+      // Abo beenden
+      _partnerSubscription?.unsubscribe();
+      _partnerSubscription = null;
 
       if (mounted) {
          setState(() {
