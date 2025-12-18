@@ -239,14 +239,18 @@ class _ProfileViewState extends State<ProfileView> {
           ),
           const SizedBox(height: 30),
 
-          // PARTNER CONNECT
-          PartnerConnectCard(
-            currentProfile: widget.currentProfile,
-            authEmail: widget.email,
-            isPro: widget.isPro,
-            onUnlockPressed: widget.onManageSubscription,
-          ),
-          const SizedBox(height: 30),
+          // PARTNER CONNECT (NUR WENN HAUPTPROFIL)
+          // --- HIER IST DER FIX ---
+          if (widget.currentProfile.isMain) ...[
+            PartnerConnectCard(
+              currentProfile: widget.currentProfile,
+              authEmail: widget.email,
+              isPro: widget.isPro,
+              onUnlockPressed: widget.onManageSubscription,
+            ),
+            const SizedBox(height: 30),
+          ],
+          // ------------------------
 
           // ERFOLGE
           Text(l10n.achievements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
