@@ -39,6 +39,29 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   }
 
   @override
+  void didUpdateWidget(PartnerConnectCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check: Hat sich das Profil geändert?
+    if (oldWidget.currentProfile.id != widget.currentProfile.id) {
+      debugPrint("Profil-Wechsel erkannt! Lade Partner neu...");
+      
+      // 1. Alte Subscription sofort beenden
+      _partnerSubscription?.unsubscribe();
+      _partnerSubscription = null;
+      
+      // 2. Status zurücksetzen (damit UI kurz lädt)
+      setState(() {
+        _partnerStatus = null;
+        _isLoading = false;
+      });
+
+      // 3. Neu initialisieren (lädt neue Email & Status)
+      _initData();
+    }
+  }
+
+  @override
   void dispose() {
     _myEmailCtrl.dispose();
     _partnerEmailCtrl.dispose();
