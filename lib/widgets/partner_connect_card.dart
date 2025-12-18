@@ -233,7 +233,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Verbunden mit:", style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          Text(l10n.partnerLabelConnected, style: TextStyle(fontSize: 12, color: Colors.black54)),
                           Text(_partnerEmailCtrl.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                         ],
                       ),
@@ -253,13 +253,13 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
               TextField(
                 controller: _myEmailCtrl,
                 readOnly: true, 
-                decoration: const InputDecoration(labelText: "Deine E-Mail (Automatisch)", prefixIcon: Icon(Icons.person, color: Colors.grey), filled: true, fillColor: Color(0xFFF5F7FA), border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
+                decoration: InputDecoration(labelText: l10n.partnerLabelMyEmail, prefixIcon: Icon(Icons.person, color: Colors.grey), filled: true, fillColor: Color(0xFFF5F7FA), border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _partnerEmailCtrl,
-                decoration: InputDecoration(labelText: l10n.partnerEmailLabel, hintText: "z.B. partner@example.com", prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
+                decoration: InputDecoration(labelText: l10n.partnerEmailLabel, hintText: l10n.partnerHintEmail, prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 15),
@@ -317,15 +317,15 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                       child: const Icon(Icons.lock_person, size: 40, color: Colors.pinkAccent),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      "Partner Connect", // Oder l10n.partnerTitle
+                    Text(
+                      l10n.partnerTitleLocked, // Oder l10n.partnerTitle
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 30),
                       child: Text(
-                        "Verbinde dich für mehr Verständnis & Harmonie.", // Könnte auch ins l10n
+                        l10n.partnerDescLocked, // Könnte auch ins l10n
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                       ),
@@ -354,34 +354,34 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   String? _getPartnerAdvice(double score, List<dynamic>? tagsRaw, double? sleep, AppLocalizations l10n) {
     final List<String> tags = tagsRaw?.map((e) => e.toString()).toList() ?? [];
     
-    // 1. Spezifische Tags (Höchste Priorität)
+    // 1. Spezifische Tags (Vergleich sprachunabhängig oder auf bekannte Keys)
+    // Wir prüfen auf deutsche UND englische Keywords, falls die DB gemischte Daten hat
     if (tags.any((t) => ['Krank', 'Sick', 'Kopfschmerzen', 'Migräne'].contains(t))) {
-      return "Partner ist krank. Tee, Suppe oder Medikamente wären lieb!";
+      return l10n.adviceSick;
     }
     
-    // Zyklus-Check (PMS/Periode/Cramps)
     if (tags.any((t) => [l10n.tagPMS, l10n.tagPeriodHeavy, l10n.tagCramps, 'Regelschmerzen'].contains(t))) {
-      return "Vorsicht: Zyklus-Beschwerden. Wärmflasche & Schokolade bereitstellen!";
+      return l10n.adviceCycle;
     }
 
     if (tags.contains(l10n.tagStress) || tags.contains('Stress')) {
-      return "Hohes Stresslevel. Nimm dem Partner heute vielleicht eine Pflicht ab.";
+      return l10n.adviceStress;
     }
 
     // 2. Schlaf-Check
     if (sleep != null && sleep < 5.0) {
-      return "Massiver Schlafmangel. Sorge für einen ruhigen Abend.";
+      return l10n.adviceSleep;
     }
 
     // 3. Score-Basierte Tipps
     if (score < 4.0) {
-      return "Stimmung ist im Keller. Eine Umarmung oder Zuhören hilft oft mehr als Lösungen.";
+      return l10n.adviceSad;
     }
     if (score > 8.5) {
-      return "Super Stimmung! Perfekter Zeitpunkt für gemeinsame Unternehmungen.";
+      return l10n.adviceHappy;
     }
 
-    return null; // Kein spezieller Tipp nötig
+    return null;
   }
 
   Widget _buildPartnerStatus(AppLocalizations l10n) {

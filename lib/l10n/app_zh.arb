@@ -252,5 +252,33 @@
 
   "authForgotPassword": "Forgot password?",
   "authResetSuccess": "Link sent! Check your emails.",
-  "authEnterEmail": "Please enter your email address."
+  "authEnterEmail": "Please enter your email address.",
+
+  "inputDateLabel": "日期",
+  "inputCycleDay": "第 {day} 天",
+  "btnAddEntry": "添加记录 (+)",
+  
+  "proDialogTitle": "Pro 功能",
+  "proDialogDesc": "此功能仅限 Pro 会员。想要升级吗？",
+  "btnShop": "去商店",
+  
+  "partnerLabelConnected": "已连接：",
+  "partnerLabelMyEmail": "你的邮箱 (自动)",
+  "partnerHintEmail": "例如: partner@example.com",
+  "partnerTitleLocked": "伴侣连接",
+  "partnerDescLocked": "建立连接，增进理解与和谐。",
+  
+  "adviceSick": "伴侣生病了。送上茶、汤或药会很贴心！",
+  "adviceCycle": "注意：生理期不适。准备好热水袋和巧克力！",
+  "adviceStress": "压力很大。今天也许可以帮忙分担家务。",
+  "adviceSleep": "严重睡眠不足。确保今晚环境安静。",
+  "adviceSad": "心情低落。拥抱和倾听通常比给建议更有用。",
+  "adviceHappy": "心情超好！一起做点什么的好时机。",
+  
+  "lockedInsightsTitle": "解锁高级洞察",
+  "lockedInsightsDesc": "找出影响心情的确切因素。我们的 AI 会分析你的模式。",
+  "btnUnlock": "立即升级 Pro",
+  
+  "insightTrackMore": "记录更多标签以发现模式。",
+  "insightBasdOnPattern": "基于你的模式。"
 }

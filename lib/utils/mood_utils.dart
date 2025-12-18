@@ -75,43 +75,28 @@ class MoodUtils {
     }
   }
 
-  // 4. PREDICTION LOGIK (Jetzt robuster & mehrsprachig)
+  // 4. PREDICTION LOGIK (Sprachunabhängig)
   static double getTagImpact(String tag, AppLocalizations l10n) {
     
-    // --- NEGATIVE NACHWIRKUNGEN (Hangover) ---
+    // Wir normalisieren den Tag für den Vergleich (optional lowercase)
+    // und prüfen, ob er in einer unserer bekannten Listen vorkommt.
     
-    // 1. Check gegen offizielle Übersetzung (Priorität)
-    if (tag == l10n.tagParty) return -0.5;
-    if (tag == l10n.tagAlcohol) return -0.8;
-    if (tag == l10n.tagFastFood) return -0.3;
-    if (tag == l10n.tagScreenTime) return -0.4;
-    if (tag == l10n.tagWater) return -0.3;
-
-    // 2. Check gegen Synonyme / Alte Daten (Fallback)
-    // Falls User "Bier" nutzt oder Datenbank alte englische Strings hat
-    if (['Alkohol', 'Alcohol', 'Bier', 'Wein', 'Beer', 'Wine'].contains(tag)) return -0.8;
-    if (['Fast Food', 'Junk Food', 'Mcdonalds', 'Burger'].contains(tag)) return -0.3;
-    if (['Viel Handy', 'High Screen Time', 'Social Media', 'Doomscrolling'].contains(tag)) return -0.4;
-    if (['Wenig Wasser', 'Dehydrated', 'Durst'].contains(tag)) return -0.3;
-
-
-    // --- POSITIVE NACHWIRKUNGEN (Afterglow) ---
+    // --- NEGATIV ---
+    if (_matches(tag, [l10n.tagAlcohol, 'Alkohol', 'Alcohol', 'Bier', 'Beer', 'Wine'])) return -0.8;
+    if (_matches(tag, [l10n.tagFastFood, 'Fast Food', 'Junk Food', 'Burger'])) return -0.3;
+    if (_matches(tag, [l10n.tagScreenTime, 'Viel Handy', 'High Screen Time', 'Social Media'])) return -0.4;
     
-    // 1. Check gegen offizielle Übersetzung
-    if (tag == l10n.tagSport) return 0.6;
-    if (tag == l10n.tagMeditation) return 0.4;
-    if (tag == l10n.tagNature) return 0.4;
-    if (tag == l10n.tagSauna) return 0.3;
-    if (tag == l10n.tagHealthyFood) return 0.4;
-    if (tag == l10n.tagSex) return 0.5;
+    // --- POSITIV ---
+    if (_matches(tag, [l10n.tagSport, 'Sport', 'Workout', 'Gym', 'Joggen'])) return 0.6;
+    if (_matches(tag, [l10n.tagNature, 'Natur', 'Nature', 'Wald', 'Hiking'])) return 0.4;
+    if (_matches(tag, [l10n.tagSex, 'Sex', 'Intimität', 'Intimacy'])) return 0.5;
+    if (_matches(tag, [l10n.tagFamily, 'Familie', 'Family'])) return 0.2; // Familie ist meist gut, aber neutraler Startwert
 
-    // 2. Fallback
-    if (['Sport', 'Workout', 'Gym', 'Joggen', 'Running'].contains(tag)) return 0.6;
-    if (['Natur', 'Nature', 'Wald', 'Spazieren', 'Hiking'].contains(tag)) return 0.4;
-    if (['Sauna', 'Wellness', 'Massage', 'Spa'].contains(tag)) return 0.3;
-    if (['Gesund gegessen', 'Healthy Food', 'Salad', 'Gemüse'].contains(tag)) return 0.4;
-    if (['Sex', 'Intimacy', 'Intimität', 'Love'].contains(tag)) return 0.5;
+    return 0.0;
+  }
 
-    return 0.0; // Neutral
+  // Kleiner Helper, um Listen abzugleichen
+  static bool _matches(String tag, List<String> variants) {
+    return variants.contains(tag);
   }
 }

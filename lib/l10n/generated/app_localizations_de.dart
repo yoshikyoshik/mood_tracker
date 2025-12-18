@@ -720,4 +720,81 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authEnterEmail => 'Bitte gib deine E-Mail-Adresse ein.';
+
+  @override
+  String get inputDateLabel => 'Datum';
+
+  @override
+  String inputCycleDay(int day) {
+    return 'Tag $day';
+  }
+
+  @override
+  String get btnAddEntry => 'Weiteren Eintrag (+)';
+
+  @override
+  String get proDialogTitle => 'Pro-Feature';
+
+  @override
+  String get proDialogDesc =>
+      'Dieses Feature ist exklusiv für Pro-Nutzer. Möchtest du upgraden?';
+
+  @override
+  String get btnShop => 'ZUM SHOP';
+
+  @override
+  String get partnerLabelConnected => 'Verbunden mit:';
+
+  @override
+  String get partnerLabelMyEmail => 'Deine E-Mail (Automatisch)';
+
+  @override
+  String get partnerHintEmail => 'z.B. partner@example.com';
+
+  @override
+  String get partnerTitleLocked => 'Partner Connect';
+
+  @override
+  String get partnerDescLocked =>
+      'Verbinde dich für mehr Verständnis & Harmonie.';
+
+  @override
+  String get adviceSick =>
+      'Partner ist krank. Tee, Suppe oder Medikamente wären lieb!';
+
+  @override
+  String get adviceCycle =>
+      'Vorsicht: Zyklus-Beschwerden. Wärmflasche & Schokolade bereitstellen!';
+
+  @override
+  String get adviceStress =>
+      'Hohes Stresslevel. Nimm dem Partner heute vielleicht eine Pflicht ab.';
+
+  @override
+  String get adviceSleep =>
+      'Massiver Schlafmangel. Sorge für einen ruhigen Abend.';
+
+  @override
+  String get adviceSad =>
+      'Stimmung ist im Keller. Eine Umarmung oder Zuhören hilft oft mehr als Lösungen.';
+
+  @override
+  String get adviceHappy =>
+      'Super Stimmung! Perfekter Zeitpunkt für gemeinsame Unternehmungen.';
+
+  @override
+  String get lockedInsightsTitle => 'Schalte Premium-Insights frei';
+
+  @override
+  String get lockedInsightsDesc =>
+      'Erfahre genau, was deine Stimmung beeinflusst. Unsere KI analysiert deine Muster.';
+
+  @override
+  String get btnUnlock => 'Jetzt Pro werden';
+
+  @override
+  String get insightTrackMore => 'Tracke mehr Tags, um Muster zu erkennen.';
+
+  @override
+  String get insightBasdOnPattern => 'Basierend auf deinen Mustern.';
 }

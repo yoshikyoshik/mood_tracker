@@ -719,4 +719,82 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authEnterEmail => 'Please enter your email address.';
+
+  @override
+  String get inputDateLabel => 'Fecha';
+
+  @override
+  String inputCycleDay(int day) {
+    return 'Día $day';
+  }
+
+  @override
+  String get btnAddEntry => 'Añadir entrada (+)';
+
+  @override
+  String get proDialogTitle => 'Función Pro';
+
+  @override
+  String get proDialogDesc =>
+      'Esta función es exclusiva para miembros Pro. ¿Quieres actualizar?';
+
+  @override
+  String get btnShop => 'IR A LA TIENDA';
+
+  @override
+  String get partnerLabelConnected => 'Conectado con:';
+
+  @override
+  String get partnerLabelMyEmail => 'Tu email (Automático)';
+
+  @override
+  String get partnerHintEmail => 'p. ej. pareja@ejemplo.com';
+
+  @override
+  String get partnerTitleLocked => 'Conexión en pareja';
+
+  @override
+  String get partnerDescLocked =>
+      'Conecta para una mejor comprensión y armonía.';
+
+  @override
+  String get adviceSick =>
+      'Tu pareja está enferma. ¡Té, sopa o medicinas serían un buen detalle!';
+
+  @override
+  String get adviceCycle =>
+      'Atención: Molestias del ciclo. ¡Prepara la bolsa de agua caliente y chocolate!';
+
+  @override
+  String get adviceStress =>
+      'Nivel de estrés alto. Quizás podrías encargarte de alguna tarea hoy.';
+
+  @override
+  String get adviceSleep =>
+      'Falta de sueño severa. Asegura una velada tranquila.';
+
+  @override
+  String get adviceSad =>
+      'Ánimo bajo. Un abrazo o escuchar suele ayudar más que dar soluciones.';
+
+  @override
+  String get adviceHappy =>
+      '¡Muy buen humor! Momento perfecto para hacer algo juntos.';
+
+  @override
+  String get lockedInsightsTitle => 'Desbloquear análisis Premium';
+
+  @override
+  String get lockedInsightsDesc =>
+      'Descubre exactamente qué afecta tu ánimo. Nuestra IA analiza tus patrones.';
+
+  @override
+  String get btnUnlock => 'Hazte Pro ahora';
+
+  @override
+  String get insightTrackMore =>
+      'Registra más etiquetas para detectar patrones.';
+
+  @override
+  String get insightBasdOnPattern => 'Basado en tus patrones.';
 }

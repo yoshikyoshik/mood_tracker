@@ -717,4 +717,81 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authEnterEmail => 'Please enter your email address.';
+
+  @override
+  String get inputDateLabel => 'Дата';
+
+  @override
+  String inputCycleDay(int day) {
+    return 'День $day';
+  }
+
+  @override
+  String get btnAddEntry => 'Добавить запись (+)';
+
+  @override
+  String get proDialogTitle => 'Pro функция';
+
+  @override
+  String get proDialogDesc =>
+      'Эта функция доступна только Pro участникам. Хочешь обновиться?';
+
+  @override
+  String get btnShop => 'В МАГАЗИН';
+
+  @override
+  String get partnerLabelConnected => 'Связь с:';
+
+  @override
+  String get partnerLabelMyEmail => 'Твой Email (Автоматически)';
+
+  @override
+  String get partnerHintEmail => 'напр. partner@example.com';
+
+  @override
+  String get partnerTitleLocked => 'Связь с партнером';
+
+  @override
+  String get partnerDescLocked =>
+      'Подключись для лучшего понимания и гармонии.';
+
+  @override
+  String get adviceSick =>
+      'Партнер болеет. Чай, суп или лекарства будут кстати!';
+
+  @override
+  String get adviceCycle =>
+      'Внимание: проблемы с циклом. Готовь грелку и шоколад!';
+
+  @override
+  String get adviceStress =>
+      'Высокий уровень стресса. Может, возьмешь дела по дому на себя?';
+
+  @override
+  String get adviceSleep => 'Сильный недосып. Обеспечь тихий вечер.';
+
+  @override
+  String get adviceSad =>
+      'Настроение на нуле. Объятия и внимание помогут больше, чем советы.';
+
+  @override
+  String get adviceHappy =>
+      'Отличное настроение! Идеальное время побыть вместе.';
+
+  @override
+  String get lockedInsightsTitle => 'Открыть Premium инсайты';
+
+  @override
+  String get lockedInsightsDesc =>
+      'Узнай, что влияет на твое настроение. ИИ анализирует твои паттерны.';
+
+  @override
+  String get btnUnlock => 'Купить Pro';
+
+  @override
+  String get insightTrackMore =>
+      'Отмечай больше тегов, чтобы найти закономерности.';
+
+  @override
+  String get insightBasdOnPattern => 'Основано на твоих паттернах.';
 }

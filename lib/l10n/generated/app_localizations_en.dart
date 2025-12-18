@@ -715,4 +715,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authEnterEmail => 'Please enter your email address.';
+
+  @override
+  String get inputDateLabel => 'Date';
+
+  @override
+  String inputCycleDay(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String get btnAddEntry => 'Add Entry (+)';
+
+  @override
+  String get proDialogTitle => 'Pro Feature';
+
+  @override
+  String get proDialogDesc =>
+      'This feature is exclusive to Pro members. Want to upgrade?';
+
+  @override
+  String get btnShop => 'GO TO SHOP';
+
+  @override
+  String get partnerLabelConnected => 'Connected with:';
+
+  @override
+  String get partnerLabelMyEmail => 'Your Email (Automatic)';
+
+  @override
+  String get partnerHintEmail => 'e.g. partner@example.com';
+
+  @override
+  String get partnerTitleLocked => 'Partner Connect';
+
+  @override
+  String get partnerDescLocked => 'Connect for better understanding & harmony.';
+
+  @override
+  String get adviceSick => 'Partner is sick. Tea, soup, or meds would be kind!';
+
+  @override
+  String get adviceCycle =>
+      'Caution: Cycle issues. Get a hot water bottle & chocolate ready!';
+
+  @override
+  String get adviceStress =>
+      'High stress level. Maybe take over a chore today.';
+
+  @override
+  String get adviceSleep =>
+      'Massive sleep deprivation. Ensure a quiet evening.';
+
+  @override
+  String get adviceSad =>
+      'Mood is low. A hug or listening often helps more than solutions.';
+
+  @override
+  String get adviceHappy =>
+      'Great mood! Perfect time for doing something together.';
+
+  @override
+  String get lockedInsightsTitle => 'Unlock Premium Insights';
+
+  @override
+  String get lockedInsightsDesc =>
+      'Find out exactly what affects your mood. Our AI analyzes your patterns.';
+
+  @override
+  String get btnUnlock => 'Go Pro Now';
+
+  @override
+  String get insightTrackMore => 'Track more tags to detect patterns.';
+
+  @override
+  String get insightBasdOnPattern => 'Based on your patterns.';
 }

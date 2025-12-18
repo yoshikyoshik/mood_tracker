@@ -252,5 +252,33 @@
 
   "authForgotPassword": "Forgot password?",
   "authResetSuccess": "Link sent! Check your emails.",
-  "authEnterEmail": "Please enter your email address."
+  "authEnterEmail": "Please enter your email address.",
+
+  "inputDateLabel": "Date",
+  "inputCycleDay": "Day {day}",
+  "btnAddEntry": "Add Entry (+)",
+  
+  "proDialogTitle": "Pro Feature",
+  "proDialogDesc": "This feature is exclusive to Pro members. Want to upgrade?",
+  "btnShop": "GO TO SHOP",
+  
+  "partnerLabelConnected": "Connected with:",
+  "partnerLabelMyEmail": "Your Email (Automatic)",
+  "partnerHintEmail": "e.g. partner@example.com",
+  "partnerTitleLocked": "Partner Connect",
+  "partnerDescLocked": "Connect for better understanding & harmony.",
+  
+  "adviceSick": "Partner is sick. Tea, soup, or meds would be kind!",
+  "adviceCycle": "Caution: Cycle issues. Get a hot water bottle & chocolate ready!",
+  "adviceStress": "High stress level. Maybe take over a chore today.",
+  "adviceSleep": "Massive sleep deprivation. Ensure a quiet evening.",
+  "adviceSad": "Mood is low. A hug or listening often helps more than solutions.",
+  "adviceHappy": "Great mood! Perfect time for doing something together.",
+  
+  "lockedInsightsTitle": "Unlock Premium Insights",
+  "lockedInsightsDesc": "Find out exactly what affects your mood. Our AI analyzes your patterns.",
+  "btnUnlock": "Go Pro Now",
+  
+  "insightTrackMore": "Track more tags to detect patterns.",
+  "insightBasdOnPattern": "Based on your patterns."
 }

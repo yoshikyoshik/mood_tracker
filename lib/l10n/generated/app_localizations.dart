@@ -1435,6 +1435,138 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Bitte gib deine E-Mail-Adresse ein.'**
   String get authEnterEmail;
+
+  /// No description provided for @inputDateLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum'**
+  String get inputDateLabel;
+
+  /// No description provided for @inputCycleDay.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag {day}'**
+  String inputCycleDay(int day);
+
+  /// No description provided for @btnAddEntry.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiteren Eintrag (+)'**
+  String get btnAddEntry;
+
+  /// No description provided for @proDialogTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Pro-Feature'**
+  String get proDialogTitle;
+
+  /// No description provided for @proDialogDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Feature ist exklusiv für Pro-Nutzer. Möchtest du upgraden?'**
+  String get proDialogDesc;
+
+  /// No description provided for @btnShop.
+  ///
+  /// In de, this message translates to:
+  /// **'ZUM SHOP'**
+  String get btnShop;
+
+  /// No description provided for @partnerLabelConnected.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbunden mit:'**
+  String get partnerLabelConnected;
+
+  /// No description provided for @partnerLabelMyEmail.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine E-Mail (Automatisch)'**
+  String get partnerLabelMyEmail;
+
+  /// No description provided for @partnerHintEmail.
+  ///
+  /// In de, this message translates to:
+  /// **'z.B. partner@example.com'**
+  String get partnerHintEmail;
+
+  /// No description provided for @partnerTitleLocked.
+  ///
+  /// In de, this message translates to:
+  /// **'Partner Connect'**
+  String get partnerTitleLocked;
+
+  /// No description provided for @partnerDescLocked.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbinde dich für mehr Verständnis & Harmonie.'**
+  String get partnerDescLocked;
+
+  /// No description provided for @adviceSick.
+  ///
+  /// In de, this message translates to:
+  /// **'Partner ist krank. Tee, Suppe oder Medikamente wären lieb!'**
+  String get adviceSick;
+
+  /// No description provided for @adviceCycle.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorsicht: Zyklus-Beschwerden. Wärmflasche & Schokolade bereitstellen!'**
+  String get adviceCycle;
+
+  /// No description provided for @adviceStress.
+  ///
+  /// In de, this message translates to:
+  /// **'Hohes Stresslevel. Nimm dem Partner heute vielleicht eine Pflicht ab.'**
+  String get adviceStress;
+
+  /// No description provided for @adviceSleep.
+  ///
+  /// In de, this message translates to:
+  /// **'Massiver Schlafmangel. Sorge für einen ruhigen Abend.'**
+  String get adviceSleep;
+
+  /// No description provided for @adviceSad.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimmung ist im Keller. Eine Umarmung oder Zuhören hilft oft mehr als Lösungen.'**
+  String get adviceSad;
+
+  /// No description provided for @adviceHappy.
+  ///
+  /// In de, this message translates to:
+  /// **'Super Stimmung! Perfekter Zeitpunkt für gemeinsame Unternehmungen.'**
+  String get adviceHappy;
+
+  /// No description provided for @lockedInsightsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Schalte Premium-Insights frei'**
+  String get lockedInsightsTitle;
+
+  /// No description provided for @lockedInsightsDesc.
+  ///
+  /// In de, this message translates to:
+  /// **'Erfahre genau, was deine Stimmung beeinflusst. Unsere KI analysiert deine Muster.'**
+  String get lockedInsightsDesc;
+
+  /// No description provided for @btnUnlock.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt Pro werden'**
+  String get btnUnlock;
+
+  /// No description provided for @insightTrackMore.
+  ///
+  /// In de, this message translates to:
+  /// **'Tracke mehr Tags, um Muster zu erkennen.'**
+  String get insightTrackMore;
+
+  /// No description provided for @insightBasdOnPattern.
+  ///
+  /// In de, this message translates to:
+  /// **'Basierend auf deinen Mustern.'**
+  String get insightBasdOnPattern;
 }
 
 class _AppLocalizationsDelegate

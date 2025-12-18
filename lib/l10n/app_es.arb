@@ -252,5 +252,33 @@
 
   "authForgotPassword": "Forgot password?",
   "authResetSuccess": "Link sent! Check your emails.",
-  "authEnterEmail": "Please enter your email address."
+  "authEnterEmail": "Please enter your email address.",
+
+  "inputDateLabel": "Fecha",
+  "inputCycleDay": "Día {day}",
+  "btnAddEntry": "Añadir entrada (+)",
+  
+  "proDialogTitle": "Función Pro",
+  "proDialogDesc": "Esta función es exclusiva para miembros Pro. ¿Quieres actualizar?",
+  "btnShop": "IR A LA TIENDA",
+  
+  "partnerLabelConnected": "Conectado con:",
+  "partnerLabelMyEmail": "Tu email (Automático)",
+  "partnerHintEmail": "p. ej. pareja@ejemplo.com",
+  "partnerTitleLocked": "Conexión en pareja",
+  "partnerDescLocked": "Conecta para una mejor comprensión y armonía.",
+  
+  "adviceSick": "Tu pareja está enferma. ¡Té, sopa o medicinas serían un buen detalle!",
+  "adviceCycle": "Atención: Molestias del ciclo. ¡Prepara la bolsa de agua caliente y chocolate!",
+  "adviceStress": "Nivel de estrés alto. Quizás podrías encargarte de alguna tarea hoy.",
+  "adviceSleep": "Falta de sueño severa. Asegura una velada tranquila.",
+  "adviceSad": "Ánimo bajo. Un abrazo o escuchar suele ayudar más que dar soluciones.",
+  "adviceHappy": "¡Muy buen humor! Momento perfecto para hacer algo juntos.",
+  
+  "lockedInsightsTitle": "Desbloquear análisis Premium",
+  "lockedInsightsDesc": "Descubre exactamente qué afecta tu ánimo. Nuestra IA analiza tus patrones.",
+  "btnUnlock": "Hazte Pro ahora",
+  
+  "insightTrackMore": "Registra más etiquetas para detectar patrones.",
+  "insightBasdOnPattern": "Basado en tus patrones."
 }

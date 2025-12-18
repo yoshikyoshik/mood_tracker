@@ -708,4 +708,72 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authEnterEmail => 'Please enter your email address.';
+
+  @override
+  String get inputDateLabel => '日期';
+
+  @override
+  String inputCycleDay(int day) {
+    return '第 $day 天';
+  }
+
+  @override
+  String get btnAddEntry => '添加记录 (+)';
+
+  @override
+  String get proDialogTitle => 'Pro 功能';
+
+  @override
+  String get proDialogDesc => '此功能仅限 Pro 会员。想要升级吗？';
+
+  @override
+  String get btnShop => '去商店';
+
+  @override
+  String get partnerLabelConnected => '已连接：';
+
+  @override
+  String get partnerLabelMyEmail => '你的邮箱 (自动)';
+
+  @override
+  String get partnerHintEmail => '例如: partner@example.com';
+
+  @override
+  String get partnerTitleLocked => '伴侣连接';
+
+  @override
+  String get partnerDescLocked => '建立连接，增进理解与和谐。';
+
+  @override
+  String get adviceSick => '伴侣生病了。送上茶、汤或药会很贴心！';
+
+  @override
+  String get adviceCycle => '注意：生理期不适。准备好热水袋和巧克力！';
+
+  @override
+  String get adviceStress => '压力很大。今天也许可以帮忙分担家务。';
+
+  @override
+  String get adviceSleep => '严重睡眠不足。确保今晚环境安静。';
+
+  @override
+  String get adviceSad => '心情低落。拥抱和倾听通常比给建议更有用。';
+
+  @override
+  String get adviceHappy => '心情超好！一起做点什么的好时机。';
+
+  @override
+  String get lockedInsightsTitle => '解锁高级洞察';
+
+  @override
+  String get lockedInsightsDesc => '找出影响心情的确切因素。我们的 AI 会分析你的模式。';
+
+  @override
+  String get btnUnlock => '立即升级 Pro';
+
+  @override
+  String get insightTrackMore => '记录更多标签以发现模式。';
+
+  @override
+  String get insightBasdOnPattern => '基于你的模式。';
 }

@@ -1,5 +1,6 @@
 // lib/widgets/locked_insights.dart
 import 'package:flutter/material.dart';
+import '../l10n/generated/app_localizations.dart';
 
 class LockedInsights extends StatelessWidget {
   // Wir brauchen eine Funktion, die ausgeführt wird, wenn der Button gedrückt wird
@@ -12,6 +13,7 @@ class LockedInsights extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -23,14 +25,14 @@ class LockedInsights extends StatelessWidget {
         children: [
           const Icon(Icons.lock_outline, size: 48, color: Colors.indigo),
           const SizedBox(height: 16),
-          const Text(
-            "Schalte Premium-Insights frei",
+          Text(
+            l10n.lockedInsightsTitle,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            "Erfahre genau, was deine Stimmung beeinflusst. Unsere KI analysiert deine Muster.",
+            l10n.lockedInsightsDesc,
             style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
             textAlign: TextAlign.center,
           ),
@@ -38,7 +40,7 @@ class LockedInsights extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onUnlockPressed, // Hier rufen wir die übergebene Funktion auf
             icon: const Icon(Icons.diamond, size: 18),
-            label: const Text("Jetzt Pro werden"),
+            label: Text(l10n.btnUnlock),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,

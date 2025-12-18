@@ -252,5 +252,33 @@
 
   "authForgotPassword": "Forgot password?",
   "authResetSuccess": "Link sent! Check your emails.",
-  "authEnterEmail": "Please enter your email address."
+  "authEnterEmail": "Please enter your email address.",
+
+  "inputDateLabel": "Дата",
+  "inputCycleDay": "День {day}",
+  "btnAddEntry": "Добавить запись (+)",
+  
+  "proDialogTitle": "Pro функция",
+  "proDialogDesc": "Эта функция доступна только Pro участникам. Хочешь обновиться?",
+  "btnShop": "В МАГАЗИН",
+  
+  "partnerLabelConnected": "Связь с:",
+  "partnerLabelMyEmail": "Твой Email (Автоматически)",
+  "partnerHintEmail": "напр. partner@example.com",
+  "partnerTitleLocked": "Связь с партнером",
+  "partnerDescLocked": "Подключись для лучшего понимания и гармонии.",
+  
+  "adviceSick": "Партнер болеет. Чай, суп или лекарства будут кстати!",
+  "adviceCycle": "Внимание: проблемы с циклом. Готовь грелку и шоколад!",
+  "adviceStress": "Высокий уровень стресса. Может, возьмешь дела по дому на себя?",
+  "adviceSleep": "Сильный недосып. Обеспечь тихий вечер.",
+  "adviceSad": "Настроение на нуле. Объятия и внимание помогут больше, чем советы.",
+  "adviceHappy": "Отличное настроение! Идеальное время побыть вместе.",
+  
+  "lockedInsightsTitle": "Открыть Premium инсайты",
+  "lockedInsightsDesc": "Узнай, что влияет на твое настроение. ИИ анализирует твои паттерны.",
+  "btnUnlock": "Купить Pro",
+  
+  "insightTrackMore": "Отмечай больше тегов, чтобы найти закономерности.",
+  "insightBasdOnPattern": "Основано на твоих паттернах."
 }

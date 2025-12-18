@@ -277,5 +277,34 @@
 
   "authForgotPassword": "Passwort vergessen?",
   "authResetSuccess": "Link gesendet! Prüfe deine E-Mails.",
-  "authEnterEmail": "Bitte gib deine E-Mail-Adresse ein."
+  "authEnterEmail": "Bitte gib deine E-Mail-Adresse ein.",
+
+  "inputDateLabel": "Datum",
+  "inputCycleDay": "Tag {day}",
+  "@inputCycleDay": { "placeholders": { "day": { "type": "int" } } },
+  "btnAddEntry": "Weiteren Eintrag (+)",
+  
+  "proDialogTitle": "Pro-Feature",
+  "proDialogDesc": "Dieses Feature ist exklusiv für Pro-Nutzer. Möchtest du upgraden?",
+  "btnShop": "ZUM SHOP",
+    
+  "partnerLabelConnected": "Verbunden mit:",
+  "partnerLabelMyEmail": "Deine E-Mail (Automatisch)",
+  "partnerHintEmail": "z.B. partner@example.com",
+  "partnerTitleLocked": "Partner Connect",
+  "partnerDescLocked": "Verbinde dich für mehr Verständnis & Harmonie.",
+  
+  "adviceSick": "Partner ist krank. Tee, Suppe oder Medikamente wären lieb!",
+  "adviceCycle": "Vorsicht: Zyklus-Beschwerden. Wärmflasche & Schokolade bereitstellen!",
+  "adviceStress": "Hohes Stresslevel. Nimm dem Partner heute vielleicht eine Pflicht ab.",
+  "adviceSleep": "Massiver Schlafmangel. Sorge für einen ruhigen Abend.",
+  "adviceSad": "Stimmung ist im Keller. Eine Umarmung oder Zuhören hilft oft mehr als Lösungen.",
+  "adviceHappy": "Super Stimmung! Perfekter Zeitpunkt für gemeinsame Unternehmungen.",
+  
+  "lockedInsightsTitle": "Schalte Premium-Insights frei",
+  "lockedInsightsDesc": "Erfahre genau, was deine Stimmung beeinflusst. Unsere KI analysiert deine Muster.",
+  "btnUnlock": "Jetzt Pro werden",
+  
+  "insightTrackMore": "Tracke mehr Tags, um Muster zu erkennen.",
+  "insightBasdOnPattern": "Basierend auf deinen Mustern."
 }

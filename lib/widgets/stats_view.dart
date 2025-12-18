@@ -654,7 +654,14 @@ class _StatsViewState extends State<StatsView> {
       }
 
       final url = Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/analyze');
-      final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'entriesText': sb.toString()}));
+      final response = await http.post(
+        url, 
+        headers: {'Content-Type': 'application/json'}, 
+        body: jsonEncode({
+          'entriesText': sb.toString(),
+          'language': l10n.localeName, // <--- HIER SENDEN WIR DEN SPRACHCODE (z.B. 'de', 'en', 'es')
+        })
+      );
       if (response.statusCode == 200) { final data = jsonDecode(utf8.decode(response.bodyBytes)); setState(() { _analysisResult = data['result']; }); } else { setState(() { _analysisResult = l10n.errorAnalysisFailed(response.statusCode); }); }
     } catch (e) { setState(() { _analysisResult = l10n.snackError(e.toString()); }); } finally { if (mounted) { setState(() => _isAnalyzing = false); } }
   }
