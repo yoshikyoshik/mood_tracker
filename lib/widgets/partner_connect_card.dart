@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <--- DIESE ZEILE HAT GEFEHLT!
 import '../services/partner_service.dart';
 import '../models/profile.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -8,15 +8,15 @@ import '../l10n/generated/app_localizations.dart';
 class PartnerConnectCard extends StatefulWidget {
   final Profile currentProfile;
   final String authEmail;
-  final bool isPro; // <--- NEU
-  final VoidCallback onUnlockPressed; // <--- NEU (für den Klick auf "Freischalten")
+  final bool isPro;
+  final VoidCallback onUnlockPressed;
 
   const PartnerConnectCard({
     super.key, 
     required this.currentProfile, 
     required this.authEmail,
-    required this.isPro, // <--- NEU
-    required this.onUnlockPressed, // <--- NEU
+    required this.isPro,
+    required this.onUnlockPressed,
   });
 
   @override
@@ -48,7 +48,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
 
   void _initData() {
     // FIX: Wir nehmen IMMER die echte Auth-Email aus dem Login.
-    // Das korrigiert auch Fehler, falls vorher etwas Falsches in der DB gespeichert wurde.
     _myEmailCtrl.text = widget.authEmail; 
     
     // Partner Email laden wir aus der DB
@@ -61,15 +60,19 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
 
   // Realtime Subscription starten
   void _subscribeToPartner(String partnerProfileId) {
-    // Falls wir schon lauschen, abbrechen (Sicherheit)
-    if (_partnerSubscription != null) return;
+    // Falls noch eine alte Verbindung besteht: Weg damit!
+    if (_partnerSubscription != null) {
+      debugPrint("Beende alte Subscription...");
+      _partnerSubscription!.unsubscribe();
+      _partnerSubscription = null;
+    }
 
-    debugPrint("Starte Realtime für Partner: $partnerProfileId");
+    debugPrint("Starte Realtime für Partner: $partnerProfileId"); // Jetzt muss diese Meldung kommen!
 
     _partnerSubscription = Supabase.instance.client
-        .channel('partner_mood_$partnerProfileId') // Einzigartiger Kanalname
+        .channel('partner_mood_$partnerProfileId')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all, // Bei INSERT, UPDATE oder DELETE
+          event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'mood_entries',
           filter: PostgresChangeFilter(
@@ -79,7 +82,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
           ),
           callback: (payload) {
             debugPrint("Realtime Event empfangen! Lade neu...");
-            // Wenn was passiert, laden wir die Ansicht neu
             _loadPartnerStatus();
           },
         )
@@ -91,7 +93,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     try {
       await _partnerService.updatePartnerSettings(
         widget.currentProfile.id,
-        _myEmailCtrl.text.trim(), // Speichert jetzt die korrekte Auth-Email in die DB
+        _myEmailCtrl.text.trim(), 
         _partnerEmailCtrl.text.trim(),
       );
       if (mounted) {
@@ -108,9 +110,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   }
 
   Future<void> _loadPartnerStatus() async {
-    if (!widget.isPro) return; // Free User brauchen keinen Sync
+    // CHECK 1: Sind wir Pro?
+    debugPrint("DEBUG: Starte _loadPartnerStatus. Pro? ${widget.isPro}");
+    if (!widget.isPro) return; 
 
-    // Nur Ladeanzeige zeigen, wenn wir noch GAR KEINE Daten haben (sonst flackert es bei Realtime)
     if (_partnerStatus == null) {
       setState(() => _isLoading = true);
     }
@@ -120,22 +123,28 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       widget.currentProfile.partnerEmail ?? ''
     );
 
+    // CHECK 2: Was kam zurück?
+    debugPrint("DEBUG: Daten vom Service erhalten: $data");
+
     if (mounted) {
       setState(() {
         _partnerStatus = data;
         _isLoading = false;
       });
 
-      // NEU: Wenn wir erfolgreich Daten haben, starten wir die Subscription
+      // CHECK 3: Klappt die Bedingung?
       if (data != null && data['partner_profile_id'] != null) {
+        debugPrint("DEBUG: Bedingung erfüllt! Rufe _subscribeToPartner auf...");
         _subscribeToPartner(data['partner_profile_id'].toString());
+      } else {
+        debugPrint("DEBUG: Bedingung NICHT erfüllt. Data null? ${data == null}. ID da? ${data?['partner_profile_id']}");
       }
     }
   }
 
-  // --- FÜGE DIESE FUNKTION HINZU (OPTIONAL), UM SICH ZU TRENNEN ---
+  // --- TRENNEN ---
   Future<void> _disconnect() async {
-    final l10n = AppLocalizations.of(context)!; // Zugriff auf Übersetzungen
+    final l10n = AppLocalizations.of(context)!;
 
     final confirm = await showModalBottomSheet<bool>(
       context: context,
@@ -158,14 +167,12 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                 const Icon(Icons.link_off, size: 40, color: Colors.redAccent),
                 const SizedBox(height: 15),
                 
-                // TEXT AUS L10N
                 Text(
                   l10n.partnerDisconnectTitle,
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 
-                // TEXT MIT PLATZHALTER (E-Mail)
                 Text(
                   l10n.partnerDisconnectMessage(_partnerEmailCtrl.text),
                   textAlign: TextAlign.center,
@@ -203,18 +210,22 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
 
     setState(() => _isLoading = true);
     try {
+      // 1. In der DB löschen
       await _partnerService.updatePartnerSettings(
         widget.currentProfile.id,
         _myEmailCtrl.text,
         "", 
       );
       
+      // 2. WICHTIG: Realtime Abo beenden & Variable leeren!
+      _partnerSubscription?.unsubscribe();  // <--- NEU
+      _partnerSubscription = null;          // <--- NEU
+
       if (mounted) {
          setState(() {
            _partnerEmailCtrl.clear();
            _partnerStatus = null;
          });
-         // SNACKBAR TEXT AUS L10N
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.partnerDisconnectSuccess)));
       }
     } catch (e) {
@@ -233,7 +244,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       return _buildLockedCard(l10n);
     }
 
-    // --- 2. NORMALE LOGIK (wie bisher) ---
+    // --- 2. NORMALE LOGIK ---
     final bool isConnected = _partnerStatus != null;
     
     return Card(
@@ -258,8 +269,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
             const SizedBox(height: 20),
 
             if (isConnected) ...[
-              // ... Dein bestehender Code für "Verbunden" ...
-              // (Kopiere hier deinen bestehenden Block rein: Container grün, _buildPartnerStatus etc.)
+              // VERBUNDEN STATUS
                Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -275,7 +285,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(l10n.partnerLabelConnected, style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          Text(l10n.partnerLabelConnected, style: const TextStyle(fontSize: 12, color: Colors.black54)),
                           Text(_partnerEmailCtrl.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                         ],
                       ),
@@ -291,23 +301,45 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
               _buildPartnerStatus(l10n),
 
             ] else ...[
-              // ... Dein bestehender Code für "Formular" ...
+              // FORMULAR (Noch nicht verbunden)
               TextField(
                 controller: _myEmailCtrl,
                 readOnly: true, 
-                decoration: InputDecoration(labelText: l10n.partnerLabelMyEmail, prefixIcon: Icon(Icons.person, color: Colors.grey), filled: true, fillColor: Color(0xFFF5F7FA), border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
+                decoration: InputDecoration(
+                  labelText: l10n.partnerLabelMyEmail, 
+                  prefixIcon: const Icon(Icons.person, color: Colors.grey), 
+                  filled: true, 
+                  fillColor: const Color(0xFFF5F7FA), 
+                  border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none), 
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)
+                ),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _partnerEmailCtrl,
-                decoration: InputDecoration(labelText: l10n.partnerEmailLabel, hintText: l10n.partnerHintEmail, prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
+                decoration: InputDecoration(
+                  labelText: l10n.partnerEmailLabel, 
+                  hintText: l10n.partnerHintEmail, 
+                  prefixIcon: const Icon(Icons.search), 
+                  border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), 
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)
+                ),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 15),
+              
               if (_isLoading) const Center(child: CircularProgressIndicator())
               else SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _saveSettings, style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: Text(l10n.partnerConnectBtn))),
-               if (_partnerEmailCtrl.text.isNotEmpty && !_isLoading && !isConnected) ...[ const SizedBox(height: 15), Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)), const SizedBox(width: 8), Text(l10n.partnerWait, style: const TextStyle(color: Colors.orange, fontSize: 12, fontStyle: FontStyle.italic))]))]
+              
+              if (_partnerEmailCtrl.text.isNotEmpty && !_isLoading && !isConnected) ...[ 
+                const SizedBox(height: 15), 
+                Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)), 
+                  const SizedBox(width: 8), 
+                  Text(l10n.partnerWait, style: const TextStyle(color: Colors.orange, fontSize: 12, fontStyle: FontStyle.italic))
+                ]))
+              ]
             ],
           ],
         ),
@@ -315,7 +347,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     );
   }
 
-  // --- NEUES WIDGET: DIE GESPERRTE KARTE ---
+  // --- GESPERRTE KARTE (FREE) ---
   Widget _buildLockedCard(AppLocalizations l10n) {
     return GestureDetector(
       onTap: widget.onUnlockPressed,
@@ -325,7 +357,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Stack(
           children: [
-            // Der Inhalt (leicht ausgeblendet/unscharf suggeriert)
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -335,7 +366,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                   const SizedBox(height: 10),
                   Text(l10n.partnerDesc, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                   const SizedBox(height: 20),
-                  // Fake UI für den Look
                   Container(height: 50, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12))),
                   const SizedBox(height: 10),
                   Container(height: 50, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12))),
@@ -343,11 +373,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
               ),
             ),
             
-            // Der "Lock" Overlay
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6), // Milchglas-Effekt
+                  color: Colors.white.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
@@ -360,14 +389,14 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      l10n.partnerTitleLocked, // Oder l10n.partnerTitle
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                      l10n.partnerTitleLocked,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 30),
                       child: Text(
-                        l10n.partnerDescLocked, // Könnte auch ins l10n
+                        l10n.partnerDescLocked,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                       ),
@@ -393,11 +422,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     );
   }
 
+  // --- ADVICE LOGIK ---
   String? _getPartnerAdvice(double score, List<dynamic>? tagsRaw, double? sleep, AppLocalizations l10n) {
     final List<String> tags = tagsRaw?.map((e) => e.toString()).toList() ?? [];
     
-    // 1. Spezifische Tags (Vergleich sprachunabhängig oder auf bekannte Keys)
-    // Wir prüfen auf deutsche UND englische Keywords, falls die DB gemischte Daten hat
     if (tags.any((t) => ['Krank', 'Sick', 'Kopfschmerzen', 'Migräne'].contains(t))) {
       return l10n.adviceSick;
     }
@@ -410,12 +438,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       return l10n.adviceStress;
     }
 
-    // 2. Schlaf-Check
     if (sleep != null && sleep < 5.0) {
       return l10n.adviceSleep;
     }
 
-    // 3. Score-Basierte Tipps
     if (score < 4.0) {
       return l10n.adviceSad;
     }
@@ -426,11 +452,11 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
     return null;
   }
 
+  // --- PARTNER STATUS UI ---
   Widget _buildPartnerStatus(AppLocalizations l10n) {
     final name = _partnerStatus!['name'] as String? ?? 'Partner';
     final score = _partnerStatus!['score'] as double?;
     
-    // Daten holen (sicherstellen, dass wir nicht abstürzen, falls keys fehlen)
     final tags = _partnerStatus!['tags'] as List<dynamic>?;
     final sleep = _partnerStatus!['sleep'] as double?;
 
@@ -448,7 +474,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       );
     }
 
-    // Basis-Farben und Icons wie bisher
     Color color = Colors.green;
     String msg = l10n.partnerStatus(score.toStringAsFixed(1));
     IconData icon = Icons.sentiment_satisfied_alt;
@@ -462,12 +487,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       icon = Icons.sentiment_neutral;
     }
 
-    // --- NEU: TIPP GENERIEREN ---
     final String? advice = _getPartnerAdvice(score, tags, sleep, l10n);
 
     return Column(
       children: [
-        // 1. Die normale Status-Box
         Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
@@ -482,7 +505,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
               Expanded(
                 child: Text(msg, style: TextStyle(color: color.withValues(alpha: 1.0), fontWeight: FontWeight.bold)),
               ),
-              // Kleiner Indikator für Schlaf, falls vorhanden
               if (sleep != null) ...[
                 const SizedBox(width: 8),
                 Icon(Icons.bed, size: 16, color: color.withValues(alpha: 0.7)),
@@ -493,11 +515,10 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
           ),
         ),
 
-        // 2. Die neue "Smart Advice" Box (nur wenn Advice existiert)
         if (advice != null) ...[
           const SizedBox(height: 8),
           Container(
-            width: double.infinity, // Volle Breite
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.blueGrey.shade50,

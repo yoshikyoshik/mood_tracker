@@ -43,29 +43,32 @@ class PartnerService {
       // Jetzt Stimmung laden (MIT TAGS & SCHLAF)
       final entryRes = await _client
           .from('mood_entries')
-          .select() // Lädt alle Felder (inkl. tags, sleep_rating)
+          .select()
           .eq('profile_id', response['id'])
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
-      if (entryRes == null) {
-        return {
-          'partner_profile_id': response['id'],
-          'name': response['name'],
-          'score': null, 
-        };
-      }
-
-      final entry = MoodEntry.fromMap(entryRes);
-      
-      return {
+      // 1. Das Grundgerüst bauen (IMMER mit ID!)
+      final result = {
+        'partner_profile_id': response['id'], // <--- DAS IST DER WICHTIGE FIX
         'name': response['name'],
-        'score': entry.score,
-        'timestamp': entry.timestamp,
-        'tags': entry.tags.toList(), // <--- NEU
-        'sleep': entry.sleepRating,  // <--- NEU
+        'score': null, // Standardwert
       };
+
+      // 2. Wenn ein Eintrag existiert, Daten überschreiben
+      if (entryRes != null) {
+        // Wir nutzen dein Model, um die Daten sicher zu parsen
+        final entry = MoodEntry.fromMap(entryRes);
+        
+        result['score'] = entry.score;
+        result['timestamp'] = entry.timestamp;
+        result['sleep'] = entry.sleepRating;
+        result['tags'] = entry.tags.toList(); // Sicherstellen, dass es eine Liste ist
+        result['note'] = entry.note;
+      }
+      
+      return result;
 
     } catch (e) {
       debugPrint("PartnerService Error: $e");
