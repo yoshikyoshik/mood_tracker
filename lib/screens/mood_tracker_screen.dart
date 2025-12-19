@@ -83,6 +83,9 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
 
   Timer? _dayCheckTimer;
 
+  String? _currentPingAnimation; // null = keine Animation
+  RealtimeChannel? _pingSubscription;
+
   // 1. VARIABLE FÜR DEN LISTENER
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription; // Beachte: neuerdings List<ConnectivityResult> in v6
 
@@ -96,6 +99,8 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
     // -----------------------------
 
     _initializeAll();
+    _subscribeToPings();
+    
     // 2. LISTENER STARTEN (Automatischer Sync)
     // LISTENER STARTEN (Automatischer Sync)
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) async {
@@ -124,6 +129,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
     // 3. LISTENER AUFRÄUMEN
     _connectivitySubscription.cancel();
     super.dispose();
+    _pingSubscription?.unsubscribe();
   }
 
   // --- TUTORIAL START LOGIK ---
@@ -272,6 +278,65 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
       }
     }
     setState(() { _combinedTagsByCategory = newMap; });
+  }
+
+  void _subscribeToPings() {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null || _selectedProfileId == null) return;
+
+  // Nur hören, wenn wir im Hauptprofil sind? 
+  // Ja, macht Sinn, oder wenn man generell eingeloggt ist.
+  // Wir filtern auf Empfänger = Mein Hauptprofil.
+
+  // Da wir die Profil-ID brauchen, müssen wir sicherstellen, dass _profiles geladen ist.
+  // Wir nehmen an, das erste Profil ist das Hauptprofil oder wir suchen es.
+  final myProfileId = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first).id;
+
+  _pingSubscription = Supabase.instance.client
+      .channel('my_pings')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'partner_pings',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'receiver_profile_id',
+          value: myProfileId,
+        ),
+        callback: (payload) {
+          final newPing = payload.newRecord;
+          if (newPing['ping_type'] != null) {
+            _triggerPingAnimation(newPing['ping_type']);
+          }
+        },
+      )
+      .subscribe();
+}
+
+void _triggerPingAnimation(String type) {
+    String animFile = 'assets/anim_heart.json'; // Fallback
+
+    // HIER WAREN DIE KLAMMERN FEHLEND:
+    if (type == 'hug') {
+      animFile = 'assets/anim_hug.json';
+    } else if (type == 'energy') {
+      animFile = 'assets/anim_fire.json';
+    } else if (type == 'poke') {
+      animFile = 'assets/anim_ghost.json';
+    }
+
+    if (mounted) {
+      setState(() {
+        _currentPingAnimation = animFile;
+      });
+
+      // Nach 3 Sekunden Animation wieder ausblenden
+      Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _currentPingAnimation = null);
+        }
+      });
+    }
   }
 
   // --- ACTIONS ---
@@ -643,6 +708,27 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
                 ),
               ),
             ),
+
+            // --- NEU: PING ANIMATION OVERLAY ---
+      if (_currentPingAnimation != null)
+        Positioned.fill(
+          child: IgnorePointer( // Damit man durchklicken kann (optional, oder blocken)
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.3), // Leicht abdunkeln
+              child: Center(
+                child: Lottie.asset(
+                  _currentPingAnimation!,
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                  repeat: false, // Oder true, wenn es loopen soll bis Timer endet
+                ),
+              ),
+            ),
+          ),
+        ),
+       // ----------------------------------
+
         ],
       ),
       bottomNavigationBar: Container(

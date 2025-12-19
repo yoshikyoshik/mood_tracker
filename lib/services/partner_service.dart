@@ -75,4 +75,13 @@ class PartnerService {
       return null;
     }
   }
+
+  // Ping senden
+  Future<void> sendPing(String senderId, String receiverProfileId, String type) async {
+    await Supabase.instance.client.from('partner_pings').insert({
+      'sender_id': senderId,
+      'receiver_profile_id': receiverProfileId,
+      'ping_type': type,
+    });
+  }
 }

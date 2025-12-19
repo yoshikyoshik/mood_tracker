@@ -106,6 +106,73 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
         .subscribe();
   }
 
+  // --- PING SENDEN LOGIK ---
+  Future<void> _sendPing(String type) async {
+    if (_partnerStatus == null) return;
+    
+    // Kleines haptisches Feedback oder Snack, damit man weiß "ist raus"
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Ping gesendet! 🚀"), duration: Duration(milliseconds: 500)),
+    );
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      // Wir holen die Partner Profile ID aus dem geladenen Status
+      // ACHTUNG: Wir müssen sicher sein, dass wir die ID haben. 
+      // Im vorherigen Code hatten wir 'partner_profile_id' im _partnerStatus gespeichert.
+      final partnerProfileId = _partnerStatus!['partner_profile_id'];
+
+      if (partnerProfileId != null) {
+        await _partnerService.sendPing(user.id, partnerProfileId.toString(), type);
+      }
+    } catch (e) {
+      debugPrint("Ping Fehler: $e");
+    }
+  }
+
+  Widget _buildPingButtons(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 15),
+        Text("Send a Sign", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _pingBtn('❤️', "Love", 'love', Colors.pink),
+            _pingBtn('🤗', "Hug", 'hug', Colors.orange),
+            _pingBtn('🔥', "Energy", 'energy', Colors.red),
+            _pingBtn('👻', "Hi", 'poke', Colors.blueGrey),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pingBtn(String emoji, String label, String type, Color color) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => _sendPing(type),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 24)),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
+  }
+
   Future<void> _saveSettings() async {
     setState(() => _isLoading = true);
     try {
@@ -308,6 +375,9 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
               ),
               const SizedBox(height: 20),
               _buildPartnerStatus(l10n),
+
+              // Ping Buttons
+              _buildPingButtons(l10n),
 
             ] else ...[
               // FORMULAR (Noch nicht verbunden)

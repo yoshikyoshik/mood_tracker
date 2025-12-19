@@ -114,6 +114,10 @@ flutter:
   assets:
     - assets/success.json
     - assets/icon/
+    - assets/anim_heart.json
+    - assets/anim_hug.json
+    - assets/anim_fire.json
+    - assets/anim_ghost.json
 
 # --- KONFIGURATION FÜR APP ICON ---
 flutter_launcher_icons:
