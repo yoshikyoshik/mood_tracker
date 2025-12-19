@@ -794,4 +794,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String patternCount(int count) {
     return '(基于 $count 次事件)';
   }
+
+  @override
+  String get me => '我';
 }

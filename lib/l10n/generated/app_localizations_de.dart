@@ -815,4 +815,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String patternCount(int count) {
     return '(Basiert auf $count Ereignissen)';
   }
+
+  @override
+  String get me => 'Ich';
 }

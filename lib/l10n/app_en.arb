@@ -285,5 +285,7 @@
   "patternTitle": "Patterns Detected 💡",
   "patternDrop": "Whenever you track '{tag}', your mood drops by an average of {delta} points the next day.",
   "patternCycle": "Often, '{tag1}' is followed by '{tag2}' the next day.",
-  "patternCount": "(Based on {count} events)"
+  "patternCount": "(Based on {count} events)",
+
+  "me": "Me"
 }

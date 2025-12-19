@@ -314,5 +314,7 @@
   "patternCycle": "Oft folgt auf '{tag1}' am nächsten Tag '{tag2}'.",
   "@patternCycle": { "placeholders": { "tag1": { "type": "String" }, "tag2": { "type": "String" } } },
   "patternCount": "(Basiert auf {count} Ereignissen)",
-  "@patternCount": { "placeholders": { "count": { "type": "int" } } }
+  "@patternCount": { "placeholders": { "count": { "type": "int" } } },
+
+  "me": "Ich"
 }

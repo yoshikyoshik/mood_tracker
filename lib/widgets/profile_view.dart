@@ -14,6 +14,7 @@ class ProfileView extends StatefulWidget {
   final String email;
   final String version;
   final List<MoodEntry> entries;
+  final List<MoodEntry> allEntries;
   final bool isPro;
   final VoidCallback onLogout;
   final VoidCallback onManageSubscription;
@@ -26,6 +27,7 @@ class ProfileView extends StatefulWidget {
     required this.email,
     required this.version,
     required this.entries,
+    required this.allEntries,
     required this.isPro,
     required this.onLogout,
     required this.onManageSubscription,
@@ -252,11 +254,13 @@ class _ProfileViewState extends State<ProfileView> {
           ],
           // ------------------------
 
-          // ERFOLGE
-          Text(l10n.achievements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 15),
-          _buildBadgesGrid(context),
-          const SizedBox(height: 30),
+          // ERFOLGE (NUR BEIM HAUPTPROFIL ANZEIGEN)
+          if (widget.currentProfile.isMain) ...[
+            Text(l10n.achievements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 15),
+            _buildBadgesGrid(context),
+            const SizedBox(height: 30),
+          ],
 
           // EINSTELLUNGEN
           Text(l10n.settings, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -287,14 +291,17 @@ class _ProfileViewState extends State<ProfileView> {
 
   Widget _buildBadgesGrid(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final totalEntries = widget.entries.length;
-    final uniqueDaysCount = widget.entries.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().length;
-    final nightCount = widget.entries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
-    final noteCount = widget.entries.where((e) => e.note != null && e.note!.length > 10).length;
-    final highMoodCount = widget.entries.where((e) => e.score >= 8.0).length;
-    final detailedCount = widget.entries.where((e) => e.tags.length >= 3).length;
-    final sleepTrackedCount = widget.entries.where((e) => e.sleepRating != null).length;
-    final weekendCount = widget.entries.where((e) => e.timestamp.weekday >= 6).length;
+    final totalEntries = widget.allEntries.length;
+    final uniqueDaysCount = widget.allEntries
+        .map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day))
+        .toSet()
+        .length;
+    final nightCount = widget.allEntries.where((e) => e.timestamp.hour >= 22 || e.timestamp.hour < 4).length;
+    final noteCount = widget.allEntries.where((e) => e.note != null && e.note!.length > 10).length;
+    final highMoodCount = widget.allEntries.where((e) => e.score >= 8.0).length;
+    final detailedCount = widget.allEntries.where((e) => e.tags.length >= 3).length;
+    final sleepTrackedCount = widget.allEntries.where((e) => e.sleepRating != null).length;
+    final weekendCount = widget.allEntries.where((e) => e.timestamp.weekday >= 6).length;
 
     final badges = [
       { 'title': l10n.badgeStart, 'desc': l10n.badgeStartDesc, 'icon': Icons.flag_rounded, 'color': Colors.blue, 'unlocked': totalEntries >= 1 },

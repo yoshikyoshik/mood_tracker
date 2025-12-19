@@ -1591,6 +1591,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'(Basiert auf {count} Ereignissen)'**
   String patternCount(int count);
+
+  /// No description provided for @me.
+  ///
+  /// In de, this message translates to:
+  /// **'Ich'**
+  String get me;
 }
 
 class _AppLocalizationsDelegate

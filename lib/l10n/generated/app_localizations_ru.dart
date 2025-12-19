@@ -812,4 +812,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String patternCount(int count) {
     return '(На основе $count событий)';
   }
+
+  @override
+  String get me => 'Я';
 }

@@ -815,4 +815,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String patternCount(int count) {
     return '(Basado en $count eventos)';
   }
+
+  @override
+  String get me => 'Yo';
 }

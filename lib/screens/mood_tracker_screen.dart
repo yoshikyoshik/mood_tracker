@@ -49,7 +49,7 @@ class MoodTrackerContent extends StatefulWidget {
   State<MoodTrackerContent> createState() => _MoodTrackerContentState();
 }
 
-class _MoodTrackerContentState extends State<MoodTrackerContent> {
+class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBindingObserver {
   // State
   int _selectedIndex = 0;
   bool _showSuccessAnimation = false;
@@ -81,12 +81,20 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
   final GlobalKey _three = GlobalKey(); // Stats Tab
   final GlobalKey _four = GlobalKey();  // Profile Tab
 
+  Timer? _dayCheckTimer;
+
   // 1. VARIABLE FÜR DEN LISTENER
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription; // Beachte: neuerdings List<ConnectivityResult> in v6
 
   @override
   void initState() {
     super.initState();
+
+    // --- NEU: Lifecycle & Timer ---
+    WidgetsBinding.instance.addObserver(this);
+    _startDayCheckTimer();
+    // -----------------------------
+
     _initializeAll();
     // 2. LISTENER STARTEN (Automatischer Sync)
     // LISTENER STARTEN (Automatischer Sync)
@@ -107,6 +115,12 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
 
   @override
   void dispose() {
+
+    // --- NEU: Aufräumen ---
+    WidgetsBinding.instance.removeObserver(this);
+    _dayCheckTimer?.cancel();
+    // ----------------------
+
     // 3. LISTENER AUFRÄUMEN
     _connectivitySubscription.cancel();
     super.dispose();
@@ -136,6 +150,33 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
       _initializeTagsMap();
       // 2. FIX: Custom Tags sofort wieder aus der DB holen und einsortieren!
       _loadCustomTags();
+    }
+  }
+
+  // --- LIFECYCLE & DAY CHECK ---
+  
+  void _startDayCheckTimer() {
+    // Jede Minute prüfen
+    _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkForDayChange();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Wenn App aufwacht
+    if (state == AppLifecycleState.resumed) {
+      _checkForDayChange();
+    }
+  }
+
+  void _checkForDayChange() {
+    // Zwingt die UI zum Neu-Zeichnen, damit DateTime.now() aktualisiert wird.
+    if (mounted) {
+      setState(() {
+        // Hier passiert nichts, aber das setState sorgt dafür, 
+        // dass die build-Methode neu läuft und das aktuelle Datum prüft.
+      });
     }
   }
 
@@ -328,7 +369,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                             DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _selectedProfileId,
-                                icon: const SizedBox.shrink(),
+                                icon: const SizedBox.shrink(), // Standard-Icon verstecken, wir bauen ein eigenes
                                 isDense: true,
                                 dropdownColor: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
@@ -340,6 +381,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                                     _changeProfile(newValue);
                                   }
                                 },
+                                // 1. HEADER ANZEIGE (Zugeklappt)
                                 selectedItemBuilder: (BuildContext context) {
                                   return [
                                     ..._profiles.map((p) {
@@ -351,43 +393,100 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                                               p.name,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
-                                                fontWeight: FontWeight.w800, 
-                                                color: headerTextColor,
-                                                fontSize: 22, 
+                                                fontWeight: FontWeight.w800,
+                                                // HAUPTPROFIL: Indigo Farbe, ANDERE: Schwarz
+                                                color: p.isMain ? theme.colorScheme.primary : headerTextColor,
+                                                fontSize: 22,
                                                 height: 1.2,
                                               ),
                                             ),
                                           ),
+                                          
+                                          // --- ICON FÜR HAUPTPROFIL ---
+                                          if (p.isMain) ...[
+                                            const SizedBox(width: 6),
+                                            Icon(
+                                              Icons.verified, // Oder Icons.star_rounded
+                                              size: 20, 
+                                              color: theme.colorScheme.primary
+                                            ),
+                                          ],
+                                          // ----------------------------
+
                                           const SizedBox(width: 4),
                                           Icon(Icons.keyboard_arrow_down, size: 22, color: headerTextColor.withValues(alpha: 0.5)),
-                                          const SizedBox(width: 12),
-                                          GestureDetector(
-                                            onTap: _editCurrentProfileDialog,
-                                            child: Icon(Icons.edit_outlined, size: 18, color: headerTextColor.withValues(alpha: 0.4)),
-                                          ),
+                                          
+                                          // Nur anzeigen, wenn ausgewählt, damit man editieren kann
+                                          if (p.id == _selectedProfileId) ...[
+                                            const SizedBox(width: 12),
+                                            GestureDetector(
+                                              onTap: _editCurrentProfileDialog,
+                                              child: Icon(Icons.edit_outlined, size: 18, color: headerTextColor.withValues(alpha: 0.4)),
+                                            ),
+                                          ]
                                         ],
                                       );
                                     }),
+                                    // Fallback für 'new' item (wird technisch hier nie angezeigt, aber nötig für Array-Länge)
                                     Text(l10n.newProfile), 
                                   ];
                                 },
+                                // 2. LISTEN ANZEIGE (Aufgeklappt)
                                 items: [
                                   ..._profiles.map((p) => DropdownMenuItem(
-                                    value: p.id, 
+                                    value: p.id,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(vertical: 8),
-                                      child: Text(p.name, style: const TextStyle(fontSize: 16)),
+                                      // Optional: Hauptprofil leicht hervorheben im Hintergrund
+                                      decoration: p.isMain ? BoxDecoration(
+                                        border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 3))
+                                      ) : null,
+                                      child: Row(
+                                        children: [
+                                          // Kleines Icon auch in der Liste
+                                          if (p.isMain) 
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 8, right: 8),
+                                              child: Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
+                                            )
+                                          else 
+                                            // --- HIER IST DIE ÄNDERUNG ---
+                                            // Statt leerem Platz ein dezentes Icon für Beobachter
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 8, right: 8),
+                                              child: Icon(Icons.visibility_outlined, size: 16, color: Colors.grey.withValues(alpha: 0.5)),
+                                            ),
+                                            
+                                          Text(
+                                            p.name, 
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              // Hauptprofil fett gedruckt
+                                              fontWeight: p.isMain ? FontWeight.bold : FontWeight.normal,
+                                              color: p.isMain ? theme.colorScheme.primary : Colors.black87
+                                            )
+                                          ),
+                                          
+                                          if (p.isMain) 
+                                             Padding(
+                                               padding: const EdgeInsets.only(left: 6),
+                                               child: Text("(${l10n.me})", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                             ),
+                                        ],
+                                      ),
                                     ),
                                   )),
+                                  // "Neues Profil" Eintrag
                                   DropdownMenuItem(
                                     value: 'new',
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(vertical: 8),
                                       child: Row(
                                         children: [
+                                          const SizedBox(width: 8), // Einrücken passend zu oben
                                           Icon(
-                                            (!_isPro && _profiles.isNotEmpty) ? Icons.lock_outline : Icons.add_circle_outline, 
-                                            size: 18, 
+                                            (!_isPro && _profiles.isNotEmpty) ? Icons.lock_outline : Icons.add_circle_outline,
+                                            size: 18,
                                             color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo
                                           ),
                                           const SizedBox(width: 10),
@@ -503,8 +602,18 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> {
                             email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail",
                             version: _appVersion,
                             
-                            // FIX: Nur relevante Einträge übergeben für PDF Export
+                            // 1. Das bleibt (gefiltert für PDF)
                             entries: relevantEntries, 
+                            
+                            // 2. FIX: Nur Einträge vom Hauptprofil für die Badges zählen!
+                            // Wir suchen die ID des Hauptprofils (oder Fallback auf das erste)
+                            allEntries: _allEntries.where((e) {
+                              final mainProfile = _profiles.firstWhere(
+                                (p) => p.isMain, 
+                                orElse: () => _profiles.first
+                              );
+                              return e.profileId == mainProfile.id;
+                            }).toList(), 
                             
                             isPro: _isPro,
                             onLogout: _signOut,
