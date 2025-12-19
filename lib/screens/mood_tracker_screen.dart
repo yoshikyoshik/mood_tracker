@@ -99,8 +99,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
     // -----------------------------
 
     _initializeAll();
-    _subscribeToPings();
-    
+        
     // 2. LISTENER STARTEN (Automatischer Sync)
     // LISTENER STARTEN (Automatischer Sync)
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) async {
@@ -844,18 +843,25 @@ void _triggerPingAnimation(String type) {
       final prefs = await SharedPreferences.getInstance();
       final lastProfileId = prefs.getString('last_profile_id');
 
-      setState(() {
-        _profiles = data.map((json) => Profile.fromJson(json)).toList();
+      if (mounted) {
+        setState(() {
+          _profiles = data.map((json) => Profile.fromJson(json)).toList();
+          
+          if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { 
+            _selectedProfileId = lastProfileId; 
+          } else if (_profiles.isNotEmpty) { 
+            _selectedProfileId = _profiles.first.id; 
+          }
+          _initializeTagsMap();
+        });
         
-        // Prüfen, ob die ID noch gültig ist (gehört sie mir?)
-        if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { 
-          _selectedProfileId = lastProfileId; 
-        } else if (_profiles.isNotEmpty) { 
-          _selectedProfileId = _profiles.first.id; 
-        }
-        _initializeTagsMap();
-      });
-      if (_selectedProfileId != null) _loadEntries();
+        if (_selectedProfileId != null) _loadEntries();
+
+        // --- HIER IST DER NEUE PLATZ ---
+        // Jetzt sind _profiles zu 100% gefüllt, also können wir den Listener starten.
+        _subscribeToPings(); 
+        // -------------------------------
+      }
     } catch (e) { 
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); 
     }
