@@ -281,37 +281,47 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
   }
 
   void _subscribeToPings() {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null || _selectedProfileId == null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    // Debug 1: Prüfen, ob wir überhaupt starten
+    debugPrint("🔍 PING SETUP: User: ${user?.email}, ProfileSelected: $_selectedProfileId");
 
-  // Nur hören, wenn wir im Hauptprofil sind? 
-  // Ja, macht Sinn, oder wenn man generell eingeloggt ist.
-  // Wir filtern auf Empfänger = Mein Hauptprofil.
+    if (user == null || _profiles.isEmpty) {
+      debugPrint("❌ PING ABBRUCH: Keine Profile geladen.");
+      return;
+    }
 
-  // Da wir die Profil-ID brauchen, müssen wir sicherstellen, dass _profiles geladen ist.
-  // Wir nehmen an, das erste Profil ist das Hauptprofil oder wir suchen es.
-  final myProfileId = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first).id;
+    // Wir suchen das Hauptprofil
+    final mainProfile = _profiles.firstWhere(
+      (p) => p.isMain, 
+      orElse: () => _profiles.first
+    );
+    
+    debugPrint("👂 PING LISTENER: Ich höre auf Pings für Profil-ID: ${mainProfile.id} (${mainProfile.name})");
 
-  _pingSubscription = Supabase.instance.client
-      .channel('my_pings')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'partner_pings',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'receiver_profile_id',
-          value: myProfileId,
-        ),
-        callback: (payload) {
-          final newPing = payload.newRecord;
-          if (newPing['ping_type'] != null) {
-            _triggerPingAnimation(newPing['ping_type']);
-          }
-        },
-      )
-      .subscribe();
-}
+    _pingSubscription = Supabase.instance.client
+        .channel('my_pings')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'partner_pings',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'receiver_profile_id',
+            value: mainProfile.id, // <--- Auf diese ID hören wir
+          ),
+          callback: (payload) {
+            debugPrint("✨ PING EMPFANGEN! Payload: ${payload.newRecord}");
+            final newPing = payload.newRecord;
+            if (newPing['ping_type'] != null) {
+              _triggerPingAnimation(newPing['ping_type']);
+            }
+          },
+        )
+        .subscribe((status, error) {
+           // Debug 3: Status der Verbindung
+           debugPrint("📡 PING CHANNEL STATUS: $status ${error != null ? '- Error: $error' : ''}");
+        });
+  }
 
 void _triggerPingAnimation(String type) {
     String animFile = 'assets/anim_heart.json'; // Fallback
