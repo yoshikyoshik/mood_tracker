@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Wichtig für Speicher
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import 'screens/auth_gate.dart';
 
@@ -33,6 +34,15 @@ Future<void> main() async {
   } catch (e) {
       debugPrint("Fehler beim Laden der Datumsformate: $e");
   }
+
+  // --- ONESIGNAL INIT ---
+  // Ersetze das hier mit DEINER OneSignal App ID aus Schritt 2
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+  OneSignal.initialize("093f8b73-b8c8-4bb5-acab-796e58d22e4b");
+  
+  // Um Erlaubnis fragen (wichtig für iOS & Android 13+)
+  OneSignal.Notifications.requestPermission(true);
+  // ---------------------
 
   runApp(const MyApp());
 

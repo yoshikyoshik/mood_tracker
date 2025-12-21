@@ -110,7 +110,7 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
   Future<void> _sendPing(String type) async {
     if (_partnerStatus == null) return;
     
-    // Kleines haptisches Feedback oder Snack, damit man weiß "ist raus"
+    // Feedback für den User
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Ping gesendet! 🚀"), duration: Duration(milliseconds: 500)),
     );
@@ -119,9 +119,6 @@ class _PartnerConnectCardState extends State<PartnerConnectCard> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      // Wir holen die Partner Profile ID aus dem geladenen Status
-      // ACHTUNG: Wir müssen sicher sein, dass wir die ID haben. 
-      // Im vorherigen Code hatten wir 'partner_profile_id' im _partnerStatus gespeichert.
       final partnerProfileId = _partnerStatus!['partner_profile_id'];
 
       if (partnerProfileId != null) {

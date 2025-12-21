@@ -14,6 +14,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
@@ -281,22 +282,16 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
 
   void _subscribeToPings() {
     final user = Supabase.instance.client.auth.currentUser;
-    // Debug 1: Prüfen, ob wir überhaupt starten
-    debugPrint("🔍 PING SETUP: User: ${user?.email}, ProfileSelected: $_selectedProfileId");
+    // Sicherheitscheck: User muss da sein und Profile geladen
+    if (user == null || _profiles.isEmpty) return;
 
-    if (user == null || _profiles.isEmpty) {
-      debugPrint("❌ PING ABBRUCH: Keine Profile geladen.");
-      return;
-    }
-
-    // Wir suchen das Hauptprofil
+    // Hauptprofil suchen
     final mainProfile = _profiles.firstWhere(
       (p) => p.isMain, 
       orElse: () => _profiles.first
     );
-    
-    debugPrint("👂 PING LISTENER: Ich höre auf Pings für Profil-ID: ${mainProfile.id} (${mainProfile.name})");
 
+    // Auf Pings für MEIN Hauptprofil hören
     _pingSubscription = Supabase.instance.client
         .channel('my_pings')
         .onPostgresChanges(
@@ -306,20 +301,16 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'receiver_profile_id',
-            value: mainProfile.id, // <--- Auf diese ID hören wir
+            value: mainProfile.id,
           ),
           callback: (payload) {
-            debugPrint("✨ PING EMPFANGEN! Payload: ${payload.newRecord}");
             final newPing = payload.newRecord;
             if (newPing['ping_type'] != null) {
               _triggerPingAnimation(newPing['ping_type']);
             }
           },
         )
-        .subscribe((status, error) {
-           // Debug 3: Status der Verbindung
-           debugPrint("📡 PING CHANNEL STATUS: $status ${error != null ? '- Error: $error' : ''}");
-        });
+        .subscribe();
   }
 
 void _triggerPingAnimation(String type) {
@@ -345,6 +336,36 @@ void _triggerPingAnimation(String type) {
           setState(() => _currentPingAnimation = null);
         }
       });
+    }
+  }
+
+// --- PUSH ID UPDATE ---
+  Future<void> _updateOneSignalId() async {
+    // 1. Die ID vom Gerät holen
+    final deviceState = OneSignal.User.pushSubscription;
+    final osId = deviceState.id; // Das ist die "Adresse" dieses Handys
+    
+    if (osId == null) {
+      debugPrint("📭 PUSH: Noch keine OneSignal ID vorhanden.");
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || _profiles.isEmpty) return;
+
+    // Wir speichern die ID beim HAUPTPROFIL des Users
+    try {
+      final mainProfile = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first);
+      
+      // Nur updaten, wenn sie sich geändert hat (spart DB Calls)
+      // Dazu müssten wir wissen was in der DB steht, aber ein Update schadet nicht.
+      await Supabase.instance.client.from('profiles').update({
+        'onesignal_id': osId,
+      }).eq('id', mainProfile.id);
+      
+      debugPrint("✅ PUSH: OneSignal ID ($osId) für Profil ${mainProfile.name} gespeichert.");
+    } catch (e) {
+      debugPrint("❌ PUSH FEHLER: Konnte ID nicht speichern: $e");
     }
   }
 
@@ -861,6 +882,8 @@ void _triggerPingAnimation(String type) {
         // Jetzt sind _profiles zu 100% gefüllt, also können wir den Listener starten.
         _subscribeToPings(); 
         // -------------------------------
+        // NEU: Push ID speichern
+        _updateOneSignalId();
       }
     } catch (e) { 
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); 
