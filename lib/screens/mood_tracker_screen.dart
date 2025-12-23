@@ -341,6 +341,8 @@ void _triggerPingAnimation(String type) {
 
 // --- PUSH ID UPDATE ---
   Future<void> _updateOneSignalId() async {
+    // FIX: Im Webbrowser sofort abbrechen
+    if (kIsWeb) return;
     // 1. Die ID vom Gerät holen
     final deviceState = OneSignal.User.pushSubscription;
     final osId = deviceState.id; // Das ist die "Adresse" dieses Handys
