@@ -68,7 +68,6 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
   List<MoodEntry> _allEntries = [];
   
   bool _isPro = false;
-  ////String? _stripeCustomerId;
 
   String _appVersion = "";
 
@@ -86,59 +85,46 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
   String? _currentPingAnimation; // null = keine Animation
   RealtimeChannel? _pingSubscription;
 
-  // 1. VARIABLE FÜR DEN LISTENER
-  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription; // Beachte: neuerdings List<ConnectivityResult> in v6
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
 
-    // --- NEU: Lifecycle & Timer ---
     WidgetsBinding.instance.addObserver(this);
     _startDayCheckTimer();
-    // -----------------------------
-
+    
     _initializeAll();
         
-    // 2. LISTENER STARTEN (Automatischer Sync)
-    // LISTENER STARTEN (Automatischer Sync)
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) async {
       bool hasConnection = results.any((r) => r != ConnectivityResult.none);
       if (hasConnection) {
-        // Sync über Service aufrufen
         final count = await _entryService.syncOfflineEntries();
         if (count > 0 && mounted) {
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count Offline-Einträge synchronisiert!"), backgroundColor: Colors.green));
-           _loadEntries(); // UI aktualisieren
+           _loadEntries(); 
         }
       }
     });
 
-    // NEU: RevenueCat Listener
     if (!kIsWeb) {
       Purchases.addCustomerInfoUpdateListener((info) {
         _handleCustomerInfo(info);
-    });
-  }
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndStartShowcase());
   }
 
   @override
   void dispose() {
-
-    // --- NEU: Aufräumen ---
     WidgetsBinding.instance.removeObserver(this);
     _dayCheckTimer?.cancel();
-    // ----------------------
-
-    // 3. LISTENER AUFRÄUMEN
     _connectivitySubscription.cancel();
     super.dispose();
     _pingSubscription?.unsubscribe();
   }
 
-  // --- TUTORIAL START LOGIK ---
   Future<void> _checkAndStartShowcase() async {
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
@@ -153,22 +139,16 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
     }
   }
 
-  // WICHTIG: Wird aufgerufen, wenn sich Abhängigkeiten (wie Sprache) ändern
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_profiles.isNotEmpty) {
-      // 1. Standard-Tags neu laden
       _initializeTagsMap();
-      // 2. FIX: Custom Tags sofort wieder aus der DB holen und einsortieren!
       _loadCustomTags();
     }
   }
 
-  // --- LIFECYCLE & DAY CHECK ---
-  
   void _startDayCheckTimer() {
-    // Jede Minute prüfen
     _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkForDayChange();
     });
@@ -176,19 +156,14 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Wenn App aufwacht
     if (state == AppLifecycleState.resumed) {
       _checkForDayChange();
     }
   }
 
   void _checkForDayChange() {
-    // Zwingt die UI zum Neu-Zeichnen, damit DateTime.now() aktualisiert wird.
     if (mounted) {
-      setState(() {
-        // Hier passiert nichts, aber das setState sorgt dafür, 
-        // dass die build-Methode neu läuft und das aktuelle Datum prüft.
-      });
+      setState(() {});
     }
   }
 
@@ -196,64 +171,21 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
 
   Map<String, List<String>> _getLocalizedBaseTags(AppLocalizations l10n) {
     return {
-      // SOZIALES
-      l10n.categorySocial: [
-        l10n.tagFamily, 
-        l10n.tagRelationship, 
-        l10n.tagFriends, 
-        l10n.tagParty, 
-        l10n.tagSex // NEU: Intimität
-      ],
-      
-      // KÖRPER & GEIST
-      l10n.categoryBodyMind: [
-        l10n.tagSport, 
-        l10n.tagSleep, 
-        l10n.tagFood, 
-        l10n.tagHealthyFood, // NEU: Gesund gegessen
-        l10n.tagFastFood, // NEU: Fast Food
-        l10n.tagWater, // NEU: Wenig Wasser
-        l10n.tagAlcohol, // NEU: Alkohol
-        l10n.tagHealth, 
-        l10n.tagMeditation,
-        l10n.tagNature, // NEU: Natur
-        l10n.tagSauna // NEU: Wellness
-      ],
-      
-      // PFLICHTEN
-      l10n.categoryObligations: [
-        l10n.tagWork, 
-        l10n.tagSchool, 
-        l10n.tagHomework, 
-        l10n.tagUni, 
-        l10n.tagHousehold
-      ],
-      
-      // FREIZEIT
-      l10n.categoryLeisure: [
-        l10n.tagHobby, 
-        l10n.tagScreenTime, // NEU: Viel Handy (passt hier oder bei Other gut)
-        l10n.tagTravel, 
-        l10n.tagWeather, 
-        l10n.tagGaming, 
-        l10n.tagReading, 
-        l10n.tagMusic
-      ],
-      
+      l10n.categorySocial: [l10n.tagFamily, l10n.tagRelationship, l10n.tagFriends, l10n.tagParty, l10n.tagSex],
+      l10n.categoryBodyMind: [l10n.tagSport, l10n.tagSleep, l10n.tagFood, l10n.tagHealthyFood, l10n.tagFastFood, l10n.tagWater, l10n.tagAlcohol, l10n.tagHealth, l10n.tagMeditation, l10n.tagNature, l10n.tagSauna],
+      l10n.categoryObligations: [l10n.tagWork, l10n.tagSchool, l10n.tagHomework, l10n.tagUni, l10n.tagHousehold],
+      l10n.categoryLeisure: [l10n.tagHobby, l10n.tagScreenTime, l10n.tagTravel, l10n.tagWeather, l10n.tagGaming, l10n.tagReading, l10n.tagMusic],
       l10n.categoryOther: [],
     };
   }
 
   String _mapDbCategoryToCurrent(String dbCategory, AppLocalizations l10n) {
     if (_combinedTagsByCategory.containsKey(dbCategory)) return dbCategory;
-
-    // Legacy Mapping
     if (dbCategory == 'Soziales' || dbCategory == 'Social') return l10n.categorySocial;
     if (dbCategory == 'Körper & Geist' || dbCategory == 'Body & Mind') return l10n.categoryBodyMind;
     if (dbCategory == 'Pflichten' || dbCategory == 'Obligations') return l10n.categoryObligations;
     if (dbCategory == 'Freizeit & Umwelt' || dbCategory == 'Leisure & Nature') return l10n.categoryLeisure;
     if (dbCategory == 'Zyklus & Körper' || dbCategory == 'Cycle & Body') return l10n.categoryCycle;
-
     return l10n.categoryOther;
   }
 
@@ -269,16 +201,8 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
       final profile = _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: '', name: ''));
       
       if (profile.isCycleTracking) {
-        final cycleTags = [
-          l10n.tagPeriodLight, l10n.tagPeriodMedium, l10n.tagPeriodHeavy, 
-          l10n.tagSpotting, l10n.tagCramps, l10n.tagPMS, l10n.tagOvulation
-        ];
-        
-        final combined = <String, List<String>>{
-          l10n.categoryCycle: cycleTags,
-          ...newMap 
-        };
-        
+        final cycleTags = [l10n.tagPeriodLight, l10n.tagPeriodMedium, l10n.tagPeriodHeavy, l10n.tagSpotting, l10n.tagCramps, l10n.tagPMS, l10n.tagOvulation];
+        final combined = <String, List<String>>{l10n.categoryCycle: cycleTags, ...newMap};
         setState(() { _combinedTagsByCategory = combined; });
         return;
       }
@@ -288,16 +212,10 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
 
   void _subscribeToPings() {
     final user = Supabase.instance.client.auth.currentUser;
-    // Sicherheitscheck: User muss da sein und Profile geladen
     if (user == null || _profiles.isEmpty) return;
 
-    // Hauptprofil suchen
-    final mainProfile = _profiles.firstWhere(
-      (p) => p.isMain, 
-      orElse: () => _profiles.first
-    );
+    final mainProfile = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first);
 
-    // Auf Pings für MEIN Hauptprofil hören
     _pingSubscription = Supabase.instance.client
         .channel('my_pings')
         .onPostgresChanges(
@@ -319,10 +237,9 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
         .subscribe();
   }
 
-void _triggerPingAnimation(String type) {
-    String animFile = 'assets/anim_heart.json'; // Fallback
+  void _triggerPingAnimation(String type) {
+    String animFile = 'assets/anim_heart.json'; 
 
-    // HIER WAREN DIE KLAMMERN FEHLEND:
     if (type == 'hug') {
       animFile = 'assets/anim_hug.json';
     } else if (type == 'energy') {
@@ -335,8 +252,6 @@ void _triggerPingAnimation(String type) {
       setState(() {
         _currentPingAnimation = animFile;
       });
-
-      // Nach 3 Sekunden Animation wieder ausblenden
       Timer(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() => _currentPingAnimation = null);
@@ -345,125 +260,87 @@ void _triggerPingAnimation(String type) {
     }
   }
 
-// --- PUSH ID UPDATE ---
   Future<void> _updateOneSignalId() async {
-    // FIX: Im Webbrowser sofort abbrechen
     if (kIsWeb) return;
-    // 1. Die ID vom Gerät holen
     final deviceState = OneSignal.User.pushSubscription;
-    final osId = deviceState.id; // Das ist die "Adresse" dieses Handys
+    final osId = deviceState.id; 
     
-    if (osId == null) {
-      debugPrint("📭 PUSH: Noch keine OneSignal ID vorhanden.");
-      return;
-    }
+    if (osId == null) return;
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || _profiles.isEmpty) return;
 
-    // Wir speichern die ID beim HAUPTPROFIL des Users
     try {
       final mainProfile = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first);
-      
-      // Nur updaten, wenn sie sich geändert hat (spart DB Calls)
-      // Dazu müssten wir wissen was in der DB steht, aber ein Update schadet nicht.
-      await Supabase.instance.client.from('profiles').update({
-        'onesignal_id': osId,
-      }).eq('id', mainProfile.id);
-      
-      debugPrint("✅ PUSH: OneSignal ID ($osId) für Profil ${mainProfile.name} gespeichert.");
+      await Supabase.instance.client.from('profiles').update({'onesignal_id': osId}).eq('id', mainProfile.id);
     } catch (e) {
       debugPrint("❌ PUSH FEHLER: Konnte ID nicht speichern: $e");
     }
   }
 
-  // --- ACTIONS ---
+  // --- ACTIONS (SUBSCRIPTION) ---
 
-Future<void> _startCheckout() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _isLoading = true);
-
-    try {
-      // 1. Angebote laden
-      Offerings offerings = await Purchases.getOfferings();
-      
-      if (!mounted) return;
-
-      if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-        final package = offerings.current!.availablePackages.first;
-        
-        // FIX: Wir nutzen explizit 'dynamic', damit der Compiler nicht meckert.
-        // ignore: deprecated_member_use
-        dynamic result = await Purchases.purchasePackage(package);
-        
-        if (!mounted) return;
-
-        CustomerInfo customerInfo;
-        
-        // Jetzt funktioniert die Weiche, weil 'result' dynamisch ist:
-        if (result is CustomerInfo) {
-          // Alte Version: Direktzuweisung
-          customerInfo = result;
-        } else {
-          // Neue Version: Wrapper entpacken
-          // Wir greifen einfach auf .customerInfo zu (Dart vertraut uns hier dank dynamic)
-          customerInfo = result.customerInfo;
-        }
-        
-        // 3. Ergebnis verarbeiten
-        _handleCustomerInfo(customerInfo);
-        
-        if (customerInfo.entitlements.all['pro_access']?.isActive == true) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text("Willkommen bei Pro! 🎉"), backgroundColor: Colors.green)
-           );
-           if (Navigator.canPop(context)) {
-             Navigator.of(context).pop(); 
-           }
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("Aktuell keine Angebote verfügbar."))
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      if (!e.toString().contains("User cancelled")) {
-         debugPrint("Kauf Fehler: $e");
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text(l10n.snackError("Kauf nicht abgeschlossen")))
-         );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  Future<void> _startCheckout() async {
+    await PaywallScreen.show(context);
+    await _checkSubscription();
   }
 
-  // ALTE _openCustomerPortal LÖSCHEN und hiermit ERSETZEN:
-Future<void> _openCustomerPortal() async {
+  void _showProOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 20),
+              const Text("Dein Abo verwalten", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.star, color: Colors.amber),
+                title: const Text("Plan ändern / Upgrade"),
+                subtitle: const Text("Wechsle z.B. auf Jährlich"),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _startCheckout();
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.settings, color: Colors.grey),
+                title: const Text("Im Play Store verwalten"),
+                subtitle: const Text("Kündigen oder Zahlungsmethode ändern"),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openCustomerPortal();
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Future<void> _openCustomerPortal() async {
     final l10n = AppLocalizations.of(context)!;
     try {
       if (!kIsWeb) {
-           // Hier nutzen wir eine URL, die auf Android immer funktioniert
            final url = Uri.parse("https://play.google.com/store/account/subscriptions");
-           
            if (await canLaunchUrl(url)) {
-             // await launchUrl(url); <-- Das hier könnte warten...
-             // BESSER:
              await launchUrl(url, mode: LaunchMode.externalApplication);
            }
       }
     } catch (e) {
-      // SICHERHEITS-CHECK
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
     }
-  }
-
-  void _showPremiumSheet(BuildContext context, String title, String message) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (ctx) => Container(padding: const EdgeInsets.all(24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, spreadRadius: 5)]), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))), const SizedBox(height: 20), const Icon(Icons.diamond, size: 40, color: Colors.indigo), const SizedBox(height: 15), Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center), const SizedBox(height: 10), Text(message, style: TextStyle(fontSize: 15, color: Colors.black87.withValues(alpha: 0.7), height: 1.5), textAlign: TextAlign.center), const SizedBox(height: 30), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { Navigator.pop(ctx); _startCheckout(); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 5, shadowColor: Colors.indigo.withValues(alpha: 0.4)), child: Text(l10n.becomePro.toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)))), const SizedBox(height: 10), TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.maybeLater, style: const TextStyle(color: Colors.grey)))])));
   }
 
   // --- BUILD METHOD ---
@@ -479,9 +356,6 @@ Future<void> _openCustomerPortal() async {
 
     final relevantEntries = (_selectedProfileId == null) ? <MoodEntry>[] : _allEntries.where((e) => e.profileId == _selectedProfileId).toList();
     final entriesForDate = relevantEntries.where((entry) => DateUtils.isSameDay(entry.timestamp, _selectedDate)).toList();
-    
-    // FIX: Unused Variable entfernt!
-    // final currentProfileName = ... (wird nicht mehr gebraucht)
     
     int? currentCycleDay;
      if (_profiles.isNotEmpty && _selectedProfileId != null) {
@@ -515,194 +389,60 @@ Future<void> _openCustomerPortal() async {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            dateString.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 12, 
-                              fontWeight: FontWeight.bold, 
-                              color: headerTextColor.withValues(alpha: 0.6),
-                              letterSpacing: 1.2
-                            ),
-                          ),
+                          Text(dateString.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: headerTextColor.withValues(alpha: 0.6), letterSpacing: 1.2)),
                           const SizedBox(height: 2), 
-                          
                           if (_profiles.isNotEmpty)
                             DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _selectedProfileId,
-                                icon: const SizedBox.shrink(), // Standard-Icon verstecken, wir bauen ein eigenes
+                                icon: const SizedBox.shrink(),
                                 isDense: true,
                                 dropdownColor: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 elevation: 4,
                                 onChanged: (String? newValue) {
-                                  if (newValue == 'new') {
-                                    _createNewProfile();
-                                  } else if (newValue != null) {
-                                    _changeProfile(newValue);
-                                  }
+                                  if (newValue == 'new') { _createNewProfile(); } else if (newValue != null) { _changeProfile(newValue); }
                                 },
-                                // 1. HEADER ANZEIGE (Zugeklappt)
                                 selectedItemBuilder: (BuildContext context) {
                                   return [
                                     ..._profiles.map((p) {
-                                      return Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              p.name,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                // HAUPTPROFIL: Indigo Farbe, ANDERE: Schwarz
-                                                color: p.isMain ? theme.colorScheme.primary : headerTextColor,
-                                                fontSize: 22,
-                                                height: 1.2,
-                                              ),
-                                            ),
-                                          ),
-                                          
-                                          // --- ICON FÜR HAUPTPROFIL ---
-                                          if (p.isMain) ...[
-                                            const SizedBox(width: 6),
-                                            Icon(
-                                              Icons.verified, // Oder Icons.star_rounded
-                                              size: 20, 
-                                              color: theme.colorScheme.primary
-                                            ),
-                                          ],
-                                          // ----------------------------
-
-                                          const SizedBox(width: 4),
-                                          Icon(Icons.keyboard_arrow_down, size: 22, color: headerTextColor.withValues(alpha: 0.5)),
-                                          
-                                          // Nur anzeigen, wenn ausgewählt, damit man editieren kann
-                                          if (p.id == _selectedProfileId) ...[
-                                            const SizedBox(width: 12),
-                                            GestureDetector(
-                                              onTap: _editCurrentProfileDialog,
-                                              child: Icon(Icons.edit_outlined, size: 18, color: headerTextColor.withValues(alpha: 0.4)),
-                                            ),
-                                          ]
-                                        ],
-                                      );
+                                      return Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: Text(p.name, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w800, color: p.isMain ? theme.colorScheme.primary : headerTextColor, fontSize: 22, height: 1.2))), if (p.isMain) ...[const SizedBox(width: 6), Icon(Icons.verified, size: 20, color: theme.colorScheme.primary)], const SizedBox(width: 4), Icon(Icons.keyboard_arrow_down, size: 22, color: headerTextColor.withValues(alpha: 0.5)), if (p.id == _selectedProfileId) ...[const SizedBox(width: 12), GestureDetector(onTap: _editCurrentProfileDialog, child: Icon(Icons.edit_outlined, size: 18, color: headerTextColor.withValues(alpha: 0.4)))]]);
                                     }),
-                                    // Fallback für 'new' item (wird technisch hier nie angezeigt, aber nötig für Array-Länge)
                                     Text(l10n.newProfile), 
                                   ];
                                 },
-                                // 2. LISTEN ANZEIGE (Aufgeklappt)
                                 items: [
-                                  ..._profiles.map((p) => DropdownMenuItem(
-                                    value: p.id,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      // Optional: Hauptprofil leicht hervorheben im Hintergrund
-                                      decoration: p.isMain ? BoxDecoration(
-                                        border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 3))
-                                      ) : null,
-                                      child: Row(
-                                        children: [
-                                          // Kleines Icon auch in der Liste
-                                          if (p.isMain) 
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 8, right: 8),
-                                              child: Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
-                                            )
-                                          else 
-                                            // --- HIER IST DIE ÄNDERUNG ---
-                                            // Statt leerem Platz ein dezentes Icon für Beobachter
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 8, right: 8),
-                                              child: Icon(Icons.visibility_outlined, size: 16, color: Colors.grey.withValues(alpha: 0.5)),
-                                            ),
-                                            
-                                          Text(
-                                            p.name, 
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              // Hauptprofil fett gedruckt
-                                              fontWeight: p.isMain ? FontWeight.bold : FontWeight.normal,
-                                              color: p.isMain ? theme.colorScheme.primary : Colors.black87
-                                            )
-                                          ),
-                                          
-                                          if (p.isMain) 
-                                             Padding(
-                                               padding: const EdgeInsets.only(left: 6),
-                                               child: Text("(${l10n.me})", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                             ),
-                                        ],
-                                      ),
-                                    ),
-                                  )),
-                                  // "Neues Profil" Eintrag
-                                  DropdownMenuItem(
-                                    value: 'new',
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(width: 8), // Einrücken passend zu oben
-                                          Icon(
-                                            (!_isPro && _profiles.isNotEmpty) ? Icons.lock_outline : Icons.add_circle_outline,
-                                            size: 18,
-                                            color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Text(l10n.newProfile, style: TextStyle(color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
+                                  ..._profiles.map((p) => DropdownMenuItem(value: p.id, child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: p.isMain ? BoxDecoration(border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 3))) : null, child: Row(children: [if (p.isMain) Padding(padding: const EdgeInsets.only(left: 8, right: 8), child: Icon(Icons.verified, size: 16, color: theme.colorScheme.primary)) else Padding(padding: const EdgeInsets.only(left: 8, right: 8), child: Icon(Icons.visibility_outlined, size: 16, color: Colors.grey.withValues(alpha: 0.5))), Text(p.name, style: TextStyle(fontSize: 16, fontWeight: p.isMain ? FontWeight.bold : FontWeight.normal, color: p.isMain ? theme.colorScheme.primary : Colors.black87)), if (p.isMain) Padding(padding: const EdgeInsets.only(left: 6), child: Text("(${l10n.me})", style: const TextStyle(fontSize: 12, color: Colors.grey)))])))),
+                                  DropdownMenuItem(value: 'new', child: Container(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [const SizedBox(width: 8), Icon((!_isPro && _profiles.isNotEmpty) ? Icons.lock_outline : Icons.add_circle_outline, size: 18, color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo), const SizedBox(width: 10), Text(l10n.newProfile, style: TextStyle(color: (!_isPro && _profiles.isNotEmpty) ? Colors.grey : Colors.indigo))]))),
                                 ],
                               ),
                             ),
                         ],
                       ),
                       
-                      // NEUE VERSION
-// Right: Icons
-Row(
-  children: [
-    _buildStreakBadge(),
-    
-    // --- NEUE KRONE FÜR PAYWALL ---
-    if (!_isPro) 
-      IconButton(
-        icon: const Icon(Icons.workspace_premium, color: Colors.amber), // Goldene Krone
-        onPressed: () async {
-          // 1. Paywall öffnen
-          await PaywallScreen.show(context);
-          
-          // 2. Status neu prüfen (falls User gekauft hat und zurückkommt)
-          // Wir nutzen deine existierende Methode _checkSubscription(), 
-          // die aktualisiert _isPro automatisch.
-          await _checkSubscription();
-
-          // --- DEBUG HELFER ---
-      if (!mounted) return;
-      
-      bool isConfigured = await Purchases.isConfigured;
-      String? appUserID = await Purchases.appUserID;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("DEBUG: RC Configured: $isConfigured | User: $appUserID"),
-          duration: const Duration(seconds: 10),
-          backgroundColor: Colors.red, // Rot damit es auffällt
-        ),
-      );
-      // --------------------
-
-        },
-      ),
-    // ------------------------------
-
-    IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
-  ],
-)
+                      // Right: Icons
+                      Row(
+                        children: [
+                          _buildStreakBadge(),
+                          
+                          IconButton(
+                            icon: Icon(
+                              _isPro ? Icons.star : Icons.workspace_premium, 
+                              color: Colors.amber
+                            ), 
+                            onPressed: () async { 
+                              if (!_isPro) {
+                                await PaywallScreen.show(context);
+                                await _checkSubscription();
+                              } else {
+                                _showProOptions();
+                              }
+                            }
+                          ),
+                          
+                          IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
+                        ],
+                      )
                     ],
                   ),
                 ),
@@ -713,16 +453,7 @@ Row(
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))
-                    ],
-                  ),
+                  decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))]),
                   child: ClipRRect(
                     borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
                     child: _selectedIndex == 0 
@@ -749,109 +480,37 @@ Row(
                           onDeleteEntry: _deleteEntry,
                           onEditEntry: _showEditSheet,
                           onManageCustomTag: _showTagOptions,
-                          // Tutorial Keys übergeben
                           showcaseKeySlider: _one,
                           showcaseKeySave: _two,
-                          onPreviousDay: () {
-                  setState(() {
-                    _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-                    // Optional: Reset der Slider, wenn man den Tag wechselt? 
-                    // Meistens besser, die Werte stehen zu lassen oder auf 5.0 zu setzen.
-                    // Ich lasse sie stehen, das fühlt sich flüssiger an.
-                  });
-                },
-                onNextDay: () {
-                  setState(() {
-                    final nextDay = _selectedDate.add(const Duration(days: 1));
-                    if (!nextDay.isAfter(DateTime.now())) {
-                       _selectedDate = nextDay;
-                    }
-                  });
-                },
+                          onPreviousDay: () { setState(() { _selectedDate = _selectedDate.subtract(const Duration(days: 1)); }); },
+                          onNextDay: () { setState(() { final nextDay = _selectedDate.add(const Duration(days: 1)); if (!nextDay.isAfter(DateTime.now())) { _selectedDate = nextDay; } }); },
                         )
                       : _selectedIndex == 1 
-                        ? StatsView(
-                            entries: relevantEntries,
-                            allEntries: _allEntries,
-                            currentProfile: _profiles.firstWhere(
-                                (p) => p.id == _selectedProfileId, 
-                                orElse: () => Profile(id: 'dummy', name: 'Gast')
-                            ),
-                            isPro: _isPro,
-                            onUnlockPressed: _startCheckout,
-                          )
+                        ? StatsView(entries: relevantEntries, allEntries: _allEntries, currentProfile: _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: 'dummy', name: 'Gast')), isPro: _isPro, onUnlockPressed: _startCheckout)
                         : ProfileView(
-                            // FIX: Wir übergeben das GANZE Profile Objekt
-                            currentProfile: _profiles.firstWhere(
-                                (p) => p.id == _selectedProfileId, 
-                                orElse: () => Profile(id: 'dummy', name: 'Gast')
-                            ),
-                            
-                            email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail",
-                            version: _appVersion,
-                            
-                            // 1. Das bleibt (gefiltert für PDF)
+                            currentProfile: _profiles.firstWhere((p) => p.id == _selectedProfileId, orElse: () => Profile(id: 'dummy', name: 'Gast')), 
+                            email: Supabase.instance.client.auth.currentUser?.email ?? "Keine E-Mail", 
+                            version: _appVersion, 
                             entries: relevantEntries, 
-                            
-                            // 2. FIX: Nur Einträge vom Hauptprofil für die Badges zählen!
-                            // Wir suchen die ID des Hauptprofils (oder Fallback auf das erste)
-                            allEntries: _allEntries.where((e) {
-                              final mainProfile = _profiles.firstWhere(
-                                (p) => p.isMain, 
-                                orElse: () => _profiles.first
-                              );
-                              return e.profileId == mainProfile.id;
-                            }).toList(), 
-                            
-                            isPro: _isPro,
-                            onLogout: _signOut,
-                            onManageSubscription: _isPro ? _openCustomerPortal : _startCheckout,
-                            onStartTutorial: () async {
-                              setState(() => _selectedIndex = 0);
-                              await Future.delayed(const Duration(milliseconds: 300));
-                              if (!context.mounted) return;
+                            allEntries: _allEntries.where((e) { final mainProfile = _profiles.firstWhere((p) => p.isMain, orElse: () => _profiles.first); return e.profileId == mainProfile.id; }).toList(), 
+                            isPro: _isPro, 
+                            onLogout: _signOut, 
+                            onManageSubscription: _isPro ? _showProOptions : _startCheckout, 
+                            onStartTutorial: () async { 
+                              setState(() => _selectedIndex = 0); 
+                              await Future.delayed(const Duration(milliseconds: 300)); 
+                              if (!context.mounted) return; 
                               // ignore: deprecated_member_use
-                              ShowCaseWidget.of(context).startShowCase([_one, _two, _three, _four]);
-                            },
-                            onContactSupport: () {
-                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.contactSupport)));
-                            },
-                          ),
+                              ShowCaseWidget.of(context).startShowCase([_one, _two, _three, _four]); 
+                            }, 
+                            onContactSupport: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.contactSupport))); }),
                   ),
                 ),
               ),
             ],
           ),
-          if (_showSuccessAnimation)
-            IgnorePointer(
-              child: Container(
-                color: Colors.black45,
-                child: Center(
-                  child: Lottie.asset('assets/success.json', repeat: false, width: 250),
-                ),
-              ),
-            ),
-
-            // --- NEU: PING ANIMATION OVERLAY ---
-      if (_currentPingAnimation != null)
-        Positioned.fill(
-          child: IgnorePointer( // Damit man durchklicken kann (optional, oder blocken)
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.3), // Leicht abdunkeln
-              child: Center(
-                child: Lottie.asset(
-                  _currentPingAnimation!,
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.contain,
-                  repeat: false, // Oder true, wenn es loopen soll bis Timer endet
-                ),
-              ),
-            ),
-          ),
-        ),
-       // ----------------------------------
-
+          if (_showSuccessAnimation) IgnorePointer(child: Container(color: Colors.black45, child: Center(child: Lottie.asset('assets/success.json', repeat: false, width: 250)))),
+          if (_currentPingAnimation != null) Positioned.fill(child: IgnorePointer(child: Container(color: Colors.black.withValues(alpha: 0.3), child: Center(child: Lottie.asset(_currentPingAnimation!, width: 300, height: 300, fit: BoxFit.contain, repeat: false))))),
         ],
       ),
       bottomNavigationBar: Container(
@@ -880,8 +539,6 @@ Row(
 
   // --- DATA LOADING ---
 
-  // --- OFFLINE SYNC LOGIK ---
-
   Future<void> _loadAppVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
@@ -908,18 +565,10 @@ Row(
 
       await _loadProfiles();
 
-      // --- NEU: ZUERST IDENTIFIZIEREN ---
-      // --- KORRIGIERTER BLOCK START ---
-    // Wir nutzen einfach die 'user' Variable von oben.
-    // Keine neue Definition (final user = ...), kein neues if.
+      await Purchases.logIn(user.id); 
+      debugPrint("🔑 RevenueCat Login mit ID: ${user.id}");
     
-    await Purchases.logIn(user.id); 
-    debugPrint("🔑 RevenueCat Login mit ID: ${user.id}");
-    
-    // --- KORRIGIERTER BLOCK ENDE ---
-
-    // NEU: Service Aufruf
-    final count = await _entryService.syncOfflineEntries();
+      final count = await _entryService.syncOfflineEntries();
       if (count > 0 && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count Offline-Einträge nachgeladen."), backgroundColor: Colors.green));
       }
@@ -932,7 +581,7 @@ Row(
 
       if (mounted) {
          _initializeTagsMap();
-         _updateHomeWidget(); // <--- Aktualisiert das Widget beim App-Start
+         _updateHomeWidget();
       }
 
     } catch (e) {
@@ -948,14 +597,7 @@ Row(
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
       
-      // FIX: Wir laden NUR die Profile, die dem eingeloggten User gehören!
-      // Vorher fehlte .eq('user_id', userId), deshalb wurden ALLE Profile geladen.
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('user_id', userId) // <--- WICHTIGSTER FIX
-          .order('created_at');
-          
+      final response = await Supabase.instance.client.from('profiles').select().eq('user_id', userId).order('created_at');
       final data = response as List<dynamic>;
       
       if (data.isEmpty) { 
@@ -970,22 +612,12 @@ Row(
       if (mounted) {
         setState(() {
           _profiles = data.map((json) => Profile.fromJson(json)).toList();
-          
-          if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { 
-            _selectedProfileId = lastProfileId; 
-          } else if (_profiles.isNotEmpty) { 
-            _selectedProfileId = _profiles.first.id; 
-          }
+          if (lastProfileId != null && _profiles.any((p) => p.id == lastProfileId)) { _selectedProfileId = lastProfileId; } 
+          else if (_profiles.isNotEmpty) { _selectedProfileId = _profiles.first.id; }
           _initializeTagsMap();
         });
-        
         if (_selectedProfileId != null) _loadEntries();
-
-        // --- HIER IST DER NEUE PLATZ ---
-        // Jetzt sind _profiles zu 100% gefüllt, also können wir den Listener starten.
         _subscribeToPings(); 
-        // -------------------------------
-        // NEU: Push ID speichern
         _updateOneSignalId();
       }
     } catch (e) { 
@@ -1011,33 +643,29 @@ Row(
     } catch (e) { debugPrint("Tags Error: $e"); }
   }
 
-  // ALTE _checkSubscription LÖSCHEN und hiermit ERSETZEN:
-Future<void> _checkSubscription() async {
-  if (kIsWeb) return; // Im Web kein RevenueCat
-
-  try {
-    CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-    _handleCustomerInfo(customerInfo);
-  } catch (e) {
-    debugPrint("RevenueCat Check Error: $e");
+  Future<void> _checkSubscription() async {
+    if (kIsWeb) return;
+    try {
+      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+      _handleCustomerInfo(customerInfo);
+    } catch (e) {
+      debugPrint("RevenueCat Check Error: $e");
+    }
   }
-}
 
-void _handleCustomerInfo(CustomerInfo customerInfo) {
-  if (!mounted) return;
-  // 'pro_access' muss exakt so heißen wie dein Entitlement in RevenueCat!
-  final bool isActive = customerInfo.entitlements.all['pro_access']?.isActive ?? false;
+  void _handleCustomerInfo(CustomerInfo customerInfo) {
+    if (!mounted) return;
+    final bool isActive = customerInfo.entitlements.all['pro_access']?.isActive ?? false;
 
-  setState(() {
-    _isPro = isActive;
-  });
+    setState(() {
+      _isPro = isActive;
+    });
 
-  // Optional: User ID an RevenueCat senden (damit Käufe dem User zugeordnet sind)
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId != null) {
-    Purchases.logIn(userId);
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      Purchases.logIn(userId);
+    }
   }
-}
 
   // --- ACTIONS ---
 
@@ -1053,17 +681,13 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
 
   Future<DateTime?> _showModernDatePicker(DateTime initialDate) async {
     final l10n = AppLocalizations.of(context)!;
-    
-    // Temporärer State für die Auswahl im Dialog
     DateTime tempDate = initialDate;
 
     return showModalBottomSheet<DateTime>(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
           return SafeArea(
@@ -1072,132 +696,25 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Griff oben
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  
-                  // Header Zeile mit "Heute" Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.dialogSelectDate,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      
-                      TextButton.icon(
-                        onPressed: () {
-                          setSheetState(() {
-                            tempDate = DateTime.now();
-                          });
-                        },
-                        icon: const Icon(Icons.today, size: 18),
-                        label: Text(l10n.today.toUpperCase()),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.indigo,
-                          textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  
+                  Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(l10n.dialogSelectDate, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), TextButton.icon(onPressed: () { setSheetState(() { tempDate = DateTime.now(); }); }, icon: const Icon(Icons.today, size: 18), label: Text(l10n.today.toUpperCase()), style: TextButton.styleFrom(foregroundColor: Colors.indigo, textStyle: const TextStyle(fontWeight: FontWeight.bold)))]),
                   const SizedBox(height: 10),
-
                   TableCalendar(
                     firstDay: DateTime(2023),
                     lastDay: DateTime.now(),
                     focusedDay: tempDate,
                     currentDay: DateTime.now(),
-                    
                     locale: Localizations.localeOf(context).languageCode,
-                    
-                    // 1. ÄNDERUNG: Woche beginnt am Montag
                     startingDayOfWeek: StartingDayOfWeek.monday,
-                    
-                    // 2. ÄNDERUNG: Wochentage (Kopfzeile) stylen
-                    daysOfWeekStyle: const DaysOfWeekStyle(
-                      // Wochenende (Sa, So) rot färben
-                      weekendStyle: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-                      // Werktage (Mo-Fr) normal schwarz
-                      weekdayStyle: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-                    ),
-
-                    eventLoader: (day) {
-                      return _allEntries.where((entry) {
-                        final matchProfile = entry.profileId == _selectedProfileId;
-                        final matchDate = isSameDay(entry.timestamp, day);
-                        return matchProfile && matchDate;
-                      }).toList();
-                    },
-
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: false,
-                      titleCentered: true,
-                      titleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                      leftChevronIcon: Icon(Icons.chevron_left, color: Colors.indigo),
-                      rightChevronIcon: Icon(Icons.chevron_right, color: Colors.indigo),
-                    ),
-                    
-                    calendarStyle: CalendarStyle(
-                      selectedDecoration: const BoxDecoration(
-                        color: Colors.indigo,
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: Colors.indigo.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: Colors.indigo.shade300,
-                        shape: BoxShape.circle,
-                      ),
-                      markersMaxCount: 1,
-                      
-                      todayTextStyle: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
-                      selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      defaultTextStyle: const TextStyle(color: Colors.black87),
-                      
-                      // Auch die Zahlen im Kalender (Tage) am Wochenende rot färben
-                      weekendTextStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-
-                    selectedDayPredicate: (day) => isSameDay(tempDate, day),
-                    onDaySelected: (selectedDay, focusedDay) {
-                      if (selectedDay.isAfter(DateTime.now())) return;
-                      setSheetState(() {
-                        tempDate = selectedDay;
-                      });
-                    },
+                    daysOfWeekStyle: const DaysOfWeekStyle(weekendStyle: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold), weekdayStyle: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                    eventLoader: (day) { return _allEntries.where((entry) { final matchProfile = entry.profileId == _selectedProfileId; final matchDate = DateUtils.isSameDay(entry.timestamp, day); return matchProfile && matchDate; }).toList(); },
+                    headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true, titleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.bold), leftChevronIcon: Icon(Icons.chevron_left, color: Colors.indigo), rightChevronIcon: Icon(Icons.chevron_right, color: Colors.indigo)),
+                    calendarStyle: CalendarStyle(selectedDecoration: const BoxDecoration(color: Colors.indigo, shape: BoxShape.circle), todayDecoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.3), shape: BoxShape.circle), markerDecoration: BoxDecoration(color: Colors.indigo.shade300, shape: BoxShape.circle), markersMaxCount: 1, todayTextStyle: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold), selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), defaultTextStyle: const TextStyle(color: Colors.black87), weekendTextStyle: const TextStyle(color: Colors.redAccent)),
+                    selectedDayPredicate: (day) => DateUtils.isSameDay(tempDate, day),
+                    onDaySelected: (selectedDay, focusedDay) { if (selectedDay.isAfter(DateTime.now())) return; setSheetState(() { tempDate = selectedDay; }); },
                   ),
-
                   const SizedBox(height: 20),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, tempDate),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        l10n.btnSelect,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
+                  SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(ctx, tempDate), style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0), child: Text(l10n.btnSelect, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
                 ],
               ),
             ),
@@ -1209,14 +726,8 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
 
   Future<void> _loadEntries() async {
     try {
-      // HIER RUFEN WIR JETZT DEN SERVICE
-      // (Später fügen wir hier einfach limit/offset hinzu für Pagination)
       final entries = await _entryService.getEntries();
-      
-      setState(() {
-        _allEntries = entries;
-        _isLoading = false;
-      });
+      setState(() { _allEntries = entries; _isLoading = false; });
     } catch (e) {
       debugPrint("Load Error: $e");
       if (mounted) setState(() => _isLoading = false);
@@ -1228,62 +739,31 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || _selectedProfileId == null) return;
 
-    // --- LOGIK ÄNDERUNG START ---
-    // Wir nehmen Jahr/Monat/Tag vom ausgewählten Datum (kalender)
-    // Aber Stunde/Minute von JETZT, damit die Sortierung stimmt
     final now = DateTime.now();
-    final entryTimestamp = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      now.hour,
-      now.minute,
-      now.second,
-    );
-    // --- LOGIK ÄNDERUNG ENDE ---
+    final entryTimestamp = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, now.hour, now.minute, now.second);
 
-    final newEntry = MoodEntry(
-      timestamp: entryTimestamp, // Hier die neue Variable nutzen
-      score: _currentMoodValue,
-      sleepRating: _trackSleep ? _currentSleepValue : null,
-      tags: Set.from(_selectedTags),
-      note: _noteController.text.trim(),
-      profileId: _selectedProfileId!
-    );
+    final newEntry = MoodEntry(timestamp: entryTimestamp, score: _currentMoodValue, sleepRating: _trackSleep ? _currentSleepValue : null, tags: Set.from(_selectedTags), note: _noteController.text.trim(), profileId: _selectedProfileId!);
 
     setState(() => _showSuccessAnimation = true);
 
     try {
       final savedEntry = await _entryService.saveEntry(newEntry, user.id);
-
       setState(() {
-        // Wir sortieren neu, da der Eintrag jetzt evtl. nicht ganz oben steht (wenn Datum in Vergangenheit)
         _allEntries.add(savedEntry);
         _allEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-        
-        // UI Reset
         _selectedTags.clear();
         _noteController.clear();
-        // Mood lassen wir vielleicht stehen oder resetten auf 5.0, Geschmackssache
       });
 
       if (savedEntry.id != null && savedEntry.id!.startsWith('offline_') && mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("Kein Internet. Eintrag lokal gespeichert."), backgroundColor: Colors.orange)
-         );
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kein Internet. Eintrag lokal gespeichert."), backgroundColor: Colors.orange));
       } else {
         _updateHomeWidget();
       }
 
-      Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _showSuccessAnimation = false);
-      });
-
+      Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
     } catch (e) {
-      if (mounted) {
-        setState(() => _showSuccessAnimation = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
-      }
+      if (mounted) { setState(() => _showSuccessAnimation = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
     }
   }
 
@@ -1298,94 +778,39 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
     }
   }
 
-  // Signatur angepasst: Nimmt jetzt 'originalTimestamp' entgegen
   Future<void> _updateEntry(String id, double s, double sl, Set<String> t, String? n, DateTime originalTimestamp) async {
     final l10n = AppLocalizations.of(context)!;
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
-
-      final tempEntry = MoodEntry(
-          id: id,
-          score: s,
-          sleepRating: sl,
-          tags: t,
-          note: n,
-          timestamp: originalTimestamp, // Datum beibehalten
-          profileId: _selectedProfileId!,
-          userId: userId
-      );
-
-      // 1. Update an Service
+      final tempEntry = MoodEntry(id: id, score: s, sleepRating: sl, tags: t, note: n, timestamp: originalTimestamp, profileId: _selectedProfileId!, userId: userId);
       final updatedEntry = await _entryService.updateEntry(tempEntry);
 
-      // 2. UI Update & Animation
       if (mounted) {
-        // Erst den Dialog schließen, damit man die Animation auf dem Hauptscreen sieht
         Navigator.pop(context);
-
         setState(() {
-          // Lokales Listen-Update
           final index = _allEntries.indexWhere((e) => e.id == id);
-          if (index != -1) {
-            _allEntries[index] = updatedEntry;
-          } else {
-            _allEntries.add(updatedEntry);
-            _allEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          }
-
-          // --- NEU: Animation starten ---
+          if (index != -1) { _allEntries[index] = updatedEntry; } else { _allEntries.add(updatedEntry); _allEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp)); }
           _showSuccessAnimation = true; 
         });
 
-        // Offline Check (wie gehabt)
         final connectivityResult = await Connectivity().checkConnectivity();
-        if (!mounted) return;
-
-        if (connectivityResult.contains(ConnectivityResult.none)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Offline gespeichert. Wird später synchronisiert."),
-              backgroundColor: Colors.orange
-            )
-          );
+        if (mounted && connectivityResult.contains(ConnectivityResult.none)) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Offline gespeichert. Wird später synchronisiert."), backgroundColor: Colors.orange));
         }
-
-        // --- NEU: Timer zum Ausblenden der Animation (nach 2 Sek) ---
-        Timer(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _showSuccessAnimation = false);
-        });
+        Timer(const Duration(seconds: 2), () { if (mounted) setState(() => _showSuccessAnimation = false); });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
     }
   }
 
   Future<void> _updateHomeWidget() async {
-    // PRÜFUNG: Wenn wir im Web sind, brechen wir sofort ab.
-    // Web-Browser haben keine Homescreen-Widgets -> Fehler vermieden!
     if (kIsWeb) return;
-
     try {
-      // 1. Streak berechnen (Code hast du schon, evtl. in separate Methode auslagern)
       final streak = _calculateStreak();
-      
-      // 2. Daten an Android senden
-      // Die IDs ('tv_streak_value') müssen exakt mit dem XML aus Schritt 2 übereinstimmen!
       await HomeWidget.saveWidgetData<String>('tv_streak_value', streak.toString());
-      
-      // 3. Widget aktualisieren erzwingen
-      await HomeWidget.updateWidget(
-        name: 'MoodWidgetProvider',
-        androidName: 'MoodWidgetProvider',
-        iOSName: 'MoodWidget', // Kommt später
-      );
-    } catch (e) {
-      // Falls auf dem Handy etwas schiefgeht (z.B. Widget noch nicht installiert),
-      // fangen wir den Fehler ab, damit die App weiterläuft.
-      debugPrint("Fehler beim Aktualisieren des HomeWidgets: $e");
-    }
+      await HomeWidget.updateWidget(name: 'MoodWidgetProvider', androidName: 'MoodWidgetProvider', iOSName: 'MoodWidget');
+    } catch (e) { debugPrint("Fehler beim Aktualisieren des HomeWidgets: $e"); }
   }
 
   void _showEditSheet(MoodEntry entry) {
@@ -1395,186 +820,30 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
     Set<String> editTags = Set.from(entry.tags);
     final TextEditingController editNoteCtrl = TextEditingController(text: entry.note);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true, 
-      useSafeArea: true,
-      backgroundColor: const Color(0xFFF5F7FA), // <--- HIER IST DIE NEUE FARBE (Cool Grey)
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))
-      ),
-      builder: (context) {
+    showModalBottomSheet(context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: const Color(0xFFF5F7FA), shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))), builder: (context) {
         return StatefulBuilder(builder: (context, setSheetState) {
           final moodData = MoodUtils.getMoodData(editScore, l10n);
-          // Tastatur-Höhe holen
           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-          return Container(
-            // Padding unten = Tastaturhöhe (damit nichts verdeckt wird)
-            padding: EdgeInsets.only(bottom: bottomInset),
-            // Maximale Höhe begrenzen, damit es oben nicht überlappt
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.95
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min, 
-              children: [
-                // --- 1. HEADER (Mit mehr Abstand oben) ---
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), // Mehr Platz oben
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
-                        child: Text(l10n.cancel),
-                      ),
-                      Text(
-                        l10n.edit,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                      TextButton(
-                        onPressed: () => _updateEntry(
-                          entry.id!, 
-                          editScore, 
-                          editSleep, 
-                          editTags, 
-                          editNoteCtrl.text.trim(),
-                          entry.timestamp // <--- HIER übergeben wir das Original-Datum
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.indigo, 
-                          textStyle: const TextStyle(fontWeight: FontWeight.bold)
-                        ),
-                        child: Text(l10n.save),
-                      ),
-                    ],
-                  ),
-                ),
+          return Container(padding: EdgeInsets.only(bottom: bottomInset), constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.95), child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [TextButton(onPressed: () => Navigator.pop(context), style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600), child: Text(l10n.cancel)), Text(l10n.edit, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), TextButton(onPressed: () => _updateEntry(entry.id!, editScore, editSleep, editTags, editNoteCtrl.text.trim(), entry.timestamp), style: TextButton.styleFrom(foregroundColor: Colors.indigo, textStyle: const TextStyle(fontWeight: FontWeight.bold)), child: Text(l10n.save))])),
                 const Divider(height: 1),
-                
-                // --- 2. SCROLLBARER INHALT ---
-                Flexible(
-                  child: SingleChildScrollView(
-                    // WICHTIG: Padding für den Inhalt selbst (Abstand zu den Rändern & unten Platz zum Scrollen)
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Mood
-                        Center(
-                          child: Column(
-                            children: [
-                              Text(moodData['emoji']!, style: const TextStyle(fontSize: 48)),
-                              const SizedBox(height: 5),
-                              Text(moodData['label']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            ],
-                          ),
-                        ),
+                Flexible(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 20, 24, 40), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Center(child: Column(children: [Text(moodData['emoji']!, style: const TextStyle(fontSize: 48)), const SizedBox(height: 5), Text(moodData['label']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))])),
                         const SizedBox(height: 10),
-                        Slider(
-                          value: editScore, 
-                          min: 0.0, 
-                          max: 10.0, 
-                          onChanged: (val) => setSheetState(() => editScore = val)
-                        ),
-                        
-                        const SizedBox(height: 25), // Mehr Abstand
-                        
-                        // Schlaf
-                        Row(
-                          children: [
-                            const Icon(Icons.bed, size: 20, color: Colors.indigo),
-                            const SizedBox(width: 8),
-                            Text("${l10n.inputSleep}: ${editSleep.toStringAsFixed(1)}h", style: const TextStyle(fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        Slider(
-                          value: editSleep, 
-                          min: 0.0, 
-                          max: 10.0, 
-                          activeColor: Colors.indigo, 
-                          onChanged: (val) => setSheetState(() => editSleep = val)
-                        ),
-                        
+                        Slider(value: editScore, min: 0.0, max: 10.0, onChanged: (val) => setSheetState(() => editScore = val)),
+                        const SizedBox(height: 25), 
+                        Row(children: [const Icon(Icons.bed, size: 20, color: Colors.indigo), const SizedBox(width: 8), Text("${l10n.inputSleep}: ${editSleep.toStringAsFixed(1)}h", style: const TextStyle(fontWeight: FontWeight.w600))]),
+                        Slider(value: editSleep, min: 0.0, max: 10.0, activeColor: Colors.indigo, onChanged: (val) => setSheetState(() => editSleep = val)),
                         const SizedBox(height: 25),
-                        
-                        // --- 3. KATEGORISIERTE TAGS (Wie im Main Screen) ---
                         ..._combinedTagsByCategory.entries.map((entry) { 
                           if (entry.value.isEmpty) return const SizedBox.shrink(); 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start, 
-                            children: [
-                              // Kategorie-Titel
-                              Text(
-                                entry.key.toUpperCase(), 
-                                style: TextStyle(
-                                  fontSize: 11, 
-                                  fontWeight: FontWeight.w800, 
-                                  color: Colors.grey.shade500, 
-                                  letterSpacing: 1.1
-                                )
-                              ), 
-                              const SizedBox(height: 10), 
-                              
-                              // Tags
-                              Wrap(
-                                spacing: 8.0, 
-                                runSpacing: 8.0, 
-                                children: entry.value.map((tag) {
-                                  final isSelected = editTags.contains(tag);
-                                  return ChoiceChip(
-                                    label: Text(tag), 
-                                    selected: isSelected,
-                                    selectedColor: Colors.black87,
-                                    labelStyle: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black87,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                                    ),
-                                    backgroundColor: Colors.white,
-                                    elevation: isSelected ? 2 : 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: isSelected ? Colors.transparent : Colors.grey.shade300
-                                      )
-                                    ),
-                                    onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))
-                                  );
-                                }).toList()
-                              ),
-                              const SizedBox(height: 20), // Abstand zur nächsten Kategorie
-                            ]
-                          ); 
+                          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(entry.key.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 1.1)), const SizedBox(height: 10), Wrap(spacing: 8.0, runSpacing: 8.0, children: entry.value.map((tag) { final isSelected = editTags.contains(tag); return ChoiceChip(label: Text(tag), selected: isSelected, selectedColor: Colors.black87, labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal), backgroundColor: Colors.white, elevation: isSelected ? 2 : 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey.shade300)), onSelected: (s) => setSheetState(() => s ? editTags.add(tag) : editTags.remove(tag))); }).toList()), const SizedBox(height: 20)]); 
                         }),
-                        
                         const SizedBox(height: 10),
-                        
-                        // Notizfeld
-                        TextField(
-                          controller: editNoteCtrl,
-                          decoration: InputDecoration(
-                            hintText: l10n.inputNoteHint,
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                            prefixIcon: const Icon(Icons.edit_note, color: Colors.grey),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          ),
-                          maxLines: 3,
-                          minLines: 1,
-                          textInputAction: TextInputAction.newline, 
-                        ),
-                        // Extra Platz unten, damit man bequem scrollen kann
+                        TextField(controller: editNoteCtrl, decoration: InputDecoration(hintText: l10n.inputNoteHint, filled: true, fillColor: Colors.grey.shade50, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), prefixIcon: const Icon(Icons.edit_note, color: Colors.grey), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)), maxLines: 3, minLines: 1, textInputAction: TextInputAction.newline),
                         const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
+                      ]))),
+              ]));
         });
       },
     );
@@ -1582,7 +851,8 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
 
   void _createNewProfile() {
     final l10n = AppLocalizations.of(context)!;
-    if (!_isPro && _profiles.isNotEmpty) { _showPremiumSheet(context, l10n.premiumTeaserTitle, l10n.premiumTeaserMessage); return; }
+    if (!_isPro && _profiles.isNotEmpty) { PaywallScreen.show(context); return; }
+    
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) { 
       final controller = TextEditingController();
       return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1606,65 +876,36 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
     bool tracking = profile.isCycleTracking;
     DateTime? lastPeriod = profile.lastPeriodDate;
 
-    await showModalBottomSheet(
-      context: context, isScrollControlled: true, 
-      builder: (ctx) => StatefulBuilder(builder: (innerCtx, setDialogState) {
+    await showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) => StatefulBuilder(builder: (innerCtx, setDialogState) {
         return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 24, right: 24, top: 24), child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(l10n.dialogEditProfileTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 20),
           TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.dialogNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))), const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [const Icon(Icons.water_drop, color: Colors.pinkAccent), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogCycleTracking, style: const TextStyle(fontWeight: FontWeight.bold)), Text(l10n.dialogCycleDesc, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])), Switch(value: tracking, activeTrackColor: Colors.pinkAccent, onChanged: (v) => setDialogState(() => tracking = v))]),
-          ),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)), child: Row(children: [const Icon(Icons.water_drop, color: Colors.pinkAccent), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogCycleTracking, style: const TextStyle(fontWeight: FontWeight.bold)), Text(l10n.dialogCycleDesc, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])), Switch(value: tracking, activeTrackColor: Colors.pinkAccent, onChanged: (v) => setDialogState(() => tracking = v))])),
           if (tracking) InkWell(onTap: () async { final d = await _showModernDatePicker(lastPeriod ?? DateTime.now()); if (d != null) setDialogState(() => lastPeriod = d); }, child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(12)), child: Row(children: [const Icon(Icons.calendar_today, color: Colors.grey), const SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l10n.dialogPeriodStart, style: const TextStyle(fontWeight: FontWeight.bold)), Text(lastPeriod == null ? l10n.dialogSelectDate : DateFormat('dd.MM.yyyy').format(lastPeriod!), style: TextStyle(color: Colors.indigo.shade400, fontWeight: FontWeight.bold))])]))),
           const SizedBox(height: 20),
-          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async {
-             await _updateProfile(profile.id, nameCtrl.text, tracking, lastPeriod);
-             if (mounted) Navigator.pop(context);
-          }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))
+          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () async { await _updateProfile(profile.id, nameCtrl.text, tracking, lastPeriod); if (mounted) Navigator.pop(context); }, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)), child: Text(l10n.save)))
         ]));
-      })
-    );
+      }));
   }
 
   Future<void> _updateProfile(String id, String name, bool tracking, DateTime? lastPeriod) async {
     final l10n = AppLocalizations.of(context)!;
     try {
       await Supabase.instance.client.from('profiles').update({'name': name, 'is_cycle_tracking': tracking, 'last_period_date': lastPeriod?.toIso8601String()}).eq('id', id);
-      await _loadProfiles(); 
-      await _loadCustomTags();
+      await _loadProfiles(); await _loadCustomTags();
     } catch (e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
   }
 
   Future<void> _signOut() async {
-  // 1. Widget leeren (nur auf Handy)
-  // Wir überschreiben den alten Streak-Wert mit "--" oder "0", damit der nächste User
-  // nicht die Daten des Vorgängers sieht.
-  if (!kIsWeb) {
-    try {
-      await HomeWidget.saveWidgetData<String>('tv_streak_value', '--'); 
-      await HomeWidget.updateWidget(
-        name: 'MoodWidgetProvider',
-        androidName: 'MoodWidgetProvider',
-        iOSName: 'MoodWidget',
-      );
-    } catch (e) {
-      debugPrint("Fehler beim Widget-Reset: $e");
+    if (!kIsWeb) {
+      try {
+        await HomeWidget.saveWidgetData<String>('tv_streak_value', '--'); 
+        await HomeWidget.updateWidget(name: 'MoodWidgetProvider', androidName: 'MoodWidgetProvider', iOSName: 'MoodWidget');
+      } catch (e) { debugPrint("Fehler beim Widget-Reset: $e"); }
     }
+    await Supabase.instance.client.auth.signOut();
+    if (mounted) { Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const AuthGate()), (route) => false); }
   }
-
-  // 2. Supabase Logout
-  await Supabase.instance.client.auth.signOut();
-
-  // 3. Navigation zurück zum Login
-  if (mounted) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const AuthGate()), 
-      (route) => false
-    );
-  }
-}
 
   Future<void> _changeProfile(String id) async {
     setState(() => _selectedProfileId = id);
@@ -1704,44 +945,17 @@ void _handleCustomerInfo(CustomerInfo customerInfo) {
 
   int _calculateStreak() {
     if (_allEntries.isEmpty) return 0;
-    
-    // 1. Eigene ID holen
     final myUserId = Supabase.instance.client.auth.currentUser?.id;
     if (myUserId == null) return 0;
-
-    // 2. FILTERN: Nur Einträge nehmen, die MIR gehören.
-    // Partner-Einträge (die eine andere user_id haben) werden hier ignoriert.
-    final myEntriesOnly = _allEntries.where((entry) {
-      return entry.userId == myUserId; 
-    }).toList();
-
+    final myEntriesOnly = _allEntries.where((entry) => entry.userId == myUserId).toList();
     if (myEntriesOnly.isEmpty) return 0;
-
-    // 3. Berechnung NUR mit den eigenen Einträgen fortsetzen
-    final uniqueDates = myEntriesOnly
-        .map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
-
+    final uniqueDates = myEntriesOnly.map((e) => DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day)).toSet().toList()..sort((a, b) => b.compareTo(a));
     if (uniqueDates.isEmpty) return 0;
-
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     final yesterday = today.subtract(const Duration(days: 1));
-
-    if (uniqueDates.first.isBefore(yesterday)) { return 0; }
-    
-    int streak = 0;
-    DateTime checkDate = uniqueDates.first; 
-    
-    for (var date in uniqueDates) {
-      if (DateUtils.isSameDay(date, checkDate)) { 
-        streak++; 
-        checkDate = checkDate.subtract(const Duration(days: 1)); 
-      } else { 
-        break; 
-      }
-    }
+    if (uniqueDates.first.isBefore(yesterday)) return 0;
+    int streak = 0; DateTime checkDate = uniqueDates.first; 
+    for (var date in uniqueDates) { if (DateUtils.isSameDay(date, checkDate)) { streak++; checkDate = checkDate.subtract(const Duration(days: 1)); } else { break; } }
     return streak;
   }
 
