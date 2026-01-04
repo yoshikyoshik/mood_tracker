@@ -1,14 +1,12 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 import java.util.Properties
 import java.io.FileInputStream
 
-// Lade die Key-Properties sicher
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -18,7 +16,9 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.luviosphere.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    
+    // NDK Version
+    ndkVersion = "27.0.12077973"
 
     lint {
         checkReleaseBuilds = false
@@ -26,30 +26,32 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.luviosphere.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = flutter.minSdkVersion 
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        
+        ndk {
+            // Wir erzwingen die Architekturen
+            abiFilters.add("arm64-v8a")
+            abiFilters.add("armeabi-v7a")
+            abiFilters.add("x86_64")
+        }
     }
 
-    // HIER WAR DER FEHLER: Wir nutzen nur EINEN Block in korrekter Kotlin-Syntax
     signingConfigs {
         create("release") {
-            // Wir prüfen, ob die Properties geladen wurden, um Abstürze zu vermeiden
             if (keystoreProperties.isNotEmpty()) {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
@@ -61,14 +63,21 @@ android {
 
     buildTypes {
         getByName("release") {
-            // HIER WAR AUCH EIN FEHLER: Alte Syntax entfernt
-            // Korrekte Zuweisung der Release-Config:
             signingConfig = signingConfigs.getByName("release")
-            
-            // Standard Optimierungen (optional, aber gut für Release)
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+            
+            // WICHTIG: Hier habe ich 'debugSymbolLevel' GELÖSCHT.
+            // Das verhindert, dass er nach Dateien sucht, die wir nicht haben.
+        }
+    }
+    
+    // Das ist der wichtigste Schutz gegen den NDK-Bug:
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols.add("**/*.so")
         }
     }
 }

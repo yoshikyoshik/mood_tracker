@@ -4,9 +4,7 @@ import 'dart:async';
 import 'package:lottie/lottie.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -15,13 +13,14 @@ import 'package:home_widget/home_widget.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'paywall_screen.dart';
 
 // Import for Localization
 import '../l10n/generated/app_localizations.dart';
 
 import '../models/mood_entry.dart';
 import '../models/profile.dart';
-import '../models/subscription.dart';
 import '../widgets/mood_input_view.dart';
 import '../widgets/stats_view.dart';
 import '../widgets/profile_view.dart';
@@ -69,7 +68,7 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
   List<MoodEntry> _allEntries = [];
   
   bool _isPro = false;
-  String? _stripeCustomerId;
+  ////String? _stripeCustomerId;
 
   String _appVersion = "";
 
@@ -114,6 +113,13 @@ class _MoodTrackerContentState extends State<MoodTrackerContent> with WidgetsBin
         }
       }
     });
+
+    // NEU: RevenueCat Listener
+    if (!kIsWeb) {
+      Purchases.addCustomerInfoUpdateListener((info) {
+        _handleCustomerInfo(info);
+    });
+  }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndStartShowcase());
   }
@@ -373,28 +379,86 @@ void _triggerPingAnimation(String type) {
 
   // --- ACTIONS ---
 
-  Future<void> _startCheckout() async {
+Future<void> _startCheckout() async {
     final l10n = AppLocalizations.of(context)!;
-    final user = Supabase.instance.client.auth.currentUser; if (user == null) return;
     setState(() => _isLoading = true);
-    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
+
     try {
-      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-checkout'), body: jsonEncode({'userEmail': user.email, 'userId': user.id, 'priceId': 'price_1SbFNUFoVhyNl27phao8dSGu', 'returnUrl': returnUrl}));
-      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); } 
-    finally { if (mounted) setState(() => _isLoading = false); }
+      // 1. Angebote laden
+      Offerings offerings = await Purchases.getOfferings();
+      
+      if (!mounted) return;
+
+      if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
+        final package = offerings.current!.availablePackages.first;
+        
+        // FIX: Wir nutzen explizit 'dynamic', damit der Compiler nicht meckert.
+        // ignore: deprecated_member_use
+        dynamic result = await Purchases.purchasePackage(package);
+        
+        if (!mounted) return;
+
+        CustomerInfo customerInfo;
+        
+        // Jetzt funktioniert die Weiche, weil 'result' dynamisch ist:
+        if (result is CustomerInfo) {
+          // Alte Version: Direktzuweisung
+          customerInfo = result;
+        } else {
+          // Neue Version: Wrapper entpacken
+          // Wir greifen einfach auf .customerInfo zu (Dart vertraut uns hier dank dynamic)
+          customerInfo = result.customerInfo;
+        }
+        
+        // 3. Ergebnis verarbeiten
+        _handleCustomerInfo(customerInfo);
+        
+        if (customerInfo.entitlements.all['pro_access']?.isActive == true) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Willkommen bei Pro! 🎉"), backgroundColor: Colors.green)
+           );
+           if (Navigator.canPop(context)) {
+             Navigator.of(context).pop(); 
+           }
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("Aktuell keine Angebote verfügbar."))
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      if (!e.toString().contains("User cancelled")) {
+         debugPrint("Kauf Fehler: $e");
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(l10n.snackError("Kauf nicht abgeschlossen")))
+         );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  Future<void> _openCustomerPortal() async {
+  // ALTE _openCustomerPortal LÖSCHEN und hiermit ERSETZEN:
+Future<void> _openCustomerPortal() async {
     final l10n = AppLocalizations.of(context)!;
-    if (_stripeCustomerId == null) return;
-    setState(() => _isLoading = true);
-    final String returnUrl = kIsWeb ? 'https://celadon-pasca-8b960a.netlify.app/' : 'moodtracker://home';
     try {
-      final response = await http.post(Uri.parse('https://celadon-pasca-8b960a.netlify.app/.netlify/functions/create-portal'), body: jsonEncode({'customerId': _stripeCustomerId, 'returnUrl': returnUrl}));
-      if (response.statusCode == 200) { final url = Uri.parse(jsonDecode(response.body)['url']); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString())))); }
-    finally { if (mounted) setState(() => _isLoading = false); }
+      if (!kIsWeb) {
+           // Hier nutzen wir eine URL, die auf Android immer funktioniert
+           final url = Uri.parse("https://play.google.com/store/account/subscriptions");
+           
+           if (await canLaunchUrl(url)) {
+             // await launchUrl(url); <-- Das hier könnte warten...
+             // BESSER:
+             await launchUrl(url, mode: LaunchMode.externalApplication);
+           }
+      }
+    } catch (e) {
+      // SICHERHEITS-CHECK
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackError(e.toString()))));
+      }
+    }
   }
 
   void _showPremiumSheet(BuildContext context, String title, String message) {
@@ -598,20 +662,47 @@ void _triggerPingAnimation(String type) {
                         ],
                       ),
                       
-                      // Right: Icons
-                      Row(
-                        children: [
-                          _buildStreakBadge(),
-                          if (!_isPro) 
-                            IconButton(
-                              icon: const Icon(Icons.diamond_outlined), 
-                              color: primaryColor,
-                              onPressed: _startCheckout
-                            ),
-                          
-                          IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
-                        ],
-                      )
+                      // NEUE VERSION
+// Right: Icons
+Row(
+  children: [
+    _buildStreakBadge(),
+    
+    // --- NEUE KRONE FÜR PAYWALL ---
+    if (!_isPro) 
+      IconButton(
+        icon: const Icon(Icons.workspace_premium, color: Colors.amber), // Goldene Krone
+        onPressed: () async {
+          // 1. Paywall öffnen
+          await PaywallScreen.show(context);
+          
+          // 2. Status neu prüfen (falls User gekauft hat und zurückkommt)
+          // Wir nutzen deine existierende Methode _checkSubscription(), 
+          // die aktualisiert _isPro automatisch.
+          await _checkSubscription();
+
+          // --- DEBUG HELFER ---
+      if (!mounted) return;
+      
+      bool isConfigured = await Purchases.isConfigured;
+      String? appUserID = await Purchases.appUserID;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("DEBUG: RC Configured: $isConfigured | User: $appUserID"),
+          duration: const Duration(seconds: 10),
+          backgroundColor: Colors.red, // Rot damit es auffällt
+        ),
+      );
+      // --------------------
+
+        },
+      ),
+    // ------------------------------
+
+    IconButton(icon: Icon(Icons.calendar_today_outlined, color: headerTextColor), onPressed: _pickDate),
+  ],
+)
                     ],
                   ),
                 ),
@@ -816,9 +907,19 @@ void _triggerPingAnimation(String type) {
       }
 
       await _loadProfiles();
-      
-      // NEU: Service Aufruf
-      final count = await _entryService.syncOfflineEntries();
+
+      // --- NEU: ZUERST IDENTIFIZIEREN ---
+      // --- KORRIGIERTER BLOCK START ---
+    // Wir nutzen einfach die 'user' Variable von oben.
+    // Keine neue Definition (final user = ...), kein neues if.
+    
+    await Purchases.logIn(user.id); 
+    debugPrint("🔑 RevenueCat Login mit ID: ${user.id}");
+    
+    // --- KORRIGIERTER BLOCK ENDE ---
+
+    // NEU: Service Aufruf
+    final count = await _entryService.syncOfflineEntries();
       if (count > 0 && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$count Offline-Einträge nachgeladen."), backgroundColor: Colors.green));
       }
@@ -910,13 +1011,33 @@ void _triggerPingAnimation(String type) {
     } catch (e) { debugPrint("Tags Error: $e"); }
   }
 
-  Future<void> _checkSubscription() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser; if (user == null) return;
-      final data = await Supabase.instance.client.from('subscriptions').select().eq('user_id', user.id).maybeSingle();
-      if (data != null && mounted) { final sub = Subscription.fromMap(data); setState(() { _isPro = sub.isPro; _stripeCustomerId = sub.customerId; }); }
-    } catch (e) { debugPrint("Sub Error: $e"); }
+  // ALTE _checkSubscription LÖSCHEN und hiermit ERSETZEN:
+Future<void> _checkSubscription() async {
+  if (kIsWeb) return; // Im Web kein RevenueCat
+
+  try {
+    CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+    _handleCustomerInfo(customerInfo);
+  } catch (e) {
+    debugPrint("RevenueCat Check Error: $e");
   }
+}
+
+void _handleCustomerInfo(CustomerInfo customerInfo) {
+  if (!mounted) return;
+  // 'pro_access' muss exakt so heißen wie dein Entitlement in RevenueCat!
+  final bool isActive = customerInfo.entitlements.all['pro_access']?.isActive ?? false;
+
+  setState(() {
+    _isPro = isActive;
+  });
+
+  // Optional: User ID an RevenueCat senden (damit Käufe dem User zugeordnet sind)
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId != null) {
+    Purchases.logIn(userId);
+  }
+}
 
   // --- ACTIONS ---
 
